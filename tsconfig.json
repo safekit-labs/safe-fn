@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"lib": ["esnext", "dom"],
+		"outDir": "./dist",
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"rootDir": ".",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"]
+		}
+	},
+	"include": ["./src/**/*.ts", "./__tests__/**/*.ts", "./examples/**/*.ts"],
+	"exclude": ["dist", "build", "node_modules"]
+}

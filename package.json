@@ -1,0 +1,78 @@
+{
+  "name": "@corporationx/procedure-builder",
+  "version": "0.1.0",
+  "description": "A type-safe procedure builder with interceptors, schema validation, and context management for TypeScript applications.",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/corporationx/procedure-builder",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/corporationx/procedure-builder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/corporationx/procedure-builder/issues"
+  },
+  "types": "./dist/src/index.d.ts",
+  "main": "./dist/src/index.js",
+  "module": "./dist/src/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build:tsc": "tsc -p tsconfig.build.json",
+    "build:resolve": "tsc-alias -p tsconfig.build.json",
+    "build": "bun run build:tsc && bun run build:resolve",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts",
+    "test": "vitest"
+  },
+  "keywords": [
+    "typescript",
+    "procedures",
+    "handlers",
+    "interceptors",
+    "middleware",
+    "validation",
+    "type-safe",
+    "cqrs",
+    "builder",
+    "schema",
+    "context",
+    "command",
+    "query",
+    "service"
+  ],
+  "author": "corporationx",
+  "devDependencies": {
+    "@standard-schema/spec": "^1.0.0"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "tsc-alias": "^1.8.16",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4",
+    "zod": "^3.25.67"
+  }
+}
