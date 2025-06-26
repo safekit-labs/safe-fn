@@ -2,6 +2,8 @@
  * Core types for the SafeFn library
  */
 
+import type { StandardSchemaV1 } from '@standard-schema/spec';
+
 /**
  * Context object passed through the procedure execution chain
  */
@@ -66,9 +68,9 @@ export type SafeFnHandler<TInput, TOutput, TContext extends Context> = (
 ) => Promise<TOutput>;
 
 /**
- * Schema validation function type - can accept Zod schemas directly or validation functions
+ * Schema validation function type - supports Standard Schema spec and legacy formats
  */
-export type SchemaValidator<T> = ((input: unknown) => T) | { parse: (input: unknown) => T };
+export type SchemaValidator<T> = StandardSchemaV1<T> | ((input: unknown) => T) | { parse: (input: unknown) => T };
 
 /**
  * Safe function builder interface with type tracking
@@ -91,6 +93,16 @@ export interface SafeFnBuilder<
 /**
  * SafeFn Client interface
  */
-export interface Client<TContext extends Context = Context> extends SafeFnBuilder<TContext, unknown, unknown> {}
+export interface Client<TContext extends Context = Context> {
+  use<TNewContext extends Context>(
+    interceptor: Interceptor<TNewContext>
+  ): Client<TContext & TNewContext>;
+  meta(metadata: Metadata): SafeFnBuilder<TContext, unknown, unknown>;
+  input<TNewInput>(schema: SchemaValidator<TNewInput>): SafeFnBuilder<TContext, TNewInput, unknown>;
+  output<TNewOutput>(schema: SchemaValidator<TNewOutput>): SafeFnBuilder<TContext, unknown, TNewOutput>;
+  handler<THandlerInput = any, THandlerOutput = any>(
+    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>
+  ): (input: THandlerInput, context?: Partial<TContext>) => Promise<THandlerOutput>;
+}
 
 

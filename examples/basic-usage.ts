@@ -1,24 +1,21 @@
 /**
  * Basic Usage Example
- * Simple safe functions with validation
+ * Using the client to create a simple function with validation
  */
-
-import { createSafeFnClient } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
-// Create a simple client
-const client = createSafeFnClient();
+import { safeFnClient } from './simple-client-setup';
 
-// Simple safe function with validation
-const addNumbers = client
-  .meta({ operation: 'add' })
-  .input(z.object({
-    a: z.number(),
-    b: z.number()
-  }))
-  .handler(async ({ parsedInput }) => {
-    return parsedInput.a + parsedInput.b;
+export const getUser = safeFnClient
+  .meta({ operation: 'get-user', requiresAuth: true })
+  .input(z.object({ id: z.string() }))
+  .handler(async ({ parsedInput, ctx }) => {
+    // parsedInput is fully typed as { id: string }
+    return { id: parsedInput.id, name: 'John Doe', email: 'john@example.com' };
   });
 
 // Usage
-const result = await addNumbers({ a: 5, b: 3 }); // Returns: 8
+async function example() {
+  const user = await getUser({ id: '123' }, { userId: 'current-user' });
+  console.log(user);
+}

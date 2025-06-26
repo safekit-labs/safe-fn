@@ -1,15 +1,16 @@
 /**
  * SafeFn Client factory and implementation
  */
-import { createSafeFn } from '@/builder';
-
 import type {
   Client,
   ClientConfig,
   Context,
   Interceptor,
-  SafeFnHandler
+  SafeFnHandler,
+  SchemaValidator
 } from '@/types';
+
+import { createSafeFn } from '@/builder';
 
 /**
  * Creates a chainable SafeFn client builder with explicit context type
@@ -36,7 +37,7 @@ class ClientBuilder<TContext extends Context = Context> implements Client<TConte
 
   use<TNewContext extends Context>(
     interceptor: Interceptor<TNewContext>
-  ): ClientBuilder<TContext & TNewContext> {
+  ): Client<TContext & TNewContext> {
     // Create a new client builder with the intersection type
     // Note: We use any for the interceptors array since TypeScript can't prove compatibility
     // but at runtime, the interceptors will work correctly with the intersection context
@@ -51,17 +52,15 @@ class ClientBuilder<TContext extends Context = Context> implements Client<TConte
     return this.createConfiguredBuilder().meta(metadata);
   }
 
-  input(schema: any) {
+  input<TNewInput>(schema: SchemaValidator<TNewInput>) {
     return this.createConfiguredBuilder().input(schema);
   }
 
-  output(schema: any) {
+  output<TNewOutput>(schema: SchemaValidator<TNewOutput>) {
     return this.createConfiguredBuilder().output(schema);
   }
 
-  handler<THandlerInput = unknown, THandlerOutput = unknown>(
-    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>
-  ) {
+  handler<THandlerInput = any, THandlerOutput = any>(handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>) {
     return this.createConfiguredBuilder().handler<THandlerInput, THandlerOutput>(handler);
   }
 

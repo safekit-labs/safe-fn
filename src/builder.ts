@@ -1,8 +1,6 @@
 /**
  * Main safe function builder implementation
  */
-
-import { executeInterceptorChain } from '@/interceptor';
 import type {
   SafeFnHandler,
   Context,
@@ -12,16 +10,38 @@ import type {
   SchemaValidator,
 } from '@/types';
 
+import { executeInterceptorChain } from '@/interceptor';
+
 /**
- * Creates a schema validator function that handles both direct schemas and validation functions
+ * Creates a schema validator function that handles Standard Schema, legacy schemas, and validation functions
  */
 function createSchemaValidator<T>(schema: SchemaValidator<T>): (input: unknown) => T {
   if (typeof schema === 'function') {
     return schema;
-  } else if (schema && typeof schema.parse === 'function') {
-    return (input: unknown) => schema.parse(input);
+  } else if (schema && typeof schema === 'object') {
+    // Check for Standard Schema first
+    if ('~standard' in schema && typeof schema['~standard'] === 'object') {
+      const standardSchema = schema['~standard'];
+      if (typeof standardSchema.validate === 'function') {
+        return (input: unknown) => {
+          const result = standardSchema.validate(input);
+          // Handle both sync and async results
+          if (result && typeof (result as any).then === 'function') {
+            throw new Error('Async Standard Schema validation not supported yet');
+          }
+          if ((result as any).issues) {
+            throw new Error('Schema validation failed: ' + JSON.stringify((result as any).issues));
+          }
+          return (result as any).value;
+        };
+      }
+    }
+    // Fallback to legacy Zod-style .parse method
+    if ('parse' in schema && typeof schema.parse === 'function') {
+      return (input: unknown) => schema.parse(input);
+    }
   }
-  throw new Error('Invalid schema: must be a function or object with parse method');
+  throw new Error('Invalid schema: must be a function, Standard Schema, or object with parse method');
 }
 
 /**
@@ -64,7 +84,7 @@ export function createSafeFn<TContext extends Context = Context>(): SafeFnBuilde
       return builder as any; // Type assertion needed for the new output type
     },
 
-    handler<THandlerInput = unknown, THandlerOutput = unknown>(handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>) {
+    handler<THandlerInput = any, THandlerOutput = any>(handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>) {
       return async (input: THandlerInput, context?: Partial<TContext>) => {
         // Merge with default context if available
         const defaultContext = (builder as any)._defaultContext || {};

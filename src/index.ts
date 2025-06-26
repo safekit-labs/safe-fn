@@ -43,11 +43,8 @@ export type {
   SafeFnHandler,
   SafeFnBuilder,
   Client,
-  SchemaValidator
+  SchemaValidator,
 } from '@/types';
 
 // Client factory
 export { createSafeFnClient } from '@/client';
-
-// Interceptor utilities
-export { executeInterceptorChain } from '@/interceptor';

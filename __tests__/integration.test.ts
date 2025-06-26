@@ -1,10 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
-import {
-  createSafeFnClient,
-  Context,
-  Interceptor
-} from '@/index';
+import type { Context, Interceptor } from '@/index';
+
+import { createSafeFnClient } from '@/index';
 
 // Test types
 interface UserContext extends Context {
@@ -275,7 +273,7 @@ describe('SafeFn - Complete Integration Test', () => {
       contextUserId: 'anonymous',
       processed: true
     });
-    expect(result.timestamp).toBeDefined();
+    expect((result as any).timestamp).toBeDefined();
   });
 
   it('should handle metadata validation and usage', async () => {
