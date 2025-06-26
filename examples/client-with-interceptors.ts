@@ -3,7 +3,7 @@
  * Shows how to use clients and interceptors
  */
 
-import { createClient, Context, Interceptor } from '@corporationx/procedure-builder';
+import { createClient, Context, Interceptor } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
 interface AppContext extends Context {
@@ -23,11 +23,11 @@ const loggingInterceptor: Interceptor<AppContext> = async ({ next, metadata, ctx
 const client = createClient<AppContext>()
   .use(loggingInterceptor);
 
-// Create procedure using client
+// Create safe function using client
 const getUser = client
-  .metadata({ operation: 'get-user' })
-  .inputSchema(z.object({ id: z.string() }))
-  .query(async ({ parsedInput, ctx }) => {
+  .meta({ operation: 'get-user' })
+  .input(z.object({ id: z.string() }))
+  .handler(async ({ parsedInput, ctx }) => {
     return { id: parsedInput.id, name: 'John Doe' };
   });
 

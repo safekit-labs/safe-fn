@@ -1,5 +1,5 @@
 /**
- * Core types for the CQRS Builder library
+ * Core types for the SafeFn library
  */
 
 /**
@@ -17,7 +17,7 @@ export interface Metadata {
 }
 
 /**
- * Configuration for the CQRS client
+ * Configuration for the SafeFn client
  */
 export interface ClientConfig<TContext extends Context = Context> {
   defaultContext?: TContext;
@@ -59,23 +59,9 @@ export interface HandlerInput<TInput, TContext extends Context> {
 }
 
 /**
- * Command handler function type
+ * Safe function handler type
  */
-export type CommandHandler<TInput, TOutput, TContext extends Context> = (
-  input: HandlerInput<TInput, TContext>
-) => Promise<TOutput>;
-
-/**
- * Query handler function type
- */
-export type QueryHandler<TInput, TOutput, TContext extends Context> = (
-  input: HandlerInput<TInput, TContext>
-) => Promise<TOutput>;
-
-/**
- * Service handler function type - for general business logic
- */
-export type ServiceHandler<TInput, TOutput, TContext extends Context> = (
+export type SafeFnHandler<TInput, TOutput, TContext extends Context> = (
   input: HandlerInput<TInput, TContext>
 ) => Promise<TOutput>;
 
@@ -85,32 +71,26 @@ export type ServiceHandler<TInput, TOutput, TContext extends Context> = (
 export type SchemaValidator<T> = ((input: unknown) => T) | { parse: (input: unknown) => T };
 
 /**
- * Procedure builder interface with type tracking
+ * Safe function builder interface with type tracking
  */
-export interface ProcedureBuilder<
+export interface SafeFnBuilder<
   TContext extends Context = Context,
   TInput = unknown,
   TOutput = unknown
 > {
-  metadata(metadata: Metadata): ProcedureBuilder<TContext, TInput, TOutput>;
-  use(interceptor: Interceptor<TContext>): ProcedureBuilder<TContext, TInput, TOutput>;
-  inputSchema<TNewInput>(schema: SchemaValidator<TNewInput>): ProcedureBuilder<TContext, TNewInput, TOutput>;
-  outputSchema<TNewOutput>(schema: SchemaValidator<TNewOutput>): ProcedureBuilder<TContext, TInput, TNewOutput>;
-  command<THandlerInput = TInput, THandlerOutput = TOutput>(
-    handler: CommandHandler<THandlerInput, THandlerOutput, TContext>
-  ): (input: THandlerInput, context?: Partial<TContext>) => Promise<THandlerOutput>;
-  query<THandlerInput = TInput, THandlerOutput = TOutput>(
-    handler: QueryHandler<THandlerInput, THandlerOutput, TContext>
-  ): (input: THandlerInput, context?: Partial<TContext>) => Promise<THandlerOutput>;
-  service<THandlerInput = TInput, THandlerOutput = TOutput>(
-    handler: ServiceHandler<THandlerInput, THandlerOutput, TContext>
+  meta(metadata: Metadata): SafeFnBuilder<TContext, TInput, TOutput>;
+  use(interceptor: Interceptor<TContext>): SafeFnBuilder<TContext, TInput, TOutput>;
+  input<TNewInput>(schema: SchemaValidator<TNewInput>): SafeFnBuilder<TContext, TNewInput, TOutput>;
+  output<TNewOutput>(schema: SchemaValidator<TNewOutput>): SafeFnBuilder<TContext, TInput, TNewOutput>;
+  handler<THandlerInput = TInput, THandlerOutput = TOutput>(
+    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>
   ): (input: THandlerInput, context?: Partial<TContext>) => Promise<THandlerOutput>;
 }
 
 
 /**
- * CQRS Client interface
+ * SafeFn Client interface
  */
-export interface Client<TContext extends Context = Context> extends ProcedureBuilder<TContext, unknown, unknown> {}
+export interface Client<TContext extends Context = Context> extends SafeFnBuilder<TContext, unknown, unknown> {}
 
 

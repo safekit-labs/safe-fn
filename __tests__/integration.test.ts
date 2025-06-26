@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import {
   createClient,
-  procedure,
+  createSafeFn,
   Context,
   Interceptor
 } from '@/index';
@@ -51,8 +51,8 @@ const calculatorOutputSchema = z.number();
 type CreateUserInput = z.infer<typeof createUserInputSchema>;
 type GetUserInput = z.infer<typeof getUserInputSchema>;
 
-describe('CQRS Builder - Complete Integration Test', () => {
-  it('should demonstrate full CQRS pattern with all features', async () => {
+describe('SafeFn - Complete Integration Test', () => {
+  it('should demonstrate full safe function pattern with all features', async () => {
     // Setup interceptors
     const auditInterceptor: Interceptor<UserContext> = async ({ next }) => {
       // console.log(`[AUDIT] ${metadata.operation} - User: ${ctx.userId}`);
@@ -94,7 +94,7 @@ describe('CQRS Builder - Complete Integration Test', () => {
 
     // Create procedures using client with Zod schemas and chained .use()
     const createUser = client
-      .metadata({
+      .meta({
         operationName: 'USER.CREATE',
         auditLevel: 'high',
         requiresAuth: true,
@@ -103,9 +103,9 @@ describe('CQRS Builder - Complete Integration Test', () => {
       .use(auditInterceptor)
       .use(loggingInterceptor)
       .use(authInterceptor)
-      .inputSchema(createUserInputSchema)
-      .outputSchema(userOutputSchema)
-      .command(async ({ parsedInput }) => {
+      .input(createUserInputSchema)
+      .output(userOutputSchema)
+      .handler(async ({ parsedInput }) => {
         const input = parsedInput;
         const user: User = {
           id: `user_${Date.now()}`,
@@ -119,7 +119,7 @@ describe('CQRS Builder - Complete Integration Test', () => {
       });
 
     const getUser = client
-      .metadata({
+      .meta({
         operationName: 'USER.GET',
         auditLevel: 'low',
         requiresAuth: false,
@@ -127,9 +127,9 @@ describe('CQRS Builder - Complete Integration Test', () => {
       })
       .use(auditInterceptor)
       .use(loggingInterceptor)
-      .inputSchema(getUserInputSchema)
-      .outputSchema(userOutputSchema)
-      .query(async ({ parsedInput }) => {
+      .input(getUserInputSchema)
+      .output(userOutputSchema)
+      .handler(async ({ parsedInput }) => {
         const input = parsedInput;
         const user = mockUsers.get(input.id);
         if (!user) {
@@ -187,13 +187,13 @@ describe('CQRS Builder - Complete Integration Test', () => {
     expect(errorHandler).toHaveBeenCalled();
   });
 
-  it('should work with standalone procedures (without client)', async () => {
-    // Test standalone procedure creation with Zod schemas
-    const simpleCalculator = procedure()
-      .metadata({ operation: 'calculate' })
-      .inputSchema(calculatorInputSchema)
-      .outputSchema(calculatorOutputSchema)
-      .query(async ({ parsedInput }) => {
+  it('should work with standalone safe functions (without client)', async () => {
+    // Test standalone safe function creation with Zod schemas
+    const simpleCalculator = createSafeFn()
+      .meta({ operation: 'calculate' })
+      .input(calculatorInputSchema)
+      .output(calculatorOutputSchema)
+      .handler(async ({ parsedInput }) => {
         const input = parsedInput;
         return input.a + input.b;
       });
@@ -252,8 +252,8 @@ describe('CQRS Builder - Complete Integration Test', () => {
       .use(dataTransformInterceptor);
 
     const testProcedure = client
-      .metadata({ operation: 'test' })
-      .command(async ({ ctx, parsedInput }) => {
+      .meta({ operation: 'test' })
+      .handler(async ({ ctx, parsedInput }) => {
         const input = parsedInput;
         return {
           receivedInput: input,
@@ -296,31 +296,31 @@ describe('CQRS Builder - Complete Integration Test', () => {
 
     // Test with valid metadata
     const validProcedure = client
-      .metadata({
+      .meta({
         operation: 'test',
         version: '1.0.0',
         description: 'Test procedure'
       })
-      .command(async () => ({ success: true }));
+      .handler(async () => ({ success: true }));
 
     const result = await validProcedure({});
     expect(result).toEqual({ success: true });
 
     // Test with missing metadata
     const invalidProcedure = client
-      .metadata({ operation: 'test' }) // Missing version
-      .command(async () => ({ success: true }));
+      .meta({ operation: 'test' }) // Missing version
+      .handler(async () => ({ success: true }));
 
     await expect(invalidProcedure({})).rejects.toThrow('Version is required in metadata');
 
     // Test with deprecated flag
     const deprecatedProcedure = client
-      .metadata({
+      .meta({
         operation: 'old-test',
         version: '1.0.0',
         deprecated: true
       })
-      .command(async () => ({ success: true }));
+      .handler(async () => ({ success: true }));
 
     const deprecatedResult = await deprecatedProcedure({});
     expect(deprecatedResult).toEqual({ success: true });
@@ -351,12 +351,12 @@ describe('CQRS Builder - Complete Integration Test', () => {
     };
 
     // Test chained .use() method
-    const chainedProcedure = procedure()
-      .metadata({ operation: 'chained-test' })
+    const chainedProcedure = createSafeFn()
+      .meta({ operation: 'chained-test' })
       .use(firstInterceptor)
       .use(secondInterceptor)
       .use(thirdInterceptor)
-      .command(async () => {
+      .handler(async () => {
         executionOrder.push('handler');
         return { success: true };
       });
@@ -396,9 +396,9 @@ describe('CQRS Builder - Complete Integration Test', () => {
       .use(clientInterceptor);
 
     const combinedProcedure = client
-      .metadata({ operation: 'combined-test' })
+      .meta({ operation: 'combined-test' })
       .use(procedureInterceptor)
-      .command(async () => {
+      .handler(async () => {
         executionOrder.push('handler');
         return { success: true };
       });
@@ -439,7 +439,7 @@ describe('CQRS Builder - Complete Integration Test', () => {
 
     // Test recoverable error
     const recoverableProcedure = client
-      .command(async () => {
+      .handler(async () => {
         throw new Error('Something went wrong');
       });
 
@@ -452,7 +452,7 @@ describe('CQRS Builder - Complete Integration Test', () => {
 
     // Test non-recoverable error
     const nonRecoverableProcedure = client
-      .command(async () => {
+      .handler(async () => {
         throw new Error('Critical error');
       });
 
@@ -492,7 +492,7 @@ describe('CQRS Builder - Complete Integration Test', () => {
       .use(dbInterceptor)    // Add DatabaseContext interceptor
       .use(authInterceptor); // Add AuthContext interceptor
 
-    const testProcedure = client.command(async ({ ctx }) => {
+    const testProcedure = client.handler(async ({ ctx }) => {
       // TypeScript should know that ctx has both dbConnection and authToken/userId
       // This demonstrates that the intersection type is working
 

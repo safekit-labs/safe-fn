@@ -1,34 +1,33 @@
 /**
- * CQRS Builder - A type-safe, schema-agnostic CQRS implementation for TypeScript
+ * SafeFn - A type-safe function builder with interceptors, schema validation, and context management for TypeScript
  *
  * @example
  * ```typescript
- * import { createClient, procedure } from '@corporationx/cqrs-builder';
+ * import { createClient, createSafeFn } from '@corporationx/safe-fn';
  *
  * // Create a client with global interceptors
  * const client = createClient({
- *   interceptors: [loggingInterceptor],
  *   errorHandler: (error, context) => console.error(error)
  * });
  *
- * // Create procedures with chained .use() for interceptors
+ * // Create safe functions with chained .use() for interceptors
  * const createUser = client
- *   .metadata({ operation: 'create-user' })
+ *   .meta({ operation: 'create-user' })
  *   .use(authInterceptor)
  *   .use(validationInterceptor)
- *   .inputSchema((input: unknown) => input as { name: string; email: string })
- *   .command(async ({ ctx, parsedInput }) => {
- *     // Command logic here
+ *   .input((input: unknown) => input as { name: string; email: string })
+ *   .handler(async ({ ctx, parsedInput }) => {
+ *     // Function logic here
  *     return { id: '123', ...parsedInput };
  *   });
  *
- * // Or use standalone procedure
- * const getUser = procedure()
- *   .metadata({ operation: 'get-user' })
+ * // Or use standalone safe function
+ * const getUser = createSafeFn()
+ *   .meta({ operation: 'get-user' })
  *   .use(cacheInterceptor)
- *   .inputSchema((input: unknown) => input as { id: string })
- *   .query(async ({ ctx, parsedInput }) => {
- *     // Query logic here
+ *   .input((input: unknown) => input as { id: string })
+ *   .handler(async ({ ctx, parsedInput }) => {
+ *     // Function logic here
  *     return { id: parsedInput.id, name: 'John', email: 'john@example.com' };
  *   });
  * ```
@@ -41,10 +40,8 @@ export type {
   ClientConfig,
   Interceptor,
   InterceptorOutput,
-  CommandHandler,
-  QueryHandler,
-  ServiceHandler,
-  ProcedureBuilder,
+  SafeFnHandler,
+  SafeFnBuilder,
   Client,
   SchemaValidator
 } from '@/types';
@@ -52,8 +49,8 @@ export type {
 // Client factory
 export { createClient } from '@/client';
 
-// Standalone procedure builder
-export { procedure } from '@/builder';
+// Standalone safe function builder
+export { createSafeFn } from '@/builder';
 
 // Interceptor utilities
 export { executeInterceptorChain } from '@/interceptor';

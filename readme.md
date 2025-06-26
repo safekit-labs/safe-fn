@@ -1,8 +1,8 @@
-# Procedure Builder
+# SafeFn
 
-A type-safe procedure builder with interceptors, schema validation, and context management for TypeScript applications.
+A type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.
 
-[![npm version](https://badge.fury.io/js/@corporationx%2Fprocedure-builder.svg)](https://badge.fury.io/js/@corporationx%2Fprocedure-builder)
+[![npm version](https://badge.fury.io/js/@corporationx%2Fsafe-fn.svg)](https://badge.fury.io/js/@corporationx%2Fsafe-fn)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -17,21 +17,21 @@ A type-safe procedure builder with interceptors, schema validation, and context 
 ## Installation
 
 ```bash
-npm install @corporationx/procedure-builder
+npm install @corporationx/safe-fn
 ```
 
 ## Quick Start
 
-### Basic Procedure
+### Basic Safe Function
 
 ```typescript
-import { procedure } from '@corporationx/procedure-builder';
+import { createSafeFn } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
-const addNumbers = procedure()
+const addNumbers = createSafeFn()
   .metadata({ operation: 'add-numbers' })
   .inputSchema(z.object({ a: z.number(), b: z.number() }))
-  .service(async ({ parsedInput }) => {
+  .fn(async ({ parsedInput }) => {
     return parsedInput.a + parsedInput.b;
   });
 
@@ -41,7 +41,7 @@ const result = await addNumbers({ a: 5, b: 3 }); // Returns: 8
 ### Client with Interceptors
 
 ```typescript
-import { createClient, Context, Interceptor } from '@corporationx/procedure-builder';
+import { createClient, Context, Interceptor } from '@corporationx/safe-fn';
 
 interface AppContext extends Context {
   userId?: string;
@@ -60,25 +60,46 @@ const client = createClient<AppContext>().use(loggingInterceptor);
 const getUser = client
   .metadata({ operation: 'get-user' })
   .inputSchema(z.object({ userId: z.string() }))
-  .query(async ({ parsedInput, ctx }) => {
+  .fn(async ({ parsedInput, ctx }) => {
     return { id: parsedInput.userId, name: 'John Doe' };
   });
 ```
 
-## Procedure Types
+## Safe Function Types
 
-- **`command()`** - For operations that modify state (CQRS commands)
-- **`query()`** - For read-only operations (CQRS queries)  
-- **`service()`** - For general business logic
+SafeFn provides a unified `.fn()` method that can handle any type of function. You can differentiate function types using metadata:
+
+```typescript
+// State-modifying function
+const createUser = createSafeFn()
+  .metadata({ operation: 'create-user', type: 'mutation' })
+  .fn(async ({ parsedInput }) => { /* ... */ });
+
+// Read-only function  
+const getUser = createSafeFn()
+  .metadata({ operation: 'get-user', type: 'query' })
+  .fn(async ({ parsedInput }) => { /* ... */ });
+
+// General business logic
+const processData = createSafeFn()
+  .metadata({ operation: 'process-data', type: 'service' })
+  .fn(async ({ parsedInput }) => { /* ... */ });
+```
 
 ## Examples
 
 See the [examples](./examples/) directory:
 
-- [basic-usage.ts](./examples/basic-usage.ts) - Simple procedures with validation
+- [basic-usage.ts](./examples/basic-usage.ts) - Simple safe functions with validation
 - [client-with-interceptors.ts](./examples/client-with-interceptors.ts) - Using clients and interceptors  
-- [cqrs-patterns.ts](./examples/cqrs-patterns.ts) - Commands, queries, and services
+- [cqrs-patterns.ts](./examples/cqrs-patterns.ts) - Different function patterns
 - [api-endpoint.ts](./examples/api-endpoint.ts) - REST API endpoint handlers
+
+## Inspiration
+
+This package was inspired by:
+- [next-safe-action](https://github.com/TheEdoRan/next-safe-action) - Type-safe Server Actions in Next.js
+- [tRPC](https://trpc.io/) - End-to-end typesafe APIs
 
 ## Contributing
 

@@ -21,3 +21,11 @@ bun.lockb
 # OS generated files
 .DS_Store
 thumbs.db
+
+# Environment variables
+.env
+.env.*
+
+# AI
+.claude/
+.cursor/

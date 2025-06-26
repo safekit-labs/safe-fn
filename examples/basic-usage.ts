@@ -1,19 +1,19 @@
 /**
  * Basic Usage Example
- * Simple procedures with validation
+ * Simple safe functions with validation
  */
 
-import { procedure } from '@corporationx/procedure-builder';
+import { createSafeFn } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
-// Simple procedure with validation
-const addNumbers = procedure()
-  .metadata({ operation: 'add' })
-  .inputSchema(z.object({
+// Simple safe function with validation
+const addNumbers = createSafeFn()
+  .meta({ operation: 'add' })
+  .input(z.object({
     a: z.number(),
     b: z.number()
   }))
-  .service(async ({ parsedInput }) => {
+  .handler(async ({ parsedInput }) => {
     return parsedInput.a + parsedInput.b;
   });
 

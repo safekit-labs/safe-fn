@@ -1,20 +1,18 @@
 /**
- * CQRS Client factory and implementation
+ * SafeFn Client factory and implementation
  */
-import { procedure } from '@/builder';
+import { createSafeFn } from '@/builder';
 
 import type {
   Client,
   ClientConfig,
   Context,
   Interceptor,
-  CommandHandler,
-  QueryHandler,
-  ServiceHandler
+  SafeFnHandler
 } from '@/types';
 
 /**
- * Creates a chainable CQRS client builder with explicit context type
+ * Creates a chainable SafeFn client builder with explicit context type
  */
 export function createClient<TContext extends Context = Context>(
   config?: ClientConfig<TContext>
@@ -49,38 +47,26 @@ class ClientBuilder<TContext extends Context = Context> implements Client<TConte
     );
   }
 
-  metadata(metadata: any) {
-    return this.createConfiguredBuilder().metadata(metadata);
+  meta(metadata: any) {
+    return this.createConfiguredBuilder().meta(metadata);
   }
 
-  inputSchema(schema: any) {
-    return this.createConfiguredBuilder().inputSchema(schema);
+  input(schema: any) {
+    return this.createConfiguredBuilder().input(schema);
   }
 
-  outputSchema(schema: any) {
-    return this.createConfiguredBuilder().outputSchema(schema);
+  output(schema: any) {
+    return this.createConfiguredBuilder().output(schema);
   }
 
-  command<THandlerInput = unknown, THandlerOutput = unknown>(
-    handler: CommandHandler<THandlerInput, THandlerOutput, TContext>
+  handler<THandlerInput = unknown, THandlerOutput = unknown>(
+    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>
   ) {
-    return this.createConfiguredBuilder().command<THandlerInput, THandlerOutput>(handler);
-  }
-
-  query<THandlerInput = unknown, THandlerOutput = unknown>(
-    handler: QueryHandler<THandlerInput, THandlerOutput, TContext>
-  ) {
-    return this.createConfiguredBuilder().query<THandlerInput, THandlerOutput>(handler);
-  }
-
-  service<THandlerInput = unknown, THandlerOutput = unknown>(
-    handler: ServiceHandler<THandlerInput, THandlerOutput, TContext>
-  ) {
-    return this.createConfiguredBuilder().service<THandlerInput, THandlerOutput>(handler);
+    return this.createConfiguredBuilder().handler<THandlerInput, THandlerOutput>(handler);
   }
 
   private createConfiguredBuilder() {
-    const builder = procedure<TContext>();
+    const builder = createSafeFn<TContext>();
     
     // Store the client configuration for use in the builder
     (builder as any)._clientInterceptors = this.interceptors;

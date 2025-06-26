@@ -1,9 +1,9 @@
 /**
  * API Endpoint Example
- * Using procedures for REST API handlers
+ * Using safe functions for REST API handlers
  */
 
-import { createClient, Context, Interceptor } from '@corporationx/procedure-builder';
+import { createClient, Context, Interceptor } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
 interface ApiContext extends Context {
@@ -25,16 +25,16 @@ const apiClient = createClient<ApiContext>()
 
 // POST /api/users endpoint
 const createUserEndpoint = apiClient
-  .metadata({ 
+  .meta({ 
     method: 'POST', 
     endpoint: '/api/users',
     requiresAuth: true 
   })
-  .inputSchema(z.object({
+  .input(z.object({
     email: z.string().email(),
     name: z.string()
   }))
-  .service(async ({ parsedInput, ctx }) => {
+  .handler(async ({ parsedInput, ctx }) => {
     // Create user logic
     return {
       id: 'user123',

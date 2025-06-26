@@ -1,17 +1,17 @@
 {
-  "name": "@corporationx/procedure-builder",
+  "name": "@corporationx/safe-fn",
   "version": "0.1.0",
-  "description": "A type-safe procedure builder with interceptors, schema validation, and context management for TypeScript applications.",
+  "description": "A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.",
   "private": false,
   "type": "module",
   "license": "MIT",
-  "homepage": "https://github.com/corporationx/procedure-builder",
+  "homepage": "https://github.com/corporationx/safe-fn",
   "repository": {
     "type": "git",
-    "url": "https://github.com/corporationx/procedure-builder.git"
+    "url": "https://github.com/corporationx/safe-fn.git"
   },
   "bugs": {
-    "url": "https://github.com/corporationx/procedure-builder/issues"
+    "url": "https://github.com/corporationx/safe-fn/issues"
   },
   "types": "./dist/src/index.d.ts",
   "main": "./dist/src/index.js",
@@ -45,19 +45,16 @@
   },
   "keywords": [
     "typescript",
-    "procedures",
+    "functions",
     "handlers",
     "interceptors",
     "middleware",
     "validation",
     "type-safe",
-    "cqrs",
     "builder",
     "schema",
     "context",
-    "command",
-    "query",
-    "service"
+    "safe-functions"
   ],
   "author": "corporationx",
   "devDependencies": {

@@ -1,9 +1,9 @@
 /**
- * CQRS Patterns Example
- * Commands vs Queries vs Services
+ * Function Patterns Example
+ * Different types of safe functions
  */
 
-import { createClient, Context } from '@corporationx/procedure-builder';
+import { createClient, Context } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
 interface UserContext extends Context {
@@ -13,14 +13,14 @@ interface UserContext extends Context {
 
 const client = createClient<UserContext>();
 
-// Command - modifies state
+// Safe function - modifies state
 const createUser = client
-  .metadata({ operation: 'create-user' })
-  .inputSchema(z.object({
+  .meta({ operation: 'create-user', type: 'mutation' })
+  .input(z.object({
     email: z.string().email(),
     name: z.string()
   }))
-  .command(async ({ parsedInput }) => {
+  .handler(async ({ parsedInput }) => {
     // Create user in database
     return { 
       id: 'user123', 
@@ -29,23 +29,23 @@ const createUser = client
     };
   });
 
-// Query - reads data
+// Safe function - reads data
 const getUser = client
-  .metadata({ operation: 'get-user' })
-  .inputSchema(z.object({ id: z.string() }))
-  .query(async ({ parsedInput }) => {
+  .meta({ operation: 'get-user', type: 'query' })
+  .input(z.object({ id: z.string() }))
+  .handler(async ({ parsedInput }) => {
     // Fetch user from database
     return { id: parsedInput.id, name: 'John Doe' };
   });
 
-// Service - general business logic
+// Safe function - general business logic
 const sendWelcomeEmail = client
-  .metadata({ operation: 'send-welcome-email' })
-  .inputSchema(z.object({ 
+  .meta({ operation: 'send-welcome-email', type: 'service' })
+  .input(z.object({ 
     userId: z.string(),
     email: z.string().email()
   }))
-  .service(async ({ parsedInput }) => {
+  .handler(async ({ parsedInput }) => {
     // Send email via service
     return { sent: true, messageId: 'msg123' };
   });
