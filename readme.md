@@ -61,8 +61,9 @@ export const getUser = safeFnClient
   .meta({ operation: 'get-user', requiresAuth: true })
   .input(z.object({ id: z.string() }))
   .handler(async ({ parsedInput, ctx }) => {
+    const { id } = parsedInput;
     // parsedInput is fully typed as { id: string }
-    return { id: parsedInput.id, name: 'John Doe', email: 'john@example.com' };
+    return { id, name: 'John Doe', email: 'john@example.com' };
   });
 
 // Usage
@@ -83,7 +84,8 @@ type AddOutput = number;
 export const addNumbers = safeFnClient
   .meta({ operation: 'add-numbers' })
   .handler<AddInput, AddOutput>(async ({ parsedInput }) => {
-    return parsedInput.a + parsedInput.b;
+    const { a, b } = parsedInput;
+    return a + b;
   });
 
 // Usage
@@ -274,7 +276,7 @@ export const sendWelcomeEmail = safeFnClient
 
 ### API Endpoint Integration
 
-Perfect for REST API handlers:
+Usage with REST API handlers:
 
 ```typescript
 // api/endpoints.ts
@@ -350,13 +352,9 @@ type Interceptor<TContext> = (params: {
 SafeFn is intentionally designed as a lightweight wrapper around functions. The following features are explicitly **not included** to maintain simplicity:
 
 - **Custom Error Classes**: Errors from your functions pass through unchanged - SafeFn doesn't wrap or transform them
-- **Built-in Caching**: Use your preferred caching solution (Redis, memory, etc.) in interceptors
-- **Database Integration**: SafeFn is database-agnostic - use any ORM or database client you prefer
-- **Authentication/Authorization Logic**: Implement auth in interceptors using your existing auth system
-- **Response Serialization**: SafeFn returns your function's output directly - handle serialization in your framework
+- **Response Serialization**: SafeFn returns your function's output directly
 - **Request/Response Objects**: Works with plain data - HTTP concerns are handled by your web framework
-- **Complex State Management**: Context is request-scoped, not persistent application state
-- **Plugin System**: Use interceptors instead - they provide all the extensibility you need
+- **Plugin System**: Use interceptors instead
 - **Built-in Logging**: Add logging through interceptors using your preferred logging library
 
 **Philosophy**: SafeFn enhances your functions with type safety and middleware, but doesn't replace your existing tools and patterns.
