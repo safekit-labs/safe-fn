@@ -3,7 +3,7 @@
  * Using safe functions for REST API handlers
  */
 
-import { createClient, Context, Interceptor } from '@corporationx/safe-fn';
+import { createSafeFnClient, Context, Interceptor } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
 interface ApiContext extends Context {
@@ -20,7 +20,7 @@ const authInterceptor: Interceptor<ApiContext> = async ({ next, ctx, metadata })
   return next();
 };
 
-const apiClient = createClient<ApiContext>()
+const apiClient = createSafeFnClient<ApiContext>()
   .use(authInterceptor);
 
 // POST /api/users endpoint

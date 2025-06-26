@@ -3,7 +3,7 @@
  * Shows how to use clients and interceptors
  */
 
-import { createClient, Context, Interceptor } from '@corporationx/safe-fn';
+import { createSafeFnClient, Context, Interceptor } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
 interface AppContext extends Context {
@@ -20,7 +20,7 @@ const loggingInterceptor: Interceptor<AppContext> = async ({ next, metadata, ctx
 };
 
 // Create client with interceptor
-const client = createClient<AppContext>()
+const client = createSafeFnClient<AppContext>()
   .use(loggingInterceptor);
 
 // Create safe function using client

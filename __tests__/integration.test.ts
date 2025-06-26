@@ -1,8 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import {
-  createClient,
-  createSafeFn,
+  createSafeFnClient,
   Context,
   Interceptor
 } from '@/index';
@@ -87,7 +86,7 @@ describe('SafeFn - Complete Integration Test', () => {
     });
 
     // Create client with default configuration
-    const client = createClient<UserContext>({
+    const client = createSafeFnClient<UserContext>({
       defaultContext: { requestId: 'default' },
       errorHandler
     });
@@ -187,9 +186,10 @@ describe('SafeFn - Complete Integration Test', () => {
     expect(errorHandler).toHaveBeenCalled();
   });
 
-  it('should work with standalone safe functions (without client)', async () => {
-    // Test standalone safe function creation with Zod schemas
-    const simpleCalculator = createSafeFn()
+  it('should work with simple client setup', async () => {
+    // Test simple client with basic safe function creation using Zod schemas
+    const client = createSafeFnClient();
+    const simpleCalculator = client
       .meta({ operation: 'calculate' })
       .input(calculatorInputSchema)
       .output(calculatorOutputSchema)
@@ -247,7 +247,7 @@ describe('SafeFn - Complete Integration Test', () => {
       };
     };
 
-    const client = createClient<UserContext>()
+    const client = createSafeFnClient<UserContext>()
       .use(contextModifyingInterceptor)
       .use(dataTransformInterceptor);
 
@@ -291,7 +291,7 @@ describe('SafeFn - Complete Integration Test', () => {
       return next();
     };
 
-    const client = createClient()
+    const client = createSafeFnClient()
       .use(metadataValidatingInterceptor);
 
     // Test with valid metadata
@@ -350,8 +350,9 @@ describe('SafeFn - Complete Integration Test', () => {
       return result;
     };
 
-    // Test chained .use() method
-    const chainedProcedure = createSafeFn()
+    // Test chained .use() method with client
+    const client = createSafeFnClient();
+    const chainedProcedure = client
       .meta({ operation: 'chained-test' })
       .use(firstInterceptor)
       .use(secondInterceptor)
@@ -392,7 +393,7 @@ describe('SafeFn - Complete Integration Test', () => {
       return result;
     };
 
-    const client = createClient()
+    const client = createSafeFnClient()
       .use(clientInterceptor);
 
     const combinedProcedure = client
@@ -434,7 +435,7 @@ describe('SafeFn - Complete Integration Test', () => {
       }
     };
 
-    const client = createClient()
+    const client = createSafeFnClient()
       .use(errorRecoveryInterceptor);
 
     // Test recoverable error
@@ -488,7 +489,7 @@ describe('SafeFn - Complete Integration Test', () => {
     };
 
     // Create client with explicit combined context type
-    const client = createClient<CombinedContext>()
+    const client = createSafeFnClient<CombinedContext>()
       .use(dbInterceptor)    // Add DatabaseContext interceptor
       .use(authInterceptor); // Add AuthContext interceptor
 

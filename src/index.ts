@@ -6,7 +6,7 @@
  * import { createClient, createSafeFn } from '@corporationx/safe-fn';
  *
  * // Create a client with global interceptors
- * const client = createClient({
+ * const client = createSafeFnClient({
  *   errorHandler: (error, context) => console.error(error)
  * });
  *
@@ -21,8 +21,8 @@
  *     return { id: '123', ...parsedInput };
  *   });
  *
- * // Or use standalone safe function
- * const getUser = createSafeFn()
+ * // Create functions using the client
+ * const getUser = client
  *   .meta({ operation: 'get-user' })
  *   .use(cacheInterceptor)
  *   .input((input: unknown) => input as { id: string })
@@ -47,10 +47,7 @@ export type {
 } from '@/types';
 
 // Client factory
-export { createClient } from '@/client';
-
-// Standalone safe function builder
-export { createSafeFn } from '@/builder';
+export { createSafeFnClient } from '@/client';
 
 // Interceptor utilities
 export { executeInterceptorChain } from '@/interceptor';

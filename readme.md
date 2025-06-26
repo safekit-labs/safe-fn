@@ -22,26 +22,11 @@ npm install @corporationx/safe-fn
 
 ## Quick Start
 
-### Basic Safe Function
+### Basic Usage
 
 ```typescript
-import { createSafeFn } from '@corporationx/safe-fn';
+import { createSafeFnClient, Context, Interceptor } from '@corporationx/safe-fn';
 import { z } from 'zod';
-
-const addNumbers = createSafeFn()
-  .metadata({ operation: 'add-numbers' })
-  .inputSchema(z.object({ a: z.number(), b: z.number() }))
-  .fn(async ({ parsedInput }) => {
-    return parsedInput.a + parsedInput.b;
-  });
-
-const result = await addNumbers({ a: 5, b: 3 }); // Returns: 8
-```
-
-### Client with Interceptors
-
-```typescript
-import { createClient, Context, Interceptor } from '@corporationx/safe-fn';
 
 interface AppContext extends Context {
   userId?: string;
@@ -55,35 +40,58 @@ const loggingInterceptor: Interceptor<AppContext> = async ({ next, metadata, ctx
   return result;
 };
 
-const client = createClient<AppContext>().use(loggingInterceptor);
+const client = createSafeFnClient<AppContext>().use(loggingInterceptor);
 
 const getUser = client
-  .metadata({ operation: 'get-user' })
-  .inputSchema(z.object({ userId: z.string() }))
-  .fn(async ({ parsedInput, ctx }) => {
+  .meta({ operation: 'get-user' })
+  .input(z.object({ userId: z.string() }))
+  .handler(async ({ parsedInput, ctx }) => {
     return { id: parsedInput.userId, name: 'John Doe' };
   });
+
+const result = await getUser({ userId: '123' }, { requestId: 'req-001' });
+```
+
+### Simple Functions
+
+```typescript
+import { createSafeFnClient } from '@corporationx/safe-fn';
+import { z } from 'zod';
+
+// Simple client for basic use cases
+const client = createSafeFnClient();
+
+const addNumbers = client
+  .meta({ operation: 'add-numbers' })
+  .input(z.object({ a: z.number(), b: z.number() }))
+  .handler(async ({ parsedInput }) => {
+    return parsedInput.a + parsedInput.b;
+  });
+
+const result = await addNumbers({ a: 5, b: 3 }); // Returns: 8
 ```
 
 ## Safe Function Types
 
-SafeFn provides a unified `.fn()` method that can handle any type of function. You can differentiate function types using metadata:
+SafeFn provides a unified `.handler()` method that can handle any type of function. You can differentiate function types using metadata:
 
 ```typescript
+const client = createSafeFnClient();
+
 // State-modifying function
-const createUser = createSafeFn()
-  .metadata({ operation: 'create-user', type: 'mutation' })
-  .fn(async ({ parsedInput }) => { /* ... */ });
+const createUser = client
+  .meta({ operation: 'create-user', type: 'mutation' })
+  .handler(async ({ parsedInput }) => { /* ... */ });
 
 // Read-only function  
-const getUser = createSafeFn()
-  .metadata({ operation: 'get-user', type: 'query' })
-  .fn(async ({ parsedInput }) => { /* ... */ });
+const getUser = client
+  .meta({ operation: 'get-user', type: 'query' })
+  .handler(async ({ parsedInput }) => { /* ... */ });
 
 // General business logic
-const processData = createSafeFn()
-  .metadata({ operation: 'process-data', type: 'service' })
-  .fn(async ({ parsedInput }) => { /* ... */ });
+const processData = client
+  .meta({ operation: 'process-data', type: 'service' })
+  .handler(async ({ parsedInput }) => { /* ... */ });
 ```
 
 ## Examples

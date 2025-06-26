@@ -3,11 +3,14 @@
  * Simple safe functions with validation
  */
 
-import { createSafeFn } from '@corporationx/safe-fn';
+import { createSafeFnClient } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
+// Create a simple client
+const client = createSafeFnClient();
+
 // Simple safe function with validation
-const addNumbers = createSafeFn()
+const addNumbers = client
   .meta({ operation: 'add' })
   .input(z.object({
     a: z.number(),

@@ -3,7 +3,7 @@
  * Different types of safe functions
  */
 
-import { createClient, Context } from '@corporationx/safe-fn';
+import { createSafeFnClient, Context } from '@corporationx/safe-fn';
 import { z } from 'zod';
 
 interface UserContext extends Context {
@@ -11,7 +11,7 @@ interface UserContext extends Context {
   requestId: string;
 }
 
-const client = createClient<UserContext>();
+const client = createSafeFnClient<UserContext>();
 
 // Safe function - modifies state
 const createUser = client

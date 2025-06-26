@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SafeFn (@corporationx/safe-fn) is a lightweight TypeScript library that provides a type-safe function builder with interceptors, schema validation, and context management. It provides a unified `.fn()` method for creating safe functions with middleware support.
+SafeFn (@corporationx/safe-fn) is a lightweight TypeScript library that provides a type-safe function builder with interceptors, schema validation, and context management. It uses a client-based approach with the unified `.handler()` method for creating safe functions with middleware support.
 
 ## Development Commands
 
@@ -35,7 +35,7 @@ SafeFn (@corporationx/safe-fn) is a lightweight TypeScript library that provides
 - `dist/` - Build output (TypeScript compilation)
 
 ### Safe Function Pattern
-- **fn()** - Unified method for any type of function
+- **handler()** - Unified method for any type of function
 - Function types can be differentiated using metadata (e.g., `type: 'mutation'`, `type: 'query'`, `type: 'service'`)
 
 ### Key Features

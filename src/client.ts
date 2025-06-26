@@ -14,7 +14,7 @@ import type {
 /**
  * Creates a chainable SafeFn client builder with explicit context type
  */
-export function createClient<TContext extends Context = Context>(
+export function createSafeFnClient<TContext extends Context = Context>(
   config?: ClientConfig<TContext>
 ): ClientBuilder<TContext> {
   const defaultContext = config?.defaultContext || ({} as TContext);
