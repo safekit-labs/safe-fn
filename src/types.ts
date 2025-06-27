@@ -86,7 +86,7 @@ export interface SafeFnBuilder<
   output<TNewOutput>(schema: SchemaValidator<TNewOutput>): SafeFnBuilder<TContext, TInput, TNewOutput>;
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
     handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>
-  ): (input: THandlerInput, context?: Partial<TContext>) => Promise<THandlerOutput>;
+  ): (context: Partial<TContext>, input: THandlerInput) => Promise<THandlerOutput>;
 }
 
 
@@ -102,7 +102,7 @@ export interface Client<TContext extends Context = Context> {
   output<TNewOutput>(schema: SchemaValidator<TNewOutput>): SafeFnBuilder<TContext, unknown, TNewOutput>;
   handler<THandlerInput = any, THandlerOutput = any>(
     handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>
-  ): (input: THandlerInput, context?: Partial<TContext>) => Promise<THandlerOutput>;
+  ): (context: Partial<TContext>, input: THandlerInput) => Promise<THandlerOutput>;
 }
 
 

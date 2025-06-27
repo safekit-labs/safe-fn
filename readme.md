@@ -1,5 +1,7 @@
 # @safekit/safe-fn
 
+ALPHA: Not ready for production use.
+
 A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.
 
 [![npm version](https://badge.fury.io/js/@safekit%2Fsafe-fn.svg)](https://badge.fury.io/js/@safekit%2Fsafe-fn)

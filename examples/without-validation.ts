@@ -13,8 +13,8 @@ export const addNumbers = safeFnClient
     return parsedInput.a + parsedInput.b;
   });
 
-// Usage
-async function example() {
-  const result = await addNumbers({ a: 5, b: 3 }); // Returns: 8
-  console.log(result);
-}
+// Usage example (commented out to avoid unused function warning)
+// async function example() {
+//   const result = await addNumbers({}, { a: 5, b: 3 }); // Returns: 8
+//   console.log(result);
+// }

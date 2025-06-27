@@ -64,7 +64,7 @@ describe('Standard Schema Support', () => {
         return `Hello, ${parsedInput}!`;
       });
 
-    const result = await testFunction('World');
+    const result = await testFunction({}, 'World');
     expect(result).toBe('Hello, World!');
   });
 
@@ -78,7 +78,7 @@ describe('Standard Schema Support', () => {
         return parsedInput * 2;
       });
 
-    await expect(testFunction('not-a-number' as any)).rejects.toThrow('Expected number');
+    await expect(testFunction({}, 'not-a-number' as any)).rejects.toThrow('Expected number');
   });
 
   it('should work with Standard Schema output validation', async () => {
@@ -91,7 +91,7 @@ describe('Standard Schema Support', () => {
         return 'valid string output';
       });
 
-    const result = await testFunction({});
+    const result = await testFunction({}, {});
     expect(result).toBe('valid string output');
   });
 
@@ -106,7 +106,7 @@ describe('Standard Schema Support', () => {
         return `${parsedInput.name} is ${parsedInput.age} years old`;
       });
 
-    const result = await testFunction({ name: 'Alice', age: 30 });
+    const result = await testFunction({}, { name: 'Alice', age: 30 });
     expect(result).toBe('Alice is 30 years old');
   });
 
@@ -120,7 +120,7 @@ describe('Standard Schema Support', () => {
         return 123 as any; // Invalid output type
       });
 
-    await expect(testFunction({})).rejects.toThrow('Expected string');
+    await expect(testFunction({}, {})).rejects.toThrow('Expected string');
   });
 
   it('should work alongside legacy function validators', async () => {
@@ -145,8 +145,8 @@ describe('Standard Schema Support', () => {
         return parsedInput.toLowerCase();
       });
 
-    const legacyResult = await legacyFunction('hello');
-    const standardResult = await standardFunction('WORLD');
+    const legacyResult = await legacyFunction({}, 'hello');
+    const standardResult = await standardFunction({}, 'WORLD');
 
     expect(legacyResult).toBe('HELLO');
     expect(standardResult).toBe('world');

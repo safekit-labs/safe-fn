@@ -9,13 +9,13 @@ import { safeFnClient } from './simple-client-setup';
 export const getUser = safeFnClient
   .meta({ operation: 'get-user', requiresAuth: true })
   .input(z.object({ id: z.string() }))
-  .handler(async ({ parsedInput, ctx }) => {
+  .handler(async ({ parsedInput }) => {
     // parsedInput is fully typed as { id: string }
     return { id: parsedInput.id, name: 'John Doe', email: 'john@example.com' };
   });
 
-// Usage
-async function example() {
-  const user = await getUser({ id: '123' }, { userId: 'current-user' });
-  console.log(user);
-}
+// Usage example (commented out to avoid unused function warning)
+// async function example() {
+//   const user = await getUser({ userId: 'current-user' }, { id: '123' });
+//   console.log(user);
+// }

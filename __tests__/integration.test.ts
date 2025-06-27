@@ -45,8 +45,7 @@ const calculatorInputSchema = z.object({
 
 const calculatorOutputSchema = z.number();
 
-type CreateUserInput = z.infer<typeof createUserInputSchema>;
-type GetUserInput = z.infer<typeof getUserInputSchema>;
+// Types are inferred automatically from schemas when used
 
 describe('SafeFn - Complete Integration Test', () => {
   it('should demonstrate full safe function pattern with all features', async () => {
@@ -60,15 +59,9 @@ describe('SafeFn - Complete Integration Test', () => {
 
     const loggingInterceptor: Interceptor<UserContext> = async ({ next }) => {
       // console.log(`[LOG] Starting ${metadata.operation} with input:`, clientInput);
-
-      try {
-        const result = await next();
-        // console.log(`[LOG] ${metadata.operation} completed`);
-        return result;
-      } catch (_error) {
-        // console.log(`[LOG] ${metadata.operation} failed:`, error);
-        throw _error;
-      }
+      const result = await next();
+      // console.log(`[LOG] ${metadata.operation} completed`);
+      return result;
     };
 
     const authInterceptor: Interceptor<UserContext> = async ({ next, ctx, metadata }) => {
@@ -79,7 +72,7 @@ describe('SafeFn - Complete Integration Test', () => {
     };
 
     // Create error handler
-    const errorHandler = vi.fn((error: Error, _context: UserContext) => {
+    const errorHandler = vi.fn(() => {
       // console.error(`[ERROR] Request ${context.requestId}:`, error.message);
     });
 
@@ -137,8 +130,8 @@ describe('SafeFn - Complete Integration Test', () => {
 
     // Test successful command execution
     const createResult = await createUser(
-      { name: 'John Doe', email: 'john@example.com' },
-      { userId: 'admin', requestId: 'req-001' }
+      { userId: 'admin', requestId: 'req-001' },
+      { name: 'John Doe', email: 'john@example.com' }
     );
 
     expect(createResult).toMatchObject({
@@ -150,8 +143,8 @@ describe('SafeFn - Complete Integration Test', () => {
 
     // Test successful query execution
     const getResult = await getUser(
-      { id: createResult.id },
-      { requestId: 'req-002' }
+      { requestId: 'req-002' },
+      { id: createResult.id }
     );
 
     expect(getResult).toEqual(createResult);
@@ -159,24 +152,24 @@ describe('SafeFn - Complete Integration Test', () => {
     // Test validation errors - should throw Zod validation error
     await expect(
       createUser(
-        { name: '', email: 'invalid' },
-        { userId: 'admin', requestId: 'req-003' }
+        { userId: 'admin', requestId: 'req-003' },
+        { name: '', email: 'invalid' }
       )
     ).rejects.toThrow();
 
     // Test authentication error
     await expect(
       createUser(
-        { name: 'Jane Doe', email: 'jane@example.com' },
-        { requestId: 'req-004' } // No userId
+        { requestId: 'req-004' }, // No userId
+        { name: 'Jane Doe', email: 'jane@example.com' }
       )
     ).rejects.toThrow('Authentication required');
 
     // Test not found error
     await expect(
       getUser(
-        { id: 'non-existent' },
-        { requestId: 'req-005' }
+        { requestId: 'req-005' },
+        { id: 'non-existent' }
       )
     ).rejects.toThrow('User not found');
 
@@ -196,17 +189,17 @@ describe('SafeFn - Complete Integration Test', () => {
         return input.a + input.b;
       });
 
-    const result = await simpleCalculator({ a: 5, b: 3 });
+    const result = await simpleCalculator({}, { a: 5, b: 3 });
     expect(result).toBe(8);
 
     // Test validation - should throw Zod validation error
     await expect(
-      simpleCalculator({ a: '5', b: 3 } as any)
+      simpleCalculator({}, { a: '5', b: 3 } as any)
     ).rejects.toThrow();
   });
 
   it('should handle complex interceptor chains and context manipulation', async () => {
-    const contextModifyingInterceptor: Interceptor<UserContext> = async ({ next, clientInput, ctx, metadata }) => {
+    const contextModifyingInterceptor: Interceptor<UserContext> = async ({ next, clientInput, ctx }) => {
       // Modify context
       const modifiedContext: UserContext = {
         ...ctx,
@@ -223,7 +216,7 @@ describe('SafeFn - Complete Integration Test', () => {
       };
     };
 
-    const dataTransformInterceptor: Interceptor<UserContext> = async ({ next, clientInput, ctx, metadata }) => {
+    const dataTransformInterceptor: Interceptor<UserContext> = async ({ next, clientInput, ctx }) => {
       // Transform input
       const transformedInput = {
         ...clientInput,
@@ -261,8 +254,8 @@ describe('SafeFn - Complete Integration Test', () => {
       });
 
     const result = await testProcedure(
-      { message: 'hello' },
-      { requestId: 'test-001' }
+      { requestId: 'test-001' },
+      { message: 'hello' }
     );
 
     expect(result).toMatchObject({
@@ -277,7 +270,7 @@ describe('SafeFn - Complete Integration Test', () => {
   });
 
   it('should handle metadata validation and usage', async () => {
-    const metadataValidatingInterceptor: Interceptor = async ({ next, clientInput, ctx, metadata }) => {
+    const metadataValidatingInterceptor: Interceptor = async ({ next, metadata }) => {
       if (!metadata.version) {
         throw new Error('Version is required in metadata');
       }
@@ -301,7 +294,7 @@ describe('SafeFn - Complete Integration Test', () => {
       })
       .handler(async () => ({ success: true }));
 
-    const result = await validProcedure({});
+    const result = await validProcedure({}, {});
     expect(result).toEqual({ success: true });
 
     // Test with missing metadata
@@ -309,7 +302,7 @@ describe('SafeFn - Complete Integration Test', () => {
       .meta({ operation: 'test' }) // Missing version
       .handler(async () => ({ success: true }));
 
-    await expect(invalidProcedure({})).rejects.toThrow('Version is required in metadata');
+    await expect(invalidProcedure({}, {})).rejects.toThrow('Version is required in metadata');
 
     // Test with deprecated flag
     const deprecatedProcedure = client
@@ -320,7 +313,7 @@ describe('SafeFn - Complete Integration Test', () => {
       })
       .handler(async () => ({ success: true }));
 
-    const deprecatedResult = await deprecatedProcedure({});
+    const deprecatedResult = await deprecatedProcedure({}, {});
     expect(deprecatedResult).toEqual({ success: true });
   });
 
@@ -360,7 +353,7 @@ describe('SafeFn - Complete Integration Test', () => {
         return { success: true };
       });
 
-    const result = await chainedProcedure({});
+    const result = await chainedProcedure({}, {});
 
     expect(result).toEqual({ success: true });
     expect(executionOrder).toEqual([
@@ -402,7 +395,7 @@ describe('SafeFn - Complete Integration Test', () => {
         return { success: true };
       });
 
-    const result = await combinedProcedure({});
+    const result = await combinedProcedure({}, {});
 
     expect(result).toEqual({ success: true });
     // Client interceptors run first, then procedure interceptors
@@ -442,7 +435,7 @@ describe('SafeFn - Complete Integration Test', () => {
         throw new Error('Something went wrong');
       });
 
-    const result = await recoverableProcedure({});
+    const result = await recoverableProcedure({}, {});
     expect(result).toEqual({
       recovered: true,
       originalError: 'Something went wrong'
@@ -455,7 +448,7 @@ describe('SafeFn - Complete Integration Test', () => {
         throw new Error('Critical error');
       });
 
-    await expect(nonRecoverableProcedure({})).rejects.toThrow('Critical error');
+    await expect(nonRecoverableProcedure({}, {})).rejects.toThrow('Critical error');
   });
 
   it('should support context type accumulation through .use() chaining', async () => {
@@ -507,11 +500,11 @@ describe('SafeFn - Complete Integration Test', () => {
       };
     });
 
-    const result = await testProcedure({}, {
+    const result = await testProcedure({
       dbConnection: 'postgresql://localhost:5432',
       authToken: 'jwt-token-123',
       userId: 'user456'
-    });
+    }, {});
 
     expect(result).toEqual({
       hasDbConnection: true,

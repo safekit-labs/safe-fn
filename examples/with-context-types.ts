@@ -33,7 +33,8 @@ export const deleteUser = safeFnClient
   .meta({ operation: 'delete-user', requiresAuth: true, level: 'admin' })
   .input(z.object({ userId: z.string().uuid() }))
   .output(z.object({ success: z.boolean(), deletedAt: z.date() }))
-  .handler(async ({ parsedInput, ctx }) => {
-    // Delete user logic here
+  .handler(async ({ parsedInput }) => {
+    // Delete user logic here - parsedInput.userId contains the user to delete
+    console.log(`Deleting user: ${parsedInput.userId}`);
     return { success: true, deletedAt: new Date() };
   });

@@ -85,7 +85,7 @@ export function createSafeFn<TContext extends Context = Context>(): SafeFnBuilde
     },
 
     handler<THandlerInput = any, THandlerOutput = any>(handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>) {
-      return async (input: THandlerInput, context?: Partial<TContext>) => {
+      return async (context: Partial<TContext>, input: THandlerInput) => {
         // Merge with default context if available
         const defaultContext = (builder as any)._defaultContext || {};
         const fullContext = { ...defaultContext, ...context } as TContext;
