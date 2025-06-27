@@ -26,9 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- GitHub Actions CI/CD workflows for automated testing and npm publishing
-- Continuous Integration workflow that runs tests, type checking, and linting on PRs and pushes
-- Automated npm publishing workflow triggered by GitHub releases
+- GitHub Actions CI/CD workflows
+- @types/node dependency
+
+### Changed
+- Vitest config to TypeScript (.mjs → .ts)
 
 ### Planned
 - Performance optimizations for large interceptor chains
