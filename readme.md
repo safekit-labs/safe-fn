@@ -1,4 +1,4 @@
-# SafeFn
+# @safekit/safe-fn
 
 A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.
 
