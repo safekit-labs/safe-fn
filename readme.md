@@ -2,7 +2,7 @@
 
 A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.
 
-[![npm version](https://badge.fury.io/js/@corporationx%2Fsafe-fn.svg)](https://badge.fury.io/js/@corporationx%2Fsafe-fn)
+[![npm version](https://badge.fury.io/js/@safekit%2Fsafe-fn.svg)](https://badge.fury.io/js/@safekit%2Fsafe-fn)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -18,13 +18,13 @@ A lightweight type-safe function builder with interceptors, schema validation, a
 
 ```bash
 # npm
-npm install @corporationx/safe-fn
+npm install @safekit/safe-fn
 
 # yarn
-yarn add @corporationx/safe-fn
+yarn add @safekit/safe-fn
 
 # bun
-bun add @corporationx/safe-fn
+bun add @safekit/safe-fn
 ```
 
 ## Quick Start
@@ -35,7 +35,7 @@ The most common usage pattern - create a client with interceptors:
 
 ```typescript
 // lib/safe-fn.ts
-import { createSafeFnClient } from '@corporationx/safe-fn';
+import { createSafeFnClient } from '@safekit/safe-fn';
 
 export const safeFnClient = createSafeFnClient()
   .use(async ({ next, metadata }) => {
@@ -98,9 +98,9 @@ const result = await addNumbers({ a: 5, b: 3 }); // Returns: 8
 
 ```typescript
 // lib/safe-fn.ts
-import type { Context, Interceptor } from '@corporationx/safe-fn';
+import type { Context, Interceptor } from '@safekit/safe-fn';
 
-import { createSafeFnClient } from '@corporationx/safe-fn';
+import { createSafeFnClient } from '@safekit/safe-fn';
 
 interface AppContext extends Context {
   userId?: string;
@@ -371,4 +371,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
 
 ## License
 
-MIT © [CorporationX](https://github.com/corporationx)
+MIT © [safekit](https://github.com/safekit-labs)

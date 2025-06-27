@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SafeFn (@corporationx/safe-fn) is a lightweight TypeScript library that provides a type-safe function builder with interceptors, schema validation, and context management. It uses a client-based approach with the unified `.handler()` method for creating safe functions with middleware support.
+SafeFn (@safekit/safe-fn) is a lightweight TypeScript library that provides a type-safe function builder with interceptors, schema validation, and context management. It uses a client-based approach with the unified `.handler()` method for creating safe functions with middleware support.
 
 ## Development Commands
 
@@ -60,8 +60,8 @@ Uses Vitest with TypeScript support. Test files in `__tests__/` directory. Path 
 
 ## Package Information
 
-- **Name**: @corporationx/safe-fn
+- **Name**: @safekit/safe-fn
 - **Version**: 0.1.0
 - **License**: MIT
-- **Repository**: https://github.com/corporationx/safe-fn
+- **Repository**: https://github.com/safekit-labs/safe-fn
 - **Dependencies**: Zod for schema validation, Standard Schema spec compliance

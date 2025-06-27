@@ -1,17 +1,17 @@
 {
-  "name": "@corporationx/safe-fn",
+  "name": "@safekit/safe-fn",
   "version": "0.1.0",
   "description": "A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.",
   "private": false,
   "type": "module",
   "license": "MIT",
-  "homepage": "https://github.com/corporationx/safe-fn",
+  "homepage": "https://github.com/safekit-labs/safe-fn",
   "repository": {
     "type": "git",
-    "url": "https://github.com/corporationx/safe-fn.git"
+    "url": "https://github.com/safekit-labs/safe-fn.git"
   },
   "bugs": {
-    "url": "https://github.com/corporationx/safe-fn/issues"
+    "url": "https://github.com/safekit-labs/safe-fn/issues"
   },
   "types": "./dist/src/index.d.ts",
   "main": "./dist/src/index.js",
@@ -56,7 +56,7 @@
     "context",
     "safe-functions"
   ],
-  "author": "corporationx",
+  "author": "safekit",
   "dependencies": {
     "@standard-schema/spec": "^1.0.0"
   },
