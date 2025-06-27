@@ -1,6 +1,6 @@
 {
   "name": "@safekit/safe-fn",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.",
   "private": false,
   "type": "module",
