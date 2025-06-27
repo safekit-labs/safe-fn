@@ -2,10 +2,10 @@
  * With Context Types
  * Advanced client setup with typed context
  */
-import type { Context, Interceptor } from '@corporationx/safe-fn';
+import type { Context, Interceptor } from '@safekit/safe-fn';
 import { z } from 'zod';
 
-import { createSafeFnClient } from '@corporationx/safe-fn';
+import { createSafeFnClient } from '@safekit/safe-fn';
 
 interface AppContext extends Context {
   userId?: string;

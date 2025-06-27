@@ -2,7 +2,7 @@
  * Simple Chained Client Setup
  * The most common usage pattern - create a client with interceptors
  */
-import { createSafeFnClient } from '@corporationx/safe-fn';
+import { createSafeFnClient } from '@safekit/safe-fn';
 
 export const safeFnClient = createSafeFnClient()
   .use(async ({ next, metadata }) => {
