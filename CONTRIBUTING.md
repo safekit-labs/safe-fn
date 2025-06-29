@@ -1,5 +1,7 @@
 # Contributing
 
+To understand the reasoning behind our API design and core principles, please read our [Design Philosophy document](./DESIGN.md).
+
 ## Development Setup
 
 1. Fork and clone the repository

@@ -1,7 +1,7 @@
 {
   "name": "@safekit/safe-fn",
-  "version": "0.1.1",
-  "description": "A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.",
+  "version": "0.2.0-alpha.1",
+  "description": "[EXPERIMENTAL] A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.",
   "private": false,
   "type": "module",
   "license": "MIT",
@@ -54,7 +54,9 @@
     "builder",
     "schema",
     "context",
-    "safe-functions"
+    "safe-functions",
+    "experimental",
+    "alpha"
   ],
   "author": "safekit",
   "dependencies": {
@@ -71,6 +73,9 @@
     "vite": "^7.0.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4",
+    "yup": "^1.5.0",
+    "joi": "^17.13.3",
+    "@types/joi": "^17.2.3",
     "zod": "^3.25.67"
   }
 }

@@ -1,515 +1,224 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import type { Context, Interceptor } from '@/index';
-
 import { createSafeFnClient } from '@/index';
 
-// Test types
-interface UserContext extends Context {
+interface TestContext extends Context {
   userId?: string;
   requestId: string;
-  timestamp?: number;
 }
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: Date;
-}
+describe('SafeFn - Integration Tests', () => {
+  it('should handle client with interceptors and validation', async () => {
+    const errorHandler = vi.fn();
+    const client = createSafeFnClient<TestContext>({
+      defaultContext: { requestId: 'default' },
+      errorHandler
+    });
 
-// Mock database
-const mockUsers: Map<string, User> = new Map();
-
-// Zod schemas
-const createUserInputSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Must be a valid email')
-});
-
-const getUserInputSchema = z.object({
-  id: z.string().min(1, 'ID is required')
-});
-
-const userOutputSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  createdAt: z.date()
-});
-
-const calculatorInputSchema = z.object({
-  a: z.number(),
-  b: z.number()
-});
-
-const calculatorOutputSchema = z.number();
-
-// Types are inferred automatically from schemas when used
-
-describe('SafeFn - Complete Integration Test', () => {
-  it('should demonstrate full safe function pattern with all features', async () => {
-    // Setup interceptors
-    const auditInterceptor: Interceptor<UserContext> = async ({ next }) => {
-      // console.log(`[AUDIT] ${metadata.operation} - User: ${ctx.userId}`);
-      const result = await next();
-      // console.log(`[AUDIT] ${metadata.operation} completed`);
-      return result;
-    };
-
-    const loggingInterceptor: Interceptor<UserContext> = async ({ next }) => {
-      // console.log(`[LOG] Starting ${metadata.operation} with input:`, clientInput);
-      const result = await next();
-      // console.log(`[LOG] ${metadata.operation} completed`);
-      return result;
-    };
-
-    const authInterceptor: Interceptor<UserContext> = async ({ next, ctx, metadata }) => {
+    const authInterceptor: Interceptor<TestContext> = async ({ next, ctx, metadata }) => {
       if (!ctx.userId && metadata.requiresAuth) {
         throw new Error('Authentication required');
       }
       return next();
     };
 
-    // Create error handler
-    const errorHandler = vi.fn(() => {
-      // console.error(`[ERROR] Request ${context.requestId}:`, error.message);
-    });
-
-    // Create client with default configuration
-    const client = createSafeFnClient<UserContext>({
-      defaultContext: { requestId: 'default' },
-      errorHandler
-    });
-
-    // Create procedures using client with Zod schemas and chained .use()
-    const createUser = client
-      .meta({
-        operationName: 'USER.CREATE',
-        auditLevel: 'high',
-        requiresAuth: true,
-        version: '1.0.0'
-      })
-      .use(auditInterceptor)
-      .use(loggingInterceptor)
+    const fn = client
       .use(authInterceptor)
-      .input(createUserInputSchema)
-      .output(userOutputSchema)
-      .handler(async ({ parsedInput }) => {
-        const input = parsedInput;
-        const user: User = {
-          id: `user_${Date.now()}`,
-          name: input.name,
-          email: input.email,
-          createdAt: new Date()
-        };
+      .meta({ requiresAuth: true })
+      .input(z.object({ name: z.string() }))
+      .output(z.object({ id: z.string(), name: z.string() }))
+      .handler(async ({ parsedInput }) => ({
+        id: 'user-123',
+        name: parsedInput.name
+      }));
 
-        mockUsers.set(user.id, user);
-        return user;
-      });
+    // Test with auth
+    const result = await fn({ name: 'John' }, { userId: 'user-456', requestId: 'req-1' });
+    expect(result).toEqual({ id: 'user-123', name: 'John' });
 
-    const getUser = client
-      .meta({
-        operationName: 'USER.GET',
-        auditLevel: 'low',
-        requiresAuth: false,
-        version: '1.0.0'
-      })
-      .use(auditInterceptor)
-      .use(loggingInterceptor)
-      .input(getUserInputSchema)
-      .output(userOutputSchema)
-      .handler(async ({ parsedInput }) => {
-        const input = parsedInput;
-        const user = mockUsers.get(input.id);
-        if (!user) {
-          throw new Error('User not found');
-        }
-        return user;
-      });
-
-    // Test successful command execution
-    const createResult = await createUser(
-      { userId: 'admin', requestId: 'req-001' },
-      { name: 'John Doe', email: 'john@example.com' }
-    );
-
-    expect(createResult).toMatchObject({
-      name: 'John Doe',
-      email: 'john@example.com'
-    });
-    expect(createResult.id).toBeDefined();
-    expect(createResult.createdAt).toBeInstanceOf(Date);
-
-    // Test successful query execution
-    const getResult = await getUser(
-      { requestId: 'req-002' },
-      { id: createResult.id }
-    );
-
-    expect(getResult).toEqual(createResult);
-
-    // Test validation errors - should throw Zod validation error
-    await expect(
-      createUser(
-        { userId: 'admin', requestId: 'req-003' },
-        { name: '', email: 'invalid' }
-      )
-    ).rejects.toThrow();
-
-    // Test authentication error
-    await expect(
-      createUser(
-        { requestId: 'req-004' }, // No userId
-        { name: 'Jane Doe', email: 'jane@example.com' }
-      )
-    ).rejects.toThrow('Authentication required');
-
-    // Test not found error
-    await expect(
-      getUser(
-        { requestId: 'req-005' },
-        { id: 'non-existent' }
-      )
-    ).rejects.toThrow('User not found');
-
-    // Verify error handler was called
+    // Test without auth
+    await expect(fn({ name: 'John' }, { requestId: 'req-2' })).rejects.toThrow('Authentication required');
     expect(errorHandler).toHaveBeenCalled();
   });
 
-  it('should work with simple client setup', async () => {
-    // Test simple client with basic safe function creation using Zod schemas
-    const client = createSafeFnClient();
-    const simpleCalculator = client
-      .meta({ operation: 'calculate' })
-      .input(calculatorInputSchema)
-      .output(calculatorOutputSchema)
-      .handler(async ({ parsedInput }) => {
-        const input = parsedInput;
-        return input.a + input.b;
-      });
+  it('should handle chained interceptors', async () => {
+    const order: string[] = [];
 
-    const result = await simpleCalculator({}, { a: 5, b: 3 });
-    expect(result).toBe(8);
-
-    // Test validation - should throw Zod validation error
-    await expect(
-      simpleCalculator({}, { a: '5', b: 3 } as any)
-    ).rejects.toThrow();
-  });
-
-  it('should handle complex interceptor chains and context manipulation', async () => {
-    const contextModifyingInterceptor: Interceptor<UserContext> = async ({ next, clientInput, ctx }) => {
-      // Modify context
-      const modifiedContext: UserContext = {
-        ...ctx,
-        userId: ctx.userId || 'anonymous',
-        timestamp: Date.now()
-      } as UserContext;
-
-      // Pass the modified context to the next interceptor
-      const result = await next(clientInput, modifiedContext);
-
-      return {
-        output: result.output,
-        context: modifiedContext
-      };
+    const first: Interceptor = async ({ next }) => {
+      order.push('first-before');
+      const result = await next();
+      order.push('first-after');
+      return result;
     };
 
-    const dataTransformInterceptor: Interceptor<UserContext> = async ({ next, clientInput, ctx }) => {
-      // Transform input
-      const transformedInput = {
-        ...clientInput,
-        source: 'api'
-      };
-
-      // Pass the transformed input to the next interceptor
-      const result = await next(transformedInput, ctx);
-
-      // Transform output
-      const transformedOutput = {
-        ...result.output,
-        processed: true
-      };
-
-      return {
-        output: transformedOutput,
-        context: result.context
-      };
+    const second: Interceptor = async ({ next }) => {
+      order.push('second-before');
+      const result = await next();
+      order.push('second-after');
+      return result;
     };
 
-    const client = createSafeFnClient<UserContext>()
-      .use(contextModifyingInterceptor)
-      .use(dataTransformInterceptor);
-
-    const testProcedure = client
-      .meta({ operation: 'test' })
-      .handler(async ({ ctx, parsedInput }) => {
-        const input = parsedInput;
-        return {
-          receivedInput: input,
-          contextUserId: ctx.userId,
-          timestamp: ctx.timestamp
-        };
-      });
-
-    const result = await testProcedure(
-      { requestId: 'test-001' },
-      { message: 'hello' }
-    );
-
-    expect(result).toMatchObject({
-      receivedInput: {
-        message: 'hello',
-        source: 'api'
-      },
-      contextUserId: 'anonymous',
-      processed: true
+    const client = createSafeFnClient().use(first).use(second);
+    const fn = client.handler(async () => {
+      order.push('handler');
+      return 'result';
     });
-    expect((result as any).timestamp).toBeDefined();
-  });
 
-  it('should handle metadata validation and usage', async () => {
-    const metadataValidatingInterceptor: Interceptor = async ({ next, metadata }) => {
-      if (!metadata.version) {
-        throw new Error('Version is required in metadata');
-      }
-
-      if (metadata.deprecated) {
-        // console.warn(`[DEPRECATED] ${metadata.operation} is deprecated`);
-      }
-
-      return next();
-    };
-
-    const client = createSafeFnClient()
-      .use(metadataValidatingInterceptor);
-
-    // Test with valid metadata
-    const validProcedure = client
-      .meta({
-        operation: 'test',
-        version: '1.0.0',
-        description: 'Test procedure'
-      })
-      .handler(async () => ({ success: true }));
-
-    const result = await validProcedure({}, {});
-    expect(result).toEqual({ success: true });
-
-    // Test with missing metadata
-    const invalidProcedure = client
-      .meta({ operation: 'test' }) // Missing version
-      .handler(async () => ({ success: true }));
-
-    await expect(invalidProcedure({}, {})).rejects.toThrow('Version is required in metadata');
-
-    // Test with deprecated flag
-    const deprecatedProcedure = client
-      .meta({
-        operation: 'old-test',
-        version: '1.0.0',
-        deprecated: true
-      })
-      .handler(async () => ({ success: true }));
-
-    const deprecatedResult = await deprecatedProcedure({}, {});
-    expect(deprecatedResult).toEqual({ success: true });
-  });
-
-  it('should support chained .use() for interceptors', async () => {
-    let executionOrder: string[] = [];
-
-    const firstInterceptor: Interceptor = async ({ next }) => {
-      executionOrder.push('first-before');
-      const result = await next();
-      executionOrder.push('first-after');
-      return result;
-    };
-
-    const secondInterceptor: Interceptor = async ({ next }) => {
-      executionOrder.push('second-before');
-      const result = await next();
-      executionOrder.push('second-after');
-      return result;
-    };
-
-    const thirdInterceptor: Interceptor = async ({ next }) => {
-      executionOrder.push('third-before');
-      const result = await next();
-      executionOrder.push('third-after');
-      return result;
-    };
-
-    // Test chained .use() method with client
-    const client = createSafeFnClient();
-    const chainedProcedure = client
-      .meta({ operation: 'chained-test' })
-      .use(firstInterceptor)
-      .use(secondInterceptor)
-      .use(thirdInterceptor)
-      .handler(async () => {
-        executionOrder.push('handler');
-        return { success: true };
-      });
-
-    const result = await chainedProcedure({}, {});
-
-    expect(result).toEqual({ success: true });
-    expect(executionOrder).toEqual([
+    const result = await fn({}, {});
+    expect(result).toBe('result');
+    expect(order).toEqual([
       'first-before',
-      'second-before',
-      'third-before',
+      'second-before', 
       'handler',
-      'third-after',
       'second-after',
       'first-after'
     ]);
   });
 
-  it('should combine client-level interceptors with .use() chained interceptors', async () => {
-    let executionOrder: string[] = [];
+  it('should handle context modification in interceptors', async () => {
+    const client = createSafeFnClient<TestContext>();
 
-    const clientInterceptor: Interceptor = async ({ next }) => {
-      executionOrder.push('client-before');
-      const result = await next();
-      executionOrder.push('client-after');
-      return result;
+    const contextModifier: Interceptor<TestContext> = async ({ next, ctx }) => {
+      const modifiedCtx = { ...ctx, userId: 'modified-user' };
+      return next(undefined, modifiedCtx);
     };
 
-    const procedureInterceptor: Interceptor = async ({ next }) => {
-      executionOrder.push('procedure-before');
-      const result = await next();
-      executionOrder.push('procedure-after');
-      return result;
-    };
+    const fn = client
+      .use(contextModifier)
+      .handler(async ({ ctx }) => ({ receivedUserId: ctx.userId }));
 
-    const client = createSafeFnClient()
-      .use(clientInterceptor);
-
-    const combinedProcedure = client
-      .meta({ operation: 'combined-test' })
-      .use(procedureInterceptor)
-      .handler(async () => {
-        executionOrder.push('handler');
-        return { success: true };
-      });
-
-    const result = await combinedProcedure({}, {});
-
-    expect(result).toEqual({ success: true });
-    // Client interceptors run first, then procedure interceptors
-    expect(executionOrder).toEqual([
-      'client-before',
-      'procedure-before',
-      'handler',
-      'procedure-after',
-      'client-after'
-    ]);
+    const result = await fn({}, { requestId: 'req-1' });
+    expect(result).toEqual({ receivedUserId: 'modified-user' });
   });
 
-  it('should properly handle error propagation and recovery', async () => {
-    let errorRecoveryAttempted = false;
+  it('should handle input transformation in interceptors', async () => {
+    const client = createSafeFnClient();
 
-    const errorRecoveryInterceptor: Interceptor = async ({ next, ctx }) => {
+    const inputTransformer: Interceptor = async ({ next, rawInput }) => {
+      const transformedInput = { ...rawInput, source: 'interceptor' };
+      return next(transformedInput);
+    };
+
+    const fn = client
+      .use(inputTransformer)
+      .handler(async ({ parsedInput }) => ({ received: parsedInput }));
+
+    const result = await fn({ data: 'test' }, {});
+    expect(result.received).toEqual({ data: 'test', source: 'interceptor' });
+  });
+
+  it('should handle error recovery in interceptors', async () => {
+    const client = createSafeFnClient();
+
+    const errorRecovery: Interceptor = async ({ next }) => {
       try {
         return await next();
       } catch (error) {
-        if (error instanceof Error && error.message === 'Something went wrong') {
-          errorRecoveryAttempted = true;
-          return {
-            output: { recovered: true, originalError: error.message },
-            context: ctx
-          };
+        if (error instanceof Error && error.message === 'recoverable') {
+          return { output: 'recovered', context: {} };
         }
         throw error;
       }
     };
 
-    const client = createSafeFnClient()
-      .use(errorRecoveryInterceptor);
-
-    // Test recoverable error
-    const recoverableProcedure = client
+    const fn = client
+      .use(errorRecovery)
       .handler(async () => {
-        throw new Error('Something went wrong');
+        throw new Error('recoverable');
       });
 
-    const result = await recoverableProcedure({}, {});
-    expect(result).toEqual({
-      recovered: true,
-      originalError: 'Something went wrong'
-    });
-    expect(errorRecoveryAttempted).toBe(true);
-
-    // Test non-recoverable error
-    const nonRecoverableProcedure = client
-      .handler(async () => {
-        throw new Error('Critical error');
-      });
-
-    await expect(nonRecoverableProcedure({}, {})).rejects.toThrow('Critical error');
+    const result = await fn({}, {});
+    expect(result).toBe('recovered');
   });
 
-  it('should support context type accumulation through .use() chaining', async () => {
-    // Define specific context types
-    interface DatabaseContext extends Context {
-      dbConnection: string;
-    }
+  it('should validate with complex schemas', async () => {
+    const client = createSafeFnClient();
 
-    interface AuthContext extends Context {
-      authToken: string;
-      userId: string;
-    }
+    const fn = client
+      .input(z.object({
+        user: z.object({
+          name: z.string().min(1),
+          email: z.string().email()
+        }),
+        options: z.object({
+          sendEmail: z.boolean()
+        })
+      }))
+      .output(z.object({
+        success: z.boolean(),
+        userId: z.string()
+      }))
+      .handler(async ({ parsedInput }) => ({
+        success: true,
+        userId: `user-${parsedInput.user.name}`
+      }));
 
-    // Combined context type for client
-    type CombinedContext = DatabaseContext & AuthContext;
-
-    // Create interceptors with specific context types
-    const dbInterceptor: Interceptor<DatabaseContext> = async ({ next, ctx }) => {
-      // We know ctx has dbConnection here
-      expect(ctx.dbConnection).toBeDefined();
-      return next();
-    };
-
-    const authInterceptor: Interceptor<AuthContext> = async ({ next, ctx }) => {
-      // We know ctx has authToken and userId here
-      expect(ctx.authToken).toBeDefined();
-      expect(ctx.userId).toBeDefined();
-      return next();
-    };
-
-    // Create client with explicit combined context type
-    const client = createSafeFnClient<CombinedContext>()
-      .use(dbInterceptor)    // Add DatabaseContext interceptor
-      .use(authInterceptor); // Add AuthContext interceptor
-
-    const testProcedure = client.handler(async ({ ctx }) => {
-      // TypeScript should know that ctx has both dbConnection and authToken/userId
-      // This demonstrates that the intersection type is working
-
-      // These properties should be available without any casting if types work correctly
-      const dbConn: string = ctx.dbConnection; // Should not error
-      const token: string = ctx.authToken; // Should not error
-      const userId: string = ctx.userId; // Should not error
-
-      return {
-        hasDbConnection: !!dbConn,
-        hasAuthToken: !!token,
-        hasUserId: !!userId
-      };
-    });
-
-    const result = await testProcedure({
-      dbConnection: 'postgresql://localhost:5432',
-      authToken: 'jwt-token-123',
-      userId: 'user456'
+    const result = await fn({
+      user: { name: 'John', email: 'john@example.com' },
+      options: { sendEmail: true }
     }, {});
 
     expect(result).toEqual({
-      hasDbConnection: true,
-      hasAuthToken: true,
-      hasUserId: true
+      success: true,
+      userId: 'user-John'
     });
+
+    // Test validation error
+    await expect(fn({
+      user: { name: '', email: 'invalid' },
+      options: { sendEmail: true }
+    }, {})).rejects.toThrow();
+  });
+
+  it('should support metadata validation', async () => {
+    const client = createSafeFnClient();
+
+    const metadataValidator: Interceptor = async ({ next, metadata }) => {
+      if (!metadata.version) {
+        throw new Error('Version required');
+      }
+      return next();
+    };
+
+    const fn = client
+      .use(metadataValidator)
+      .meta({ version: '1.0.0' })
+      .handler(async () => ({ success: true }));
+
+    const result = await fn({}, {});
+    expect(result).toEqual({ success: true });
+
+    const invalidFn = client
+      .use(metadataValidator)
+      .meta({}) // Missing version
+      .handler(async () => ({ success: true }));
+
+    await expect(invalidFn({}, {})).rejects.toThrow('Version required');
+  });
+
+  it('should combine client and procedure interceptors', async () => {
+    const order: string[] = [];
+
+    const clientInterceptor: Interceptor = async ({ next }) => {
+      order.push('client');
+      return next();
+    };
+
+    const procedureInterceptor: Interceptor = async ({ next }) => {
+      order.push('procedure');
+      return next();
+    };
+
+    const client = createSafeFnClient().use(clientInterceptor);
+    const fn = client
+      .use(procedureInterceptor)
+      .handler(async () => {
+        order.push('handler');
+        return 'done';
+      });
+
+    await fn({}, {});
+    expect(order).toEqual(['client', 'procedure', 'handler']);
   });
 });

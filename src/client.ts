@@ -52,6 +52,10 @@ class ClientBuilder<TContext extends Context = Context> implements Client<TConte
     return this.createConfiguredBuilder().meta(metadata);
   }
 
+  context(context: any) {
+    return this.createConfiguredBuilder().context(context);
+  }
+
   input<TNewInput>(schema: SchemaValidator<TNewInput>) {
     return this.createConfiguredBuilder().input(schema);
   }

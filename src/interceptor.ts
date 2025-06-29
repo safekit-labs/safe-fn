@@ -59,7 +59,7 @@ export async function executeInterceptorChain<TInput, TOutput, TContext extends 
       // Call interceptor with object-based signature
       const result = await interceptor({
         next,
-        clientInput: currentInput,
+        rawInput: currentInput,
         ctx: currentContext,
         metadata
       });
