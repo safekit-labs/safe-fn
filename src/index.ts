@@ -1,9 +1,10 @@
 // Core types
 export type {
   Context,
-  Metadata,
+  Meta,
   ClientConfig,
   Interceptor,
+  Middleware,
   InterceptorOutput,
   SafeFnHandler,
   SafeFnBuilder,

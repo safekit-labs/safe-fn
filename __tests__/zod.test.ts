@@ -100,19 +100,6 @@ describe('Zod Validator Support', () => {
       await expect(fn('', -1)).rejects.toThrow();
     });
 
-    it('should work with context binding', async () => {
-      const client = createSafeFnClient();
-      const fn = client
-        .context({ requestId: 'req-123' })
-        .input(z.tuple([z.string()]))
-        .handler(async ({ args, ctx }) => {
-          const [data] = args;
-          return { data, requestId: ctx.requestId };
-        });
-
-      const result = await fn('test-data');
-      expect(result).toEqual({ data: 'test-data', requestId: 'req-123' });
-    });
 
     it('should work with interceptors', async () => {
       const client = createSafeFnClient();

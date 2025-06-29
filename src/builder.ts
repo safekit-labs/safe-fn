@@ -4,8 +4,8 @@
 import type {
   SafeFnHandler,
   Context,
-  Interceptor,
-  Metadata,
+  Middleware,
+  Meta,
   SafeFnBuilder,
   SchemaValidator,
   SafeFnSignature,
@@ -39,32 +39,12 @@ function createSchemaValidator<T>(schema: SchemaValidator<T>): (input: unknown) 
         };
       }
     }
-    // Fallback to legacy Zod-style .parse method
+    // Fallback to Zod-style .parse method
     if ('parse' in schema && typeof schema.parse === 'function') {
       return (input: unknown) => schema.parse(input);
     }
-
-    // Support for Yup schemas (has both validate and validateSync)
-    if ('validate' in schema && typeof schema.validate === 'function' && 
-        'validateSync' in schema && typeof (schema as any).validateSync === 'function') {
-      return (input: unknown) => {
-        return (schema as any).validateSync(input);
-      };
-    }
-
-    // Support for Joi schemas (has validate and describe methods)
-    if ('validate' in schema && typeof schema.validate === 'function' && 
-        'describe' in schema && typeof (schema as any).describe === 'function') {
-      return (input: unknown) => {
-        const result = schema.validate(input);
-        if (result.error) {
-          throw result.error;
-        }
-        return result.value;
-      };
-    }
   }
-  throw new Error('Invalid schema: The provided schema is not a function and does not have a compatible .parse() or .validate() method.');
+  throw new Error('Invalid schema: The provided schema is not a function and does not have a compatible .parse() method.');
 }
 
 /**
@@ -115,39 +95,83 @@ function createDefaultErrorHandler<TContext extends Context>() {
 }
 
 /**
+ * Executes the middleware chain for post-validation processing
+ */
+async function executeMiddlewareChain<TInput, TOutput, TContext extends Context, TMeta extends Meta>(
+  middlewares: Middleware<TContext, TInput, TMeta>[],
+  parsedInput: TInput,
+  context: TContext,
+  meta: TMeta,
+  finalHandler: (input: TInput) => Promise<TOutput>
+): Promise<TOutput> {
+  if (middlewares.length === 0) {
+    return finalHandler(parsedInput);
+  }
+
+  let index = 0;
+
+  const next = async (modifiedInput: TInput): Promise<TOutput> => {
+    if (index >= middlewares.length) {
+      return finalHandler(modifiedInput);
+    }
+
+    const middleware = middlewares[index++];
+    return middleware({
+      next,
+      parsedInput: modifiedInput,
+      ctx: context,
+      meta,
+    });
+  };
+
+  return next(parsedInput);
+}
+
+/**
  * Creates a new safe function builder
  */
-export function createSafeFn<TContext extends Context = Context>(): SafeFnBuilder<TContext, unknown, unknown> {
-  let currentMetadata: Metadata | undefined;
+export function createSafeFn<TContext extends Context = Context, TMeta extends Meta = Meta>(): SafeFnBuilder<TContext, unknown, unknown, TMeta> {
+  let currentMeta: TMeta | undefined;
   let inputValidator: ((input: unknown) => any) | undefined;
   let outputValidator: ((output: unknown) => any) | undefined;
-  let interceptors: any[] = [];
+  let middlewares: Middleware<TContext, any, TMeta>[] = [];
   let errorHandler: ((error: Error, context: TContext) => void) | undefined;
+  let metaValidator: ((meta: unknown) => TMeta) | undefined;
 
-  const builder: SafeFnBuilder<TContext, unknown, unknown> = {
-    meta(metadata: Metadata) {
-      currentMetadata = metadata;
+  const builder: SafeFnBuilder<TContext, unknown, unknown, TMeta> = {
+    meta<TNewMeta extends Meta>(meta: TNewMeta): SafeFnBuilder<TContext, unknown, unknown, TNewMeta> {
+      const newBuilder = createSafeFn<TContext, TNewMeta>();
+      
+      // Copy over current state
+      (newBuilder as any)._currentMeta = metaValidator ? metaValidator(meta) : meta;
+      (newBuilder as any)._inputValidator = inputValidator;
+      (newBuilder as any)._outputValidator = outputValidator;
+      (newBuilder as any)._middlewares = middlewares;
+      (newBuilder as any)._errorHandler = errorHandler;
+      (newBuilder as any)._metaValidator = metaValidator;
+      
+      // Copy client configuration if present
+      (newBuilder as any)._clientInterceptors = (builder as any)._clientInterceptors;
+      (newBuilder as any)._clientErrorHandler = (builder as any)._clientErrorHandler;
+      (newBuilder as any)._defaultContext = (builder as any)._defaultContext;
+      (newBuilder as any)._inputSchema = (builder as any)._inputSchema;
+      
+      return newBuilder;
+    },
+
+    use(middleware: Middleware<TContext, any, TMeta>) {
+      middlewares.push(middleware);
       return builder;
     },
 
-    use(interceptor: Interceptor<TContext>) {
-      interceptors.push(interceptor);
-      return builder;
-    },
-
-    context(context: Partial<TContext>) {
-      (builder as any)._builderContext = context;
-      return builder;
-    },
-
-    input<TNewInput>(schema: SchemaValidator<TNewInput>) {
+    input<TNewInput>(schema: SchemaValidator<TNewInput>): SafeFnBuilder<TContext, TNewInput, unknown, TMeta> {
       inputValidator = createSchemaValidator(schema);
       // Store the original schema for tuple detection
       (builder as any)._inputSchema = schema;
       return builder as any; // Type assertion needed for the new input type
     },
 
-    output<TNewOutput>(schema: SchemaValidator<TNewOutput>) {
+    output<TNewOutput>(schema: SchemaValidator<TNewOutput>): SafeFnBuilder<TContext, unknown, TNewOutput, TMeta> {
       outputValidator = createSchemaValidator(schema);
       return builder as any; // Type assertion needed for the new output type
     },
@@ -156,10 +180,12 @@ export function createSafeFn<TContext extends Context = Context>(): SafeFnBuilde
       // Determine if we're dealing with a tuple input using Standard Schema spec
       const isTuple = (builder as any)._inputSchema ? isStandardTupleSchema((builder as any)._inputSchema) : false;
 
-      // Merge with default context, builder context, and any provided context
+      // Merge with default context and any provided context
       const defaultContext = (builder as any)._defaultContext || {};
-      const builderContext = (builder as any)._builderContext || {};
-      const metadata = currentMetadata || {};
+      const meta = ((builder as any)._currentMeta || currentMeta || {}) as TMeta;
+      
+      // Get meta validator from client if available
+      metaValidator = (builder as any)._metaValidator;
 
       // Use client error handler if available, otherwise use default
       const clientErrorHandler = (builder as any)._clientErrorHandler;
@@ -167,26 +193,36 @@ export function createSafeFn<TContext extends Context = Context>(): SafeFnBuilde
 
       // Use client interceptors if available
       const clientInterceptors = (builder as any)._clientInterceptors || [];
-      const allInterceptors = [...clientInterceptors, ...interceptors];
 
 
       // Create the function implementation based on input type
       const finalFn = isTuple
         ? ((...args: any[]) => {
-            const fullContext = { ...defaultContext, ...builderContext } as TContext;
+            const fullContext = { ...defaultContext } as TContext;
 
             return (async () => {
               try {
-                // For tuple schemas, pass the args array directly to be validated as a tuple
-                const validatedInput = inputValidator ? inputValidator(args) : args;
+                // For tuple schemas, pass the args array directly to interceptors (raw input)
 
-                const result = await executeInterceptorChain(
-                  allInterceptors,
-                  validatedInput as THandlerInput,
+                const result = await executeInterceptorChain<THandlerOutput, TContext, TMeta>(
+                  clientInterceptors,
+                  args,
                   fullContext,
-                  metadata,
-                  async (processedInput: THandlerInput, processedContext: TContext) => {
-                    return handler({ ctx: processedContext, args: processedInput } as any);
+                  meta,
+                  async (processedInput: unknown, processedContext: TContext) => {
+                    // Validate the processed input from interceptors
+                    const validatedInput = inputValidator ? inputValidator(processedInput) : processedInput;
+                    
+                    // Execute middleware chain with validated input
+                    return executeMiddlewareChain(
+                      middlewares,
+                      validatedInput as THandlerInput,
+                      processedContext,
+                      meta,
+                      async (finalInput: THandlerInput) => {
+                        return handler({ ctx: processedContext, args: finalInput } as any);
+                      }
+                    );
                   },
                 );
 
@@ -200,19 +236,31 @@ export function createSafeFn<TContext extends Context = Context>(): SafeFnBuilde
             })();
           })
         : ((input: THandlerInput, context: Partial<TContext> = {}) => {
-            const fullContext = { ...defaultContext, ...builderContext, ...context } as TContext;
+            const fullContext = { ...defaultContext, ...context } as TContext;
 
             return (async () => {
               try {
-                const validatedInput = inputValidator ? inputValidator(input) : input;
+                // For object schemas, pass the input directly to interceptors (raw input)
 
-                const result = await executeInterceptorChain(
-                  allInterceptors,
-                  validatedInput as THandlerInput,
+                const result = await executeInterceptorChain<THandlerOutput, TContext, TMeta>(
+                  clientInterceptors,
+                  input,
                   fullContext,
-                  metadata,
-                  async (processedInput: THandlerInput, processedContext: TContext) => {
-                    return handler({ ctx: processedContext, parsedInput: processedInput } as any);
+                  meta,
+                  async (processedInput: unknown, processedContext: TContext) => {
+                    // Validate the processed input from interceptors
+                    const validatedInput = inputValidator ? inputValidator(processedInput) : processedInput;
+                    
+                    // Execute middleware chain with validated input
+                    return executeMiddlewareChain(
+                      middlewares,
+                      validatedInput as THandlerInput,
+                      processedContext,
+                      meta,
+                      async (finalInput: THandlerInput) => {
+                        return handler({ ctx: processedContext, parsedInput: finalInput } as any);
+                      }
+                    );
                   },
                 );
 

@@ -16,8 +16,8 @@ describe('SafeFn - Integration Tests', () => {
       errorHandler
     });
 
-    const authInterceptor: Interceptor<TestContext> = async ({ next, ctx, metadata }) => {
-      if (!ctx.userId && metadata.requiresAuth) {
+    const authInterceptor: Interceptor<TestContext> = async ({ next, ctx, meta }) => {
+      if (!ctx.userId && meta.requiresAuth) {
         throw new Error('Authentication required');
       }
       return next();
@@ -81,7 +81,7 @@ describe('SafeFn - Integration Tests', () => {
 
     const contextModifier: Interceptor<TestContext> = async ({ next, ctx }) => {
       const modifiedCtx = { ...ctx, userId: 'modified-user' };
-      return next(undefined, modifiedCtx);
+      return next({ ctx: modifiedCtx });
     };
 
     const fn = client
@@ -92,20 +92,26 @@ describe('SafeFn - Integration Tests', () => {
     expect(result).toEqual({ receivedUserId: 'modified-user' });
   });
 
-  it('should handle input transformation in interceptors', async () => {
+  it('should handle context transformation in interceptors', async () => {
     const client = createSafeFnClient();
 
-    const inputTransformer: Interceptor = async ({ next, rawInput }) => {
-      const transformedInput = { ...rawInput, source: 'interceptor' };
-      return next(transformedInput);
+    const contextTransformer: Interceptor = async ({ next, rawInput, ctx }) => {
+      // Interceptors can transform context but not input
+      const input = rawInput as Record<string, any>;
+      const updatedContext = { ...ctx, source: 'interceptor', originalData: input.data };
+      return next({ ctx: updatedContext });
     };
 
     const fn = client
-      .use(inputTransformer)
-      .handler(async ({ parsedInput }) => ({ received: parsedInput }));
+      .use(contextTransformer)
+      .handler(async ({ parsedInput, ctx }) => ({ 
+        received: parsedInput, 
+        contextInfo: { source: ctx.source, originalData: ctx.originalData }
+      }));
 
     const result = await fn({ data: 'test' }, {});
-    expect(result.received).toEqual({ data: 'test', source: 'interceptor' });
+    expect(result.received).toEqual({ data: 'test' });
+    expect(result.contextInfo).toEqual({ source: 'interceptor', originalData: 'test' });
   });
 
   it('should handle error recovery in interceptors', async () => {
@@ -174,8 +180,8 @@ describe('SafeFn - Integration Tests', () => {
   it('should support metadata validation', async () => {
     const client = createSafeFnClient();
 
-    const metadataValidator: Interceptor = async ({ next, metadata }) => {
-      if (!metadata.version) {
+    const metadataValidator: Interceptor = async ({ next, meta }) => {
+      if (!meta.version) {
         throw new Error('Version required');
       }
       return next();

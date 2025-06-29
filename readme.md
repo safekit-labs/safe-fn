@@ -13,7 +13,7 @@ A lightweight type-safe function builder with interceptors, schema validation, a
 
 - 🔒 **Type-Safe**: Full TypeScript support with automatic type inference and structural typing
 - 🔗 **Interceptors**: Chainable middleware for cross-cutting concerns
-- ✅ **Universal Validation**: Clean support for Zod, Yup, Joi, and Standard Schema (no `as any` needed)
+- ✅ **Zod Integration**: First-class support for Zod schemas with automatic type inference
 - 🎨 **Context Management**: Type-safe context passing through procedure chains
 - 🚀 **Lightweight**: Single runtime dependency (@standard-schema/spec)
 
@@ -30,31 +30,57 @@ yarn add @safekit/safe-fn
 bun add @safekit/safe-fn
 ```
 
+## 📚 Quick Navigation
+
+**Quick Start Examples:**
+- [Common Setup](#common-setup) - Basic client with error handling and interceptors
+- [Single Object Pattern](#1-single-object-pattern) - API-style functions with object input
+- [Multiple Arguments Pattern](#2-multiple-arguments-pattern) - Service functions with tuple arguments
+- [Zero Arguments Pattern](#3-zero-arguments-pattern) - Functions with no input
+- [Without Schema Validation](#4-without-schema-validation) - Type-safe functions without runtime validation
+
+**Client Configuration:**
+- [Basic Client](#1-basic-client) - Minimal setup
+- [With Default Context](#2-with-default-context) - Adding default context values
+- [With Error Handler](#3-with-error-handler) - Custom error handling
+- [With Global Interceptors](#4-with-global-interceptors) - Pre-validation middleware
+- [Full Configuration](#5-full-configuration) - Complete setup with typed context
+
+**Advanced Features:**
+- [Meta and Output Schema](#1-with-meta-and-output-schema) - Adding metadata and response validation
+- [Function-Level Middleware](#2-with-function-level-middleware) - Post-validation, typed middleware
+- [Tuple with Middleware](#3-tuple-with-middleware) - Middleware with tuple functions
+- [Separate Interceptor Definitions](#with-separate-interceptor-definitions) - Reusable interceptor patterns
+
 ## Quick Start
 
 SafeFn supports both **single object** patterns (for API-style functions) and **tuple** patterns (for service-layer functions with multiple arguments).
 
-### Simple Setup
+### Common Setup
 
 ```typescript
 import { createSafeFnClient } from '@safekit/safe-fn';
 
-export const client = createSafeFnClient()
-  .use(async ({ next, metadata, ctx }) => {
-    if (metadata.requiresAuth && !ctx.userId) {
-      throw new Error('Authentication required');
-    }
-    return next();
-  });
+export const safeFnClient = createSafeFnClient({
+  defaultContext: { requestId: 'default' },
+  errorHandler: (error, context) => {
+    console.error(`[${context.requestId}] Error:`, error.message);
+  },
+}).use(async ({ next, rawInput, meta }) => {
+  console.log(`[${meta.operation || 'unknown'}] Starting with input:`, rawInput);
+  const result = await next();
+  console.log(`[${meta.operation || 'unknown'}] Completed`);
+  return result;
+});
 ```
 
 ### 1. Single Object Pattern
 
 ```typescript
 import { z } from 'zod';
-import { client } from './client';
+import { safeFnClient } from './client';
 
-export const getUser = client
+export const getUser = safeFnClient
   .input(z.object({ id: z.string() }))
   .handler(async ({ parsedInput }) => {
     return { id: parsedInput.id, name: 'John' };
@@ -68,9 +94,9 @@ const user = await getUser({ id: '123' }, { userId: 'user-1' });
 
 ```typescript
 import { z } from 'zod';
-import { client } from './client';
+import { safeFnClient } from './client';
 
-export const addUser = client
+export const addUser = safeFnClient
   .input(z.tuple([z.string(), z.number()])) // name, age
   .handler(async ({ args }) => {
     const [name, age] = args;
@@ -85,53 +111,187 @@ const user = await addUser('John', 25);
 
 ```typescript
 import { z } from 'zod';
-import { client } from './client';
+import { safeFnClient } from './client';
 
-export const healthCheck = client
-  .input(z.tuple([]))
-  .handler(async () => ({ status: 'ok' }));
+export const healthCheck = safeFnClient.handler(async () => ({ status: 'ok' }));
 
 // Usage: fn()
 const health = await healthCheck();
 ```
 
-### 4. Context Binding
+### 4. Without Schema Validation
 
 ```typescript
-import { z } from 'zod';
-import { client } from './client';
-
-export const deleteUser = client
-  .context({ adminId: 'admin-1' })
-  .input(z.tuple([z.string()])) // userId
-  .handler(async ({ args, ctx }) => {
-    const [userId] = args;
-    return { deleted: userId, by: ctx.adminId };
-  });
-
-// Usage: fn(userId)
-const result = await deleteUser('user-123');
-```
-
-### 5. Without Schema Validation
-
-```typescript
-import { client } from './client';
+import { safeFnClient } from './client';
 
 type Input = { a: number; b: number };
 
-export const add = client
-  .handler<Input, number>(async ({ parsedInput }) => {
-    return parsedInput.a + parsedInput.b;
-  });
+export const add = safeFnClient.handler<Input, number>(async ({ parsedInput }) => {
+  return parsedInput.a + parsedInput.b;
+});
 
 // Usage
-const result = await add({ a: 5, b: 3 }, {});
+const result = await add({ a: 5, b: 3 });
+```
+
+## Client Setup Options
+
+Different ways to configure your SafeFn client:
+
+### 1. Basic Client
+
+```typescript
+import { createSafeFnClient } from '@safekit/safe-fn';
+
+const safeFnClient = createSafeFnClient();
+```
+
+### 2. With Default Context
+
+```typescript
+const safeFnClient = createSafeFnClient({
+  defaultContext: {
+    requestId: 'default',
+    version: '1.0.0'
+  }
+});
+```
+
+### 3. With Error Handler
+
+```typescript
+const safeFnClient = createSafeFnClient({
+  errorHandler: (error, context) => {
+    console.error(`Request ${context.requestId} failed:`, error.message);
+    // Send to monitoring service
+  }
+});
+```
+
+### 4. With Global Interceptors
+
+```typescript
+const safeFnClient = createSafeFnClient()
+  .use(async ({ next, rawInput, ctx, meta }) => {
+    console.log(`[${meta.operation}] Input:`, rawInput);
+    const result = await next();
+    console.log(`[${meta.operation}] Output:`, result.output);
+    return result;
+  })
+  .use(async ({ next, ctx, meta }) => {
+    if (meta.requiresAuth && !ctx.userId) {
+      throw new Error('Authentication required');
+    }
+    return next();
+  });
+```
+
+### 5. Full Configuration
+
+```typescript
+interface AppContext extends Context {
+  userId?: string;
+  requestId: string;
+  permissions: string[];
+}
+
+const safeFnClient = createSafeFnClient<AppContext>({
+  defaultContext: {
+    requestId: 'default',
+    permissions: []
+  },
+  errorHandler: (error, context) => {
+    console.error(`[${context.requestId}] ${context.userId}:`, error.message);
+  }
+})
+  .use(async ({ next, ctx, meta }) => {
+    if (meta.requiresAuth && !ctx.userId) {
+      throw new Error('Authentication required');
+    }
+    return next();
+  });
+```
+
+## API Showcase
+
+Additional examples showing more API features:
+
+### 1. With Meta and Output Schema
+
+```typescript
+import { z } from 'zod';
+import { safeFnClient } from './client';
+
+export const createUser = safeFnClient
+  .meta({ operation: 'create-user', requiresAuth: true })
+  .input(z.object({ name: z.string(), email: z.string().email() }))
+  .output(z.object({ id: z.string(), name: z.string(), email: z.string() }))
+  .handler(async ({ parsedInput }) => {
+    return {
+      id: 'user_123',
+      name: parsedInput.name,
+      email: parsedInput.email
+    };
+  });
+```
+
+### 2. With Function-Level Middleware
+
+```typescript
+import { z } from 'zod';
+import { safeFnClient } from './client';
+
+export const updatePost = safeFnClient
+  .meta({ operation: 'update-post', requiresAuth: true })
+  .input(z.object({ postId: z.string(), title: z.string() }))
+  .use(async ({ next, parsedInput, ctx, meta }) => {
+    // Post-validation middleware - parsedInput is fully typed!
+    const post = await db.post.findUnique({ where: { id: parsedInput.postId } });
+
+    if (post?.authorId !== ctx.userId) {
+      throw new Error('Forbidden: You do not own this post');
+    }
+
+    console.log(`${meta.operation}: User ${ctx.userId} updating post ${parsedInput.postId}`);
+    return next(parsedInput);
+  })
+  .handler(async ({ parsedInput }) => {
+    return await db.post.update({
+      where: { id: parsedInput.postId },
+      data: { title: parsedInput.title }
+    });
+  });
+```
+
+### 3. Tuple with Middleware
+
+```typescript
+import { z } from 'zod';
+import { safeFnClient } from './client';
+
+export const calculateTax = safeFnClient
+  .meta({ operation: 'calculate-tax' })
+  .input(z.tuple([z.number().positive(), z.string()])) // amount, region
+  .use(async ({ next, parsedInput, meta }) => {
+    const [amount, region] = parsedInput;
+    console.log(`${meta.operation}: Calculating tax for $${amount} in ${region}`);
+    return next(parsedInput);
+  })
+  .handler(async ({ args }) => {
+    const [amount, region] = args;
+    const rate = region === 'CA' ? 0.08 : 0.05;
+    return { amount, region, tax: amount * rate, total: amount * (1 + rate) };
+  });
+
+// Usage: fn(amount, region)
+const result = await calculateTax(100, 'CA');
 ```
 
 ## Advanced Examples
 
-### With Context Types
+### With Separate Interceptor Definitions
+
+Define interceptors separately for reusability and better organization:
 
 ```typescript
 import type { Context, Interceptor } from '@safekit/safe-fn';
@@ -141,45 +301,48 @@ interface AppContext extends Context {
   userId?: string;
 }
 
-const auth: Interceptor<AppContext> = async ({ next, ctx, metadata }) => {
-  if (metadata.requiresAuth && !ctx.userId) {
+// Define interceptors separately for reuse
+const authInterceptor: Interceptor<AppContext> = async ({ next, ctx, meta }) => {
+  if (meta.requiresAuth && !ctx.userId) {
     throw new Error('Authentication required');
   }
   return next();
 };
 
-export const client = createSafeFnClient<AppContext>().use(auth);
+const loggingInterceptor: Interceptor<AppContext> = async ({ next, rawInput, meta }) => {
+  console.log(`[${meta.operation}] Starting with input:`, rawInput);
+  const result = await next();
+  console.log(`[${meta.operation}] Completed`);
+  return result;
+};
+
+// Use the defined interceptors
+export const safeFnClient = createSafeFnClient<AppContext>()
+  .use(authInterceptor)
+  .use(loggingInterceptor);
 ```
 
 ### Schema Support
 
-Works with Zod, Yup, Joi, and custom validators:
+Works with Zod schemas and custom validators:
 
 ```typescript
 import { z } from 'zod';
-import * as yup from 'yup';
-import Joi from 'joi';
-import { client } from './client';
+import { safeFnClient } from './client';
 
-// Zod - clean TypeScript support
-const zodFn = client
+// Zod - automatic type inference
+const zodFn = safeFnClient
   .input(z.object({ name: z.string() }))
   .handler(async ({ parsedInput }) => parsedInput.name);
 
-// Yup - clean TypeScript support (no 'as any' needed!)
-const yupSchema = yup.object({ age: yup.number().required() });
-const yupFn = client
-  .input(yupSchema)
-  .handler(async ({ parsedInput }) => parsedInput.age);
-
-// Joi - clean TypeScript support (no 'as any' needed!)
-const joiSchema = Joi.object({ email: Joi.string().email() });
-const joiFn = client
-  .input(joiSchema)
-  .handler(async ({ parsedInput }) => parsedInput.email);
+// Zod tuples for multiple arguments
+const tupleFn = safeFnClient.input(z.tuple([z.string(), z.number()])).handler(async ({ args }) => {
+  const [name, age] = args;
+  return { name, age };
+});
 
 // Custom validator
-const customFn = client
+const customFn = safeFnClient
   .input((input: unknown) => {
     if (typeof input !== 'string') throw new Error('Expected string');
     return input;
@@ -187,24 +350,24 @@ const customFn = client
   .handler(async ({ parsedInput }) => parsedInput.toUpperCase());
 ```
 
-### API Integration
+## Real-World Usage Patterns
 
 ```typescript
-import { z } from 'zod';
-import { client } from './client';
+// Domain-specific clients
+export const commandClient = createSafeFnClient({
+  defaultContext: { operation: 'command' },
+  // command-specific config
+});
 
-const createUser = client
-  .input(z.object({ name: z.string(), email: z.string().email() }))
-  .handler(async ({ parsedInput }) => ({
-    id: 'user_123',
-    ...parsedInput
-  }));
+export const queryClient = createSafeFnClient({
+  defaultContext: { operation: 'query', readOnly: true },
+  // query-specific config
+});
 
-// In your API handler
-export async function POST(request: Request) {
-  const body = await request.json();
-  return await createUser(body, { requestId: crypto.randomUUID() });
-}
+export const serviceClient = createSafeFnClient({
+  defaultContext: { service: 'user-service' },
+  // service-specific config
+});
 ```
 
 ## API Reference
@@ -212,18 +375,17 @@ export async function POST(request: Request) {
 ### createSafeFnClient(config?)
 
 ```typescript
-const client = createSafeFnClient({
+const safeFnClient = createSafeFnClient({
   defaultContext: { requestId: 'default' },
-  errorHandler: (error, context) => console.error(error)
-});  
+  errorHandler: (error, context) => console.error(error),
+});
 ```
 
 ### Methods
 
 - `.use(interceptor)` - Add middleware
-- `.input(schema)` - Set input validation  
+- `.input(schema)` - Set input validation
 - `.output(schema)` - Set output validation
-- `.context(data)` - Bind context for tuple functions
 - `.handler(fn)` - Define the function
 
 ### Interceptor Type
@@ -231,51 +393,52 @@ const client = createSafeFnClient({
 ```typescript
 type Interceptor<TContext> = (params: {
   next: (modifiedInput?, modifiedContext?) => Promise<InterceptorOutput>;
-  rawInput: any;
+  rawInput: unknown;
   ctx: TContext;
-  metadata: Metadata;
+  meta: Meta;
 }) => Promise<InterceptorOutput>;
 ```
 
-## Validator Compatibility Matrix
+## Schema Support
 
-SafeFn provides different levels of support depending on the validation library:
+SafeFn provides first-class support for Zod schemas with automatic type inference:
 
-| Validator | Object Schemas | Tuple Schemas (args signature) | Handler Parameter | TypeScript Support |
-|-----------|----------------|--------------------------------|-------------------|-------------------|
-| **Zod** | ✅ Full Support | ✅ Full Support | `args` for tuples, `parsedInput` for objects | ✅ Excellent |
-| **Yup** | ✅ Full Support | ⚠️ Limited (treated as array) | `parsedInput` (always) | ✅ Clean (no `as any` needed) |
-| **Joi** | ✅ Full Support | ⚠️ Limited (treated as array) | `parsedInput` (always) | ✅ Clean (no `as any` needed) |
-| **Custom Function** | ✅ Full Support | ❌ Not Supported | `parsedInput` (always) | ✅ Full Support |
+| Schema Type         | Object Schemas  | Tuple Schemas (args signature) | Handler Parameter                            | TypeScript Support           |
+| ------------------- | --------------- | ------------------------------ | -------------------------------------------- | ---------------------------- |
+| **Zod**             | ✅ Full Support | ✅ Full Support                | `args` for tuples, `parsedInput` for objects | ✅ Automatic Type Inference  |
+| **Custom Function** | ✅ Full Support | ❌ Not Supported               | `parsedInput` (always)                       | ✅ Manual Type Specification |
 
 ### Graceful Degradation Strategy
 
 SafeFn follows a **conservative detection approach**: if we cannot be 100% certain that a schema represents a tuple, we gracefully fall back to the standard `parsedInput` signature to ensure safety and predictability.
 
 **What this means:**
+
 - **Zod tuples** (`z.tuple([...])`) are properly detected and use the `args` parameter
-- **Yup/Joi arrays** are treated as regular arrays and use `parsedInput`
 - **Custom validators** always use `parsedInput`, even for array types
 
 **Why this approach:**
+
 - **Safety**: No runtime surprises or unexpected behavior
 - **Predictability**: Clear documentation of what to expect
-- **Universal compatibility**: All validators work reliably for object schemas
-- **Clean TypeScript**: Uses structural typing - no `as any` assertions needed for any validator
+- **Type Safety**: Zod provides excellent TypeScript integration with automatic inference
+- **Simplicity**: Focus on one validation library reduces complexity and improves reliability
 
 **Example:**
+
 ```typescript
 // Zod tuple - uses args parameter ✅
-const zodTupleFn = client
-  .input(z.tuple([z.string(), z.number()]))
-  .handler(async ({ args }) => {
-    const [name, age] = args; // Type-safe tuple destructuring
-    return { name, age };
-  });
+const zodTupleFn = safeFnClient.input(z.tuple([z.string(), z.number()])).handler(async ({ args }) => {
+  const [name, age] = args; // Type-safe tuple destructuring
+  return { name, age };
+});
 
-// Yup array - uses parsedInput ✅  
-const yupArrayFn = client
-  .input(yup.array().of(yup.string()))
+// Custom validator - uses parsedInput ✅
+const customArrayFn = safeFnClient
+  .input((input: unknown) => {
+    if (!Array.isArray(input)) throw new Error('Expected array');
+    return input as string[];
+  })
   .handler(async ({ parsedInput }) => {
     return { items: parsedInput }; // Regular array
   });
@@ -296,6 +459,7 @@ SafeFn is intentionally designed as a lightweight wrapper around functions. The 
 ## Inspiration
 
 This package was inspired by:
+
 - [next-safe-action](https://github.com/TheEdoRan/next-safe-action) - Type-safe Server Actions in Next.js
 - [tRPC](https://trpc.io/) - End-to-end typesafe APIs
 

@@ -6,19 +6,24 @@ import type {
   InterceptorOutput,
   InterceptorNext,
   Context,
-  Metadata
+  Meta
 } from '@/types';
 
 /**
  * Executes a chain of interceptors in sequence with proper error handling and type safety
  */
-export async function executeInterceptorChain<TInput, TOutput, TContext extends Context>(
-  interceptors: Interceptor<TContext>[],
-  input: TInput,
+export async function executeInterceptorChain<TOutput, TContext extends Context, TMeta extends Meta = Meta>(
+  interceptors: Interceptor<TContext, TMeta>[],
+  input: unknown,
   context: TContext,
-  metadata: Metadata,
-  handler: (input: TInput, context: TContext) => Promise<TOutput>
+  meta: TMeta,
+  handler: (input: unknown, context: TContext) => Promise<TOutput>
 ): Promise<TOutput> {
+  // Fast path for no interceptors
+  if (interceptors.length === 0) {
+    return handler(input, context);
+  }
+
   // Fast path for no interceptors
   if (interceptors.length === 0) {
     return handler(input, context);
@@ -27,7 +32,7 @@ export async function executeInterceptorChain<TInput, TOutput, TContext extends 
   let currentIndex = 0;
 
   const executeNext = async (
-    currentInput: TInput,
+    currentInput: unknown,
     currentContext: TContext
   ): Promise<InterceptorOutput<TOutput, TContext>> => {
     // Base case: all interceptors executed, call the handler
@@ -44,15 +49,15 @@ export async function executeInterceptorChain<TInput, TOutput, TContext extends 
     const interceptor = interceptors[currentIndex];
     currentIndex++; // Increment after accessing to prevent issues with async execution
 
-    // Create next function that accepts modified input/context
-    const next: InterceptorNext<TContext> = async (
-      modifiedInput?: any,
-      modifiedContext?: TContext
-    ): Promise<InterceptorOutput<any, TContext>> => {
-      // Use modified values if provided, otherwise use current values
-      const nextInput = modifiedInput !== undefined ? modifiedInput : currentInput;
-      const nextContext = modifiedContext !== undefined ? modifiedContext : currentContext;
-      return executeNext(nextInput, nextContext);
+    // Create next function that accepts optional { ctx } object
+    const next: InterceptorNext = async (params?: { ctx: Context }) => {
+      // Use provided context or current context
+      const contextToUse = params?.ctx || currentContext;
+      const result = await executeNext(currentInput, contextToUse as TContext);
+      return {
+        output: result.output,
+        context: contextToUse as TContext
+      };
     };
 
     try {
@@ -61,7 +66,7 @@ export async function executeInterceptorChain<TInput, TOutput, TContext extends 
         next,
         rawInput: currentInput,
         ctx: currentContext,
-        metadata
+        meta
       });
 
       // Validate interceptor return value
@@ -69,7 +74,10 @@ export async function executeInterceptorChain<TInput, TOutput, TContext extends 
         throw new Error('Interceptor must return an object with "output" and "context" properties');
       }
 
-      return result;
+      return {
+        output: result.output as TOutput,
+        context: result.context as TContext
+      };
     } catch (error) {
       // Ensure interceptor errors are properly wrapped
       throw error instanceof Error ? error : new Error(`Interceptor error: ${String(error)}`);

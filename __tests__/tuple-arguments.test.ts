@@ -1,12 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import { createSafeFnClient } from '@/index';
-import type { Context } from '@/index';
 
-interface TestContext extends Context {
-  userId: string;
-  permissions: string[];
-}
 
 describe('SafeFn - Tuple Arguments Support', () => {
   it('should handle zero arguments', async () => {
@@ -73,19 +68,6 @@ describe('SafeFn - Tuple Arguments Support', () => {
     await expect((fn as any)('only-one-arg')).rejects.toThrow();
   });
 
-  it('should support context binding', async () => {
-    const client = createSafeFnClient<TestContext>();
-    const fn = client
-      .context({ userId: 'admin', permissions: ['write'] })
-      .input(z.tuple([z.string()]))
-      .handler(async ({ args, ctx }) => {
-        const [data] = args;
-        return { data, user: ctx.userId };
-      });
-
-    const result = await fn('test-data');
-    expect(result).toEqual({ data: 'test-data', user: 'admin' });
-  });
 
   it('should work with interceptors', async () => {
     const client = createSafeFnClient();
