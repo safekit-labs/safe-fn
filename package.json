@@ -35,7 +35,7 @@
   "scripts": {
     "build:tsc": "tsc -p tsconfig.build.json",
     "build:resolve": "tsc-alias -p tsconfig.build.json",
-    "build": "bun run build:tsc && bun run build:resolve",
+    "build": "bun run clean && bun run build:tsc && bun run build:resolve",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "clean": "rm -rf dist",

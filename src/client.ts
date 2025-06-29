@@ -1,33 +1,58 @@
 /**
  * SafeFn Client factory and implementation
  */
+import { createProcedure } from '@/procedure';
+
 import type {
   Client,
   ClientConfig,
   Context,
   Interceptor,
-  SafeFnHandler,
-  SafeFnBuilder,
+  ProcedureHandler,
+  Procedure,
   SchemaValidator,
   Meta,
 } from '@/types';
 
-
-import { createSafeFn } from '@/builder';
+// ========================================================================
+// FACTORY FUNCTION OVERLOADS
+// This is the clean, explicit, and correct solution.
+// ========================================================================
 
 /**
- * Creates a chainable SafeFn client builder with context inference from defaultContext
+ * Creates a new safeFn client with an empty context.
  */
-export function createSafeFnClient<TContext extends Context = Context, TMeta extends Meta = Meta>(
-  config?: ClientConfig<TContext, TMeta>
-): ClientBuilder<TContext, TMeta> {
-  const defaultContext = config?.defaultContext || ({} as TContext);
+export function createSafeFnClient(): Client<Record<string, unknown>, Meta>;
+
+/**
+ * Creates a new, configured safeFn client.
+ * @param config The client configuration with a `defaultContext` and/or `metaSchema`.
+ */
+export function createSafeFnClient<TContext extends Context, TMeta extends Meta = Meta>(
+  config: ClientConfig<TContext, TMeta>,
+): Client<TContext, TMeta>;
+
+// ========================================================================
+// THE SINGLE IMPLEMENTATION
+// This one implementation handles both overload cases.
+// ========================================================================
+export function createSafeFnClient(config?: ClientConfig<any, any>): Client<any, any> {
+  const defaultContext = config?.defaultContext || {};
   const errorHandler = config?.errorHandler;
   const metaSchema = config?.metaSchema;
 
-  return new ClientBuilder<TContext, TMeta>([], errorHandler, defaultContext, metaSchema);
+  return new ClientImplementation([], errorHandler, defaultContext, metaSchema);
 }
 
+// export function createSafeFnClient<TContext extends Context = Context, TMeta extends Meta = Meta>(
+//   config?: ClientConfig<TContext, TMeta>
+// ): ClientImplementation<TContext, TMeta> {
+//   const defaultContext = config?.defaultContext || ({} as TContext);
+//   const errorHandler = config?.errorHandler;
+//   const metaSchema = config?.metaSchema;
+
+//   return new ClientImplementation<TContext, TMeta>([], errorHandler, defaultContext, metaSchema);
+// }
 
 /**
  * Schema validator function that handles meta schema validation
@@ -46,7 +71,9 @@ function createMetaValidator<T>(schema: SchemaValidator<T>): (meta: unknown) => 
             throw new Error('Async Standard Schema meta validation not supported yet');
           }
           if ((result as any).issues) {
-            throw new Error('Meta schema validation failed: ' + JSON.stringify((result as any).issues));
+            throw new Error(
+              'Meta schema validation failed: ' + JSON.stringify((result as any).issues),
+            );
           }
           return (result as any).value;
         };
@@ -57,24 +84,28 @@ function createMetaValidator<T>(schema: SchemaValidator<T>): (meta: unknown) => 
       return (meta: unknown) => schema.parse(meta);
     }
   }
-  throw new Error('Invalid meta schema: The provided schema is not a function and does not have a compatible .parse() method.');
+  throw new Error(
+    'Invalid meta schema: The provided schema is not a function and does not have a compatible .parse() method.',
+  );
 }
 
 /**
  * Chainable client builder that supports .use() for interceptors
  */
-class ClientBuilder<TContext extends Context = Context, TMeta extends Meta = Meta> implements Client<TContext, TMeta> {
+class ClientImplementation<TContext extends Context, TMeta extends Meta>
+  implements Client<TContext, TMeta>
+{
   // Use readonly public properties instead of private to allow exports
-  readonly interceptors: Interceptor<any, TMeta>[];
+  readonly interceptors: Interceptor<any, any, TMeta>[];
   readonly errorHandler?: (error: Error, context: any) => void;
   readonly defaultContext?: any;
   readonly metaValidator?: (meta: unknown) => TMeta;
 
   constructor(
-    interceptors: Interceptor<any, TMeta>[] = [],
+    interceptors: Interceptor<any, any, TMeta>[] = [],
     errorHandler?: (error: Error, context: any) => void,
     defaultContext?: any,
-    metaSchema?: SchemaValidator<TMeta>
+    metaSchema?: SchemaValidator<TMeta>,
   ) {
     this.interceptors = interceptors;
     this.errorHandler = errorHandler;
@@ -82,45 +113,54 @@ class ClientBuilder<TContext extends Context = Context, TMeta extends Meta = Met
     this.metaValidator = metaSchema ? createMetaValidator(metaSchema) : undefined;
   }
 
-  use(
-    interceptor: Interceptor<TContext, TMeta>
-  ): Client<Context, TMeta> {
-    // For now, return Context - we'll improve this step by step
-    return new ClientBuilder<Context, TMeta>(
+  use<TNewContext extends TContext>(
+    interceptor: Interceptor<TContext, TNewContext, TMeta>,
+  ): Client<TNewContext, TMeta> {
+    // We create a NEW ClientBuilder whose generic is the NEW context type.
+    // This is how the type information is preserved and chained.
+    return new ClientImplementation<TNewContext, TMeta>(
       [...this.interceptors, interceptor],
       this.errorHandler,
       this.defaultContext,
-      this.metaValidator ? {
-        parse: this.metaValidator
-      } as SchemaValidator<TMeta> : undefined
+      this.metaValidator
+        ? ({
+            parse: this.metaValidator,
+          } as SchemaValidator<TMeta>)
+        : undefined,
     );
   }
 
-  meta<TNewMeta extends Meta>(meta: TNewMeta): SafeFnBuilder<TContext, unknown, unknown, TNewMeta> {
-    return this.createConfiguredBuilder().meta(meta);
+  meta<TNewMeta extends Meta>(meta: TNewMeta): Procedure<TContext, unknown, unknown, TNewMeta> {
+    return this.createConfiguredProcedure<TNewMeta>().meta(meta);
   }
 
-  input<TNewInput>(schema: SchemaValidator<TNewInput>): SafeFnBuilder<TContext, TNewInput, unknown, TMeta> {
-    return this.createConfiguredBuilder().input(schema);
+  input<TNewInput>(
+    schema: SchemaValidator<TNewInput>,
+  ): Procedure<TContext, TNewInput, unknown, TMeta> {
+    return this.createConfiguredProcedure().input(schema);
   }
 
-  output<TNewOutput>(schema: SchemaValidator<TNewOutput>): SafeFnBuilder<TContext, unknown, TNewOutput, TMeta> {
-    return this.createConfiguredBuilder().output(schema);
+  output<TNewOutput>(
+    schema: SchemaValidator<TNewOutput>,
+  ): Procedure<TContext, unknown, TNewOutput, TMeta> {
+    return this.createConfiguredProcedure().output(schema);
   }
 
-  handler<THandlerInput = any, THandlerOutput = any>(handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>) {
-    return this.createConfiguredBuilder().handler<THandlerInput, THandlerOutput>(handler);
+  handler<THandlerInput = any, THandlerOutput = any>(
+    handler: ProcedureHandler<THandlerInput, THandlerOutput, TContext>,
+  ) {
+    return this.createConfiguredProcedure().handler<THandlerInput, THandlerOutput>(handler);
   }
 
-  createConfiguredBuilder() {
-    const builder = createSafeFn<TContext, TMeta>();
-    
+  createConfiguredProcedure<TProcedureMeta extends Meta = TMeta>() {
+    const procedure = createProcedure<TContext, TProcedureMeta>();
+
     // Store the client configuration for use in the builder
-    (builder as any)._clientInterceptors = this.interceptors;
-    (builder as any)._clientErrorHandler = this.errorHandler;
-    (builder as any)._defaultContext = this.defaultContext;
-    (builder as any)._metaValidator = this.metaValidator;
-    
-    return builder;
+    (procedure as any)._clientInterceptors = this.interceptors;
+    (procedure as any)._clientErrorHandler = this.errorHandler;
+    (procedure as any)._defaultContext = this.defaultContext;
+    (procedure as any)._metaValidator = this.metaValidator;
+
+    return procedure;
   }
 }

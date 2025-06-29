@@ -1,94 +1,60 @@
 /**
  * Interceptor execution system
  */
-import type {
-  Interceptor,
-  InterceptorOutput,
-  InterceptorNext,
-  Context,
-  Meta
-} from '@/types';
+import type { Interceptor, InterceptorOutput, Context, Meta } from '@/types';
 
 /**
  * Executes a chain of interceptors in sequence with proper error handling and type safety
  */
-export async function executeInterceptorChain<TOutput, TContext extends Context, TMeta extends Meta = Meta>(
-  interceptors: Interceptor<TContext, TMeta>[],
+export async function executeInterceptorChain<
+  TOutput,
+  TContext extends Context,
+  TMeta extends Meta,
+>(
+  interceptors: Interceptor<any, any, TMeta>[],
   input: unknown,
   context: TContext,
   meta: TMeta,
-  handler: (input: unknown, context: TContext) => Promise<TOutput>
+  handler: (input: unknown, context: TContext) => Promise<TOutput>,
 ): Promise<TOutput> {
   // Fast path for no interceptors
   if (interceptors.length === 0) {
     return handler(input, context);
   }
 
-  // Fast path for no interceptors
-  if (interceptors.length === 0) {
-    return handler(input, context);
-  }
-
-  let currentIndex = 0;
+  let index = -1;
 
   const executeNext = async (
     currentInput: unknown,
-    currentContext: TContext
-  ): Promise<InterceptorOutput<TOutput, TContext>> => {
+    currentContext: Context,
+  ): Promise<InterceptorOutput<any, Context>> => {
+    index++;
+
     // Base case: all interceptors executed, call the handler
-    if (currentIndex >= interceptors.length) {
-      try {
-        const output = await handler(currentInput, currentContext);
-        return { output, context: currentContext };
-      } catch (error) {
-        // Ensure errors from handler are properly propagated
-        throw error instanceof Error ? error : new Error(String(error));
-      }
+    if (index === interceptors.length) {
+      const output = await handler(currentInput, currentContext as TContext);
+      return { output, context: currentContext };
     }
 
-    const interceptor = interceptors[currentIndex];
-    currentIndex++; // Increment after accessing to prevent issues with async execution
+    const interceptor = interceptors[index];
 
-    // Create next function that accepts optional { ctx } object
-    const next: InterceptorNext = async (params?: { ctx: Context }) => {
+    // Define the `next` function for the current interceptor.
+    // When it's called, it will execute the *next* interceptor in the chain.
+    const next = async (params?: { ctx: Context }) => {
       // Use provided context or current context
       const contextToUse = params?.ctx || currentContext;
-      const result = await executeNext(currentInput, contextToUse as TContext);
-      return {
-        output: result.output,
-        context: contextToUse as TContext
-      };
+      return await executeNext(currentInput, contextToUse);
     };
 
-    try {
-      // Call interceptor with object-based signature
-      const result = await interceptor({
-        next,
-        rawInput: currentInput,
-        ctx: currentContext,
-        meta
-      });
-
-      // Validate interceptor return value
-      if (!result || typeof result !== 'object' || !('output' in result) || !('context' in result)) {
-        throw new Error('Interceptor must return an object with "output" and "context" properties');
-      }
-
-      return {
-        output: result.output as TOutput,
-        context: result.context as TContext
-      };
-    } catch (error) {
-      // Ensure interceptor errors are properly wrapped
-      throw error instanceof Error ? error : new Error(`Interceptor error: ${String(error)}`);
-    }
+    return await interceptor({
+      rawInput: currentInput,
+      ctx: currentContext,
+      meta,
+      next,
+    });
   };
 
-  try {
-    const result = await executeNext(input, context);
-    return result.output;
-  } catch (error) {
-    // Final error handling layer
-    throw error instanceof Error ? error : new Error(`Chain execution failed: ${String(error)}`);
-  }
+  // Start the chain
+  const result = await executeNext(input, context);
+  return result.output;
 }

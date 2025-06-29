@@ -6,8 +6,8 @@ export type {
   Interceptor,
   Middleware,
   InterceptorOutput,
-  SafeFnHandler,
-  SafeFnBuilder,
+  ProcedureHandler,
+  Procedure,
   Client,
   SchemaValidator,
 } from '@/types';

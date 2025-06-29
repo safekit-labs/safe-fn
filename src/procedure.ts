@@ -2,13 +2,13 @@
  * Main safe function builder implementation
  */
 import type {
-  SafeFnHandler,
+  ProcedureHandler,
   Context,
   Middleware,
   Meta,
-  SafeFnBuilder,
+  Procedure,
   SchemaValidator,
-  SafeFnSignature,
+  ProcedureSignature,
 } from '@/types';
 
 import { executeInterceptorChain } from '@/interceptor';
@@ -130,7 +130,7 @@ async function executeMiddlewareChain<TInput, TOutput, TContext extends Context,
 /**
  * Creates a new safe function builder
  */
-export function createSafeFn<TContext extends Context = Context, TMeta extends Meta = Meta>(): SafeFnBuilder<TContext, unknown, unknown, TMeta> {
+export function createProcedure<TContext extends Context = Context, TMeta extends Meta = Meta>(): Procedure<TContext, unknown, unknown, TMeta> {
   let currentMeta: TMeta | undefined;
   let inputValidator: ((input: unknown) => any) | undefined;
   let outputValidator: ((output: unknown) => any) | undefined;
@@ -138,61 +138,61 @@ export function createSafeFn<TContext extends Context = Context, TMeta extends M
   let errorHandler: ((error: Error, context: TContext) => void) | undefined;
   let metaValidator: ((meta: unknown) => TMeta) | undefined;
 
-  const builder: SafeFnBuilder<TContext, unknown, unknown, TMeta> = {
-    meta<TNewMeta extends Meta>(meta: TNewMeta): SafeFnBuilder<TContext, unknown, unknown, TNewMeta> {
-      const newBuilder = createSafeFn<TContext, TNewMeta>();
-      
+  const procedure: Procedure<TContext, unknown, unknown, TMeta> = {
+    meta<TNewMeta extends Meta>(meta: TNewMeta): Procedure<TContext, unknown, unknown, TNewMeta> {
+      const newProcedure = createProcedure<TContext, TNewMeta>();
+
       // Copy over current state
-      (newBuilder as any)._currentMeta = metaValidator ? metaValidator(meta) : meta;
-      (newBuilder as any)._inputValidator = inputValidator;
-      (newBuilder as any)._outputValidator = outputValidator;
-      (newBuilder as any)._middlewares = middlewares;
-      (newBuilder as any)._errorHandler = errorHandler;
-      (newBuilder as any)._metaValidator = metaValidator;
-      
+      (newProcedure as any)._currentMeta = metaValidator ? metaValidator(meta) : meta;
+      (newProcedure as any)._inputValidator = inputValidator;
+      (newProcedure as any)._outputValidator = outputValidator;
+      (newProcedure as any)._middlewares = middlewares;
+      (newProcedure as any)._errorHandler = errorHandler;
+      (newProcedure as any)._metaValidator = metaValidator;
+
       // Copy client configuration if present
-      (newBuilder as any)._clientInterceptors = (builder as any)._clientInterceptors;
-      (newBuilder as any)._clientErrorHandler = (builder as any)._clientErrorHandler;
-      (newBuilder as any)._defaultContext = (builder as any)._defaultContext;
-      (newBuilder as any)._inputSchema = (builder as any)._inputSchema;
-      
-      return newBuilder;
+      (newProcedure as any)._clientInterceptors = (procedure as any)._clientInterceptors;
+      (newProcedure as any)._clientErrorHandler = (procedure as any)._clientErrorHandler;
+      (newProcedure as any)._defaultContext = (procedure as any)._defaultContext;
+      (newProcedure as any)._inputSchema = (procedure as any)._inputSchema;
+
+      return newProcedure;
     },
 
     use(middleware: Middleware<TContext, any, TMeta>) {
       middlewares.push(middleware);
-      return builder;
+      return procedure;
     },
 
-    input<TNewInput>(schema: SchemaValidator<TNewInput>): SafeFnBuilder<TContext, TNewInput, unknown, TMeta> {
+    input<TNewInput>(schema: SchemaValidator<TNewInput>): Procedure<TContext, TNewInput, unknown, TMeta> {
       inputValidator = createSchemaValidator(schema);
       // Store the original schema for tuple detection
-      (builder as any)._inputSchema = schema;
-      return builder as any; // Type assertion needed for the new input type
+      (procedure as any)._inputSchema = schema;
+      return procedure as any; // Type assertion needed for the new input type
     },
 
-    output<TNewOutput>(schema: SchemaValidator<TNewOutput>): SafeFnBuilder<TContext, unknown, TNewOutput, TMeta> {
+    output<TNewOutput>(schema: SchemaValidator<TNewOutput>): Procedure<TContext, unknown, TNewOutput, TMeta> {
       outputValidator = createSchemaValidator(schema);
-      return builder as any; // Type assertion needed for the new output type
+      return procedure as any; // Type assertion needed for the new output type
     },
 
-    handler<THandlerInput = any, THandlerOutput = any>(handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>) {
+    handler<THandlerInput = any, THandlerOutput = any>(handler: ProcedureHandler<THandlerInput, THandlerOutput, TContext>) {
       // Determine if we're dealing with a tuple input using Standard Schema spec
-      const isTuple = (builder as any)._inputSchema ? isStandardTupleSchema((builder as any)._inputSchema) : false;
+      const isTuple = (procedure as any)._inputSchema ? isStandardTupleSchema((procedure as any)._inputSchema) : false;
 
       // Merge with default context and any provided context
-      const defaultContext = (builder as any)._defaultContext || {};
-      const meta = ((builder as any)._currentMeta || currentMeta || {}) as TMeta;
-      
+      const defaultContext = (procedure as any)._defaultContext || {};
+      const meta = ((procedure as any)._currentMeta || currentMeta || {}) as TMeta;
+
       // Get meta validator from client if available
-      metaValidator = (builder as any)._metaValidator;
+      metaValidator = (procedure as any)._metaValidator;
 
       // Use client error handler if available, otherwise use default
-      const clientErrorHandler = (builder as any)._clientErrorHandler;
+      const clientErrorHandler = (procedure as any)._clientErrorHandler;
       const errorHandlerFn = errorHandler || clientErrorHandler || createDefaultErrorHandler<TContext>();
 
       // Use client interceptors if available
-      const clientInterceptors = (builder as any)._clientInterceptors || [];
+      const clientInterceptors = (procedure as any)._clientInterceptors || [];
 
 
       // Create the function implementation based on input type
@@ -212,7 +212,7 @@ export function createSafeFn<TContext extends Context = Context, TMeta extends M
                   async (processedInput: unknown, processedContext: TContext) => {
                     // Validate the processed input from interceptors
                     const validatedInput = inputValidator ? inputValidator(processedInput) : processedInput;
-                    
+
                     // Execute middleware chain with validated input
                     return executeMiddlewareChain(
                       middlewares,
@@ -250,7 +250,7 @@ export function createSafeFn<TContext extends Context = Context, TMeta extends M
                   async (processedInput: unknown, processedContext: TContext) => {
                     // Validate the processed input from interceptors
                     const validatedInput = inputValidator ? inputValidator(processedInput) : processedInput;
-                    
+
                     // Execute middleware chain with validated input
                     return executeMiddlewareChain(
                       middlewares,
@@ -274,9 +274,9 @@ export function createSafeFn<TContext extends Context = Context, TMeta extends M
             })();
           });
 
-      return finalFn as SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
+      return finalFn as ProcedureSignature<THandlerInput, THandlerOutput, TContext>;
     },
   };
 
-  return builder;
+  return procedure;
 }
