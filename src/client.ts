@@ -14,45 +14,15 @@ import type {
   Meta,
 } from '@/types';
 
-// ========================================================================
-// FACTORY FUNCTION OVERLOADS
-// This is the clean, explicit, and correct solution.
-// ========================================================================
-
-/**
- * Creates a new safeFn client with an empty context.
- */
-export function createSafeFnClient(): Client<Record<string, unknown>, Meta>;
-
-/**
- * Creates a new, configured safeFn client.
- * @param config The client configuration with a `defaultContext` and/or `metaSchema`.
- */
-export function createSafeFnClient<TContext extends Context, TMeta extends Meta = Meta>(
-  config: ClientConfig<TContext, TMeta>,
-): Client<TContext, TMeta>;
-
-// ========================================================================
-// THE SINGLE IMPLEMENTATION
-// This one implementation handles both overload cases.
-// ========================================================================
-export function createSafeFnClient(config?: ClientConfig<any, any>): Client<any, any> {
-  const defaultContext = config?.defaultContext || {};
+export function createSafeFnClient<TContext extends Context = Context, TMeta extends Meta = Meta>(
+  config?: ClientConfig<TContext, TMeta>,
+): ClientImplementation<TContext, TMeta> {
+  const defaultContext = config?.defaultContext || ({} as TContext);
   const errorHandler = config?.errorHandler;
   const metaSchema = config?.metaSchema;
 
-  return new ClientImplementation([], errorHandler, defaultContext, metaSchema);
+  return new ClientImplementation<TContext, TMeta>([], errorHandler, defaultContext, metaSchema);
 }
-
-// export function createSafeFnClient<TContext extends Context = Context, TMeta extends Meta = Meta>(
-//   config?: ClientConfig<TContext, TMeta>
-// ): ClientImplementation<TContext, TMeta> {
-//   const defaultContext = config?.defaultContext || ({} as TContext);
-//   const errorHandler = config?.errorHandler;
-//   const metaSchema = config?.metaSchema;
-
-//   return new ClientImplementation<TContext, TMeta>([], errorHandler, defaultContext, metaSchema);
-// }
 
 /**
  * Schema validator function that handles meta schema validation

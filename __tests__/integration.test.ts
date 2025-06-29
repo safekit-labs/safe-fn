@@ -16,7 +16,7 @@ describe('SafeFn - Integration Tests', () => {
       errorHandler
     });
 
-    const authInterceptor: Interceptor<TestContext> = async ({ next, ctx, meta }) => {
+    const authInterceptor: Interceptor<TestContext, TestContext> = async ({ next, ctx, meta }) => {
       if (!ctx.userId && meta.requiresAuth) {
         throw new Error('Authentication required');
       }
@@ -69,7 +69,7 @@ describe('SafeFn - Integration Tests', () => {
     expect(result).toBe('result');
     expect(order).toEqual([
       'first-before',
-      'second-before', 
+      'second-before',
       'handler',
       'second-after',
       'first-after'
@@ -79,7 +79,7 @@ describe('SafeFn - Integration Tests', () => {
   it('should handle context modification in interceptors', async () => {
     const client = createSafeFnClient<TestContext>();
 
-    const contextModifier: Interceptor<TestContext> = async ({ next, ctx }) => {
+    const contextModifier: Interceptor<TestContext, TestContext> = async ({ next, ctx }) => {
       const modifiedCtx = { ...ctx, userId: 'modified-user' };
       return next({ ctx: modifiedCtx });
     };
@@ -104,8 +104,8 @@ describe('SafeFn - Integration Tests', () => {
 
     const fn = client
       .use(contextTransformer)
-      .handler(async ({ parsedInput, ctx }) => ({ 
-        received: parsedInput, 
+      .handler(async ({ parsedInput, ctx }) => ({
+        received: parsedInput,
         contextInfo: { source: ctx.source, originalData: ctx.originalData }
       }));
 
