@@ -1,28 +1,18 @@
 /**
  * SafeFn Client factory and implementation
  */
-import { createProcedure } from '@/procedure';
+import { createSafeFn } from '@/client/client';
 
 import type {
-  Client,
+  SafeBuilder,
   ClientConfig,
   Context,
   Interceptor,
-  ProcedureHandler,
-  Procedure,
+  SafeFnHandler,
+  SafeFn,
   SchemaValidator,
   Meta,
 } from '@/types';
-
-export function createSafeFnClient<TContext extends Context = Context, TMeta extends Meta = Meta>(
-  config?: ClientConfig<TContext, TMeta>,
-): ClientImplementation<TContext, TMeta> {
-  const defaultContext = config?.defaultContext || ({} as TContext);
-  const errorHandler = config?.errorHandler;
-  const metaSchema = config?.metaSchema;
-
-  return new ClientImplementation<TContext, TMeta>([], errorHandler, defaultContext, metaSchema);
-}
 
 /**
  * Schema validator function that handles meta schema validation
@@ -59,11 +49,13 @@ function createMetaValidator<T>(schema: SchemaValidator<T>): (meta: unknown) => 
   );
 }
 
+// ------------------ BUILDER CLASS ------------------
+
 /**
- * Chainable client builder that supports .use() for interceptors
+ * Chainable client that supports .use() for interceptors
  */
-class ClientImplementation<TContext extends Context, TMeta extends Meta>
-  implements Client<TContext, TMeta>
+class SafeBuilderKlass<TContext extends Context, TMeta extends Meta>
+  implements SafeBuilder<TContext, TMeta>
 {
   // Use readonly public properties instead of private to allow exports
   readonly interceptors: Interceptor<any, any, TMeta>[];
@@ -85,10 +77,10 @@ class ClientImplementation<TContext extends Context, TMeta extends Meta>
 
   use<TNewContext extends TContext>(
     interceptor: Interceptor<TContext, TNewContext, TMeta>,
-  ): Client<TNewContext, TMeta> {
-    // We create a NEW ClientBuilder whose generic is the NEW context type.
+  ): SafeBuilder<TNewContext, TMeta> {
+    // We create a NEW Client whose generic is the NEW context type.
     // This is how the type information is preserved and chained.
-    return new ClientImplementation<TNewContext, TMeta>(
+    return new SafeBuilderKlass<TNewContext, TMeta>(
       [...this.interceptors, interceptor],
       this.errorHandler,
       this.defaultContext,
@@ -100,30 +92,30 @@ class ClientImplementation<TContext extends Context, TMeta extends Meta>
     );
   }
 
-  meta<TNewMeta extends Meta>(meta: TNewMeta): Procedure<TContext, unknown, unknown, TNewMeta> {
+  meta<TNewMeta extends Meta>(meta: TNewMeta): SafeFn<TContext, unknown, unknown, TNewMeta> {
     return this.createConfiguredProcedure<TNewMeta>().meta(meta);
   }
 
   input<TNewInput>(
     schema: SchemaValidator<TNewInput>,
-  ): Procedure<TContext, TNewInput, unknown, TMeta> {
+  ): SafeFn<TContext, TNewInput, unknown, TMeta> {
     return this.createConfiguredProcedure().input(schema);
   }
 
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,
-  ): Procedure<TContext, unknown, TNewOutput, TMeta> {
+  ): SafeFn<TContext, unknown, TNewOutput, TMeta> {
     return this.createConfiguredProcedure().output(schema);
   }
 
   handler<THandlerInput = any, THandlerOutput = any>(
-    handler: ProcedureHandler<THandlerInput, THandlerOutput, TContext>,
+    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>,
   ) {
     return this.createConfiguredProcedure().handler<THandlerInput, THandlerOutput>(handler);
   }
 
   createConfiguredProcedure<TProcedureMeta extends Meta = TMeta>() {
-    const procedure = createProcedure<TContext, TProcedureMeta>();
+    const procedure = createSafeFn<TContext, TProcedureMeta>();
 
     // Store the client configuration for use in the builder
     (procedure as any)._clientInterceptors = this.interceptors;
@@ -133,4 +125,16 @@ class ClientImplementation<TContext extends Context, TMeta extends Meta>
 
     return procedure;
   }
+}
+
+// ------------------ HELPER FUNCTION ------------------
+
+export function createSafeBuilder<TContext extends Context = Context, TMeta extends Meta = Meta>(
+  config?: ClientConfig<TContext, TMeta>,
+): SafeBuilder<TContext, TMeta> {
+  const defaultContext = config?.defaultContext || ({} as TContext);
+  const errorHandler = config?.errorHandler;
+  const metaSchema = config?.metaSchema;
+
+  return new SafeBuilderKlass<TContext, TMeta>([], errorHandler, defaultContext, metaSchema);
 }

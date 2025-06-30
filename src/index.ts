@@ -13,4 +13,4 @@ export type {
 } from '@/types';
 
 // Client factory
-export { createSafeFnClient } from '@/client';
+export { createSafeFnClient } from '@/builder/builder';

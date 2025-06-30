@@ -44,3 +44,13 @@ This document outlines key design decisions and rationale for @safekit/safe-fn.
 
 **Summary:** The unified `.handler()` approach provides clearer intent than `.fn()` while maintaining purpose-agnostic flexibility. Purpose-specific methods would add complexity without functional benefit since they execute identical logic. Function purposes are better expressed through metadata.
 
+### Support for other validators
+**Joi**
+- No build in tuple schema. Runtime detection of tuples is not possible.
+- Cannot infer type from schema unless using third party library
+**Yup**
+- Has tuples but no direct property to check if a schema is a tuple at runtime. Cannot support tuples
+- Can infer type from schema via `yup.InferType`
+**Zod**
+- Has runtime tuple detection via `zodSchema._def?.typeName === 'ZodTuple'`
+- Can infer type from schema

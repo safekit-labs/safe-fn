@@ -151,7 +151,7 @@ export interface TupleHandlerInput<TArgs extends readonly any[], TContext extend
  * If input is a tuple, spread it as arguments (context comes from builder chain only)
  * If input is an object, use single input + context pattern
  */
-export type ProcedureSignature<
+export type SafeFnSignature<
   TInput,
   TOutput,
   TContext extends Context,
@@ -162,7 +162,7 @@ export type ProcedureSignature<
 /**
  * Safe function handler type - conditionally uses args or parsedInput based on input type
  */
-export type ProcedureHandler<
+export type SafeFnHandler<
   TInput,
   TOutput,
   TContext extends Context,
@@ -189,42 +189,42 @@ export type SchemaValidator<T> =
 // ========================================================================
 
 /**
- * Safe function client
+ * Safe function builder
  */
-export interface Client<TContext extends Context, TMeta extends Meta> {
+export interface SafeBuilder<TContext extends Context, TMeta extends Meta> {
   use<TNewContext extends TContext>(
     interceptor: Interceptor<TContext, TNewContext, TMeta>,
-  ): Client<TNewContext, TMeta>;
-  meta<TNewMeta extends Meta>(meta: TNewMeta): Procedure<TContext, unknown, unknown, TNewMeta>;
+  ): SafeBuilder<TNewContext, TMeta>;
+  meta<TNewMeta extends Meta>(meta: TNewMeta): SafeFn<TContext, unknown, unknown, TNewMeta>;
   input<TNewInput>(
     schema: SchemaValidator<TNewInput>,
-  ): Procedure<TContext, TNewInput, unknown, TMeta>;
+  ): SafeFn<TContext, TNewInput, unknown, TMeta>;
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,
-  ): Procedure<TContext, unknown, TNewOutput, TMeta>;
+  ): SafeFn<TContext, unknown, TNewOutput, TMeta>;
   handler<THandlerInput = unknown, THandlerOutput = unknown>(
-    handler: ProcedureHandler<THandlerInput, THandlerOutput, TContext>,
-  ): ProcedureSignature<THandlerInput, THandlerOutput, TContext>;
+    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>,
+  ): SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
 }
 
 /**
  * Safe function procedure
  */
-export interface Procedure<
+export interface SafeFn<
   TContext extends Context = Context,
   TInput = unknown,
   TOutput = unknown,
   TMeta extends Meta = Meta,
 > {
-  meta<TNewMeta extends Meta>(meta: TNewMeta): Procedure<TContext, TInput, TOutput, TNewMeta>;
-  use(middleware: Middleware<TContext, TInput, TMeta>): Procedure<TContext, TInput, TOutput, TMeta>;
+  meta<TNewMeta extends Meta>(meta: TNewMeta): SafeFn<TContext, TInput, TOutput, TNewMeta>;
+  use(middleware: Middleware<TContext, TInput, TMeta>): SafeFn<TContext, TInput, TOutput, TMeta>;
   input<TNewInput>(
     schema: SchemaValidator<TNewInput>,
-  ): Procedure<TContext, TNewInput, TOutput, TMeta>;
+  ): SafeFn<TContext, TNewInput, TOutput, TMeta>;
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,
-  ): Procedure<TContext, TInput, TNewOutput, TMeta>;
+  ): SafeFn<TContext, TInput, TNewOutput, TMeta>;
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
-    handler: ProcedureHandler<THandlerInput, THandlerOutput, TContext>,
-  ): ProcedureSignature<THandlerInput, THandlerOutput, TContext>;
+    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>,
+  ): SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
 }
