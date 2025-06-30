@@ -1,7 +1,7 @@
 /**
  * Interceptor execution system
  */
-import type { Interceptor, InterceptorOutput, Context, Meta } from '@/types';
+import type { Interceptor, InterceptorOutput, Context, Metadata } from '@/types';
 
 /**
  * Executes a chain of interceptors in sequence with proper error handling and type safety
@@ -9,12 +9,12 @@ import type { Interceptor, InterceptorOutput, Context, Meta } from '@/types';
 export async function executeInterceptorChain<
   TOutput,
   TContext extends Context,
-  TMeta extends Meta,
+  TMetadata extends Metadata,
 >(
-  interceptors: Interceptor<any, any, TMeta>[],
+  interceptors: Interceptor<any, any, TMetadata>[],
   input: unknown,
   context: TContext,
-  meta: TMeta,
+  metadata: TMetadata,
   handler: (input: unknown, context: TContext) => Promise<TOutput>,
 ): Promise<TOutput> {
   // Fast path for no interceptors
@@ -49,7 +49,7 @@ export async function executeInterceptorChain<
     return await interceptor({
       rawInput: currentInput,
       ctx: currentContext,
-      meta,
+      metadata,
       next,
     });
   };

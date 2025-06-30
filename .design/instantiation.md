@@ -65,6 +65,28 @@ const myFn = safeFn.procedure
   .handler(async ({ ctx, parsedInput, metadata }) => {});
 ```
 
+
+### Option 4: Builder Pattern Refined
+
+```ts
+const safeFn = initSafeFn
+  .context({
+    traceId: ulid(),
+  })
+  .metadataSchema(z.object({}))
+  .use(loggingMiddleware())
+  // Need a way to target after inputValidation, before outputValidation
+  .create();
+
+const myFn = safeFn
+  .metadata({ operationName: 'myFn' })
+  .use(loggingMiddleware())
+  .input(z.object({ name: z.string() }))
+  .output(z.object({ name: z.string() }))
+  .handler(async ({ ctx, parsedInput, metadata }) => {});
+```
+
+
 ### Questions
 
 - Q: Should the order of the .use() in relation to the .input() property allow for receiving either rawInput (before .input()) or parsedInput (after .input())?

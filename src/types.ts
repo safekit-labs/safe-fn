@@ -5,7 +5,7 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 
 // ========================================================================
-// CORE CONTEXT & META TYPES
+// CORE CONTEXT & METADATA TYPES
 // ========================================================================
 
 /**
@@ -19,9 +19,9 @@ export type Context = Record<string, unknown>;
 // export type InferContext<T> = T extends Context ? T : Context;
 
 /**
- * Meta information that can be attached to procedures
+ * Metadata information that can be attached to procedures
  */
-export interface Meta {
+export interface Metadata {
   [key: string]: unknown;
 }
 
@@ -32,10 +32,10 @@ export interface Meta {
 /**
  * Configuration for the SafeFn client
  */
-export interface ClientConfig<TContext extends Context = Context, TMeta extends Meta = Meta> {
+export interface ClientConfig<TContext extends Context = Context, TMetadata extends Metadata = Metadata> {
   defaultContext?: TContext;
   errorHandler?: (error: Error, context: TContext) => void | Promise<void>;
-  metaSchema?: SchemaValidator<TMeta>;
+  metadataSchema?: SchemaValidator<TMetadata>;
 }
 
 // ========================================================================
@@ -72,11 +72,11 @@ export type TypedNext<TCurrentContext extends Context> = (params: {
 export type Interceptor<
   TCurrentContext extends Context = Context,
   TNewContext extends Context = Context,
-  TMeta extends Meta = Meta,
+  TMetadata extends Metadata = Metadata,
 > = (params: {
   rawInput: unknown; // Correctly typed as unknown for unvalidated data
   ctx: TCurrentContext;
-  meta: TMeta;
+  metadata: TMetadata;
   next: InterceptorNext<TNewContext>;
 }) => Promise<InterceptorOutput<unknown, TNewContext>>;
 
@@ -84,16 +84,16 @@ export type Interceptor<
  * The Interceptor for type inference - takes current context and returns new context
  * TCurrentContext: The context type coming into this interceptor
  * TNewContext: The context type coming out of this interceptor (inferred from return value)
- * TMeta: The meta type
+ * TMetadata: The metadata type
  */
 export type TypedInterceptor<
   TCurrentContext extends Context,
   TNewContext extends TCurrentContext,
-  TMeta extends Meta = Meta,
+  TMetadata extends Metadata = Metadata,
 > = (params: {
   rawInput: unknown;
   ctx: TCurrentContext;
-  meta: TMeta;
+  metadata: TMetadata;
   next: TypedNext<TNewContext>; // next receives the NEW context shape
 }) => Promise<InterceptorOutput<any, TNewContext>>;
 
@@ -114,12 +114,12 @@ export type MiddlewareNext<TInput> = (modifiedInput: TInput) => Promise<any>;
 export type Middleware<
   TContext extends Context = Context,
   TInput = unknown,
-  TMeta extends Meta = Meta,
+  TMetadata extends Metadata = Metadata,
 > = (params: {
   next: MiddlewareNext<TInput>;
   parsedInput: TInput; // Correctly typed as validated input
   ctx: TContext;
-  meta: TMeta;
+  metadata: TMetadata;
 }) => Promise<any>;
 
 // ========================================================================
@@ -191,20 +191,17 @@ export type SchemaValidator<T> =
 /**
  * Safe function builder
  */
-export interface SafeBuilder<TContext extends Context, TMeta extends Meta> {
+export interface SafeBuilder<TContext extends Context, TMetadata extends Metadata> {
   use<TNewContext extends TContext>(
-    interceptor: Interceptor<TContext, TNewContext, TMeta>,
-  ): SafeBuilder<TNewContext, TMeta>;
-  meta<TNewMeta extends Meta>(meta: TNewMeta): SafeFn<TContext, unknown, unknown, TNewMeta>;
-  input<TNewInput>(
-    schema: SchemaValidator<TNewInput>,
-  ): SafeFn<TContext, TNewInput, unknown, TMeta>;
-  output<TNewOutput>(
-    schema: SchemaValidator<TNewOutput>,
-  ): SafeFn<TContext, unknown, TNewOutput, TMeta>;
-  handler<THandlerInput = unknown, THandlerOutput = unknown>(
-    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>,
-  ): SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
+    interceptor: Interceptor<TContext, TNewContext, TMetadata>,
+  ): SafeBuilder<TNewContext, TMetadata>;
+  context<TNewContext extends Context = TContext>(
+    defaultContext?: TNewContext
+  ): SafeBuilder<TNewContext, TMetadata>;
+  metadataSchema<TNewMetadata extends Metadata = TMetadata>(
+    schema?: SchemaValidator<TNewMetadata>
+  ): SafeBuilder<TContext, TNewMetadata>;
+  create(): SafeFn<TContext, unknown, unknown, TMetadata>;
 }
 
 /**
@@ -214,16 +211,16 @@ export interface SafeFn<
   TContext extends Context = Context,
   TInput = unknown,
   TOutput = unknown,
-  TMeta extends Meta = Meta,
+  TMetadata extends Metadata = Metadata,
 > {
-  meta<TNewMeta extends Meta>(meta: TNewMeta): SafeFn<TContext, TInput, TOutput, TNewMeta>;
-  use(middleware: Middleware<TContext, TInput, TMeta>): SafeFn<TContext, TInput, TOutput, TMeta>;
+  metadata<TNewMetadata extends Metadata>(metadata: TNewMetadata): SafeFn<TContext, TInput, TOutput, TNewMetadata>;
+  use(middleware: Middleware<TContext, TInput, TMetadata>): SafeFn<TContext, TInput, TOutput, TMetadata>;
   input<TNewInput>(
     schema: SchemaValidator<TNewInput>,
-  ): SafeFn<TContext, TNewInput, TOutput, TMeta>;
+  ): SafeFn<TContext, TNewInput, TOutput, TMetadata>;
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,
-  ): SafeFn<TContext, TInput, TNewOutput, TMeta>;
+  ): SafeFn<TContext, TInput, TNewOutput, TMetadata>;
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
     handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>,
   ): SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
