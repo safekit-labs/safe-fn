@@ -30,31 +30,6 @@ yarn add @safekit/safe-fn
 bun add @safekit/safe-fn
 ```
 
-## 📚 Quick Navigation
-
-**Quick Start Examples:**
-
-- [Common Setup](#common-setup)
-- [Single Object Pattern](#1-single-object-pattern)
-- [Multiple Arguments Pattern](#2-multiple-arguments-pattern)
-- [Zero Arguments Pattern](#3-zero-arguments-pattern)
-- [Without Schema Validation](#4-without-schema-validation)
-
-**Client Configuration:**
-
-- [Basic Client](#1-basic-client)
-- [With Default Context](#2-with-default-context)
-- [With Error Handler](#3-with-error-handler)
-- [With Global Middleware](#4-with-global-middleware)
-- [Full Configuration](#5-full-configuration)
-
-**Advanced Features:**
-
-- [Metadata and Output Schema](#1-with-metadata-and-output-schema)
-- [Function-Level Middleware](#2-with-function-level-middleware)
-- [Tuple with Middleware](#3-tuple-with-middleware)
-- [Separate Middleware Definitions](#with-separate-middleware-definitions)
-
 ## Quick Start
 
 Here's a complete example showing `safe-fn` in action with client setup, middleware, and various function patterns:
