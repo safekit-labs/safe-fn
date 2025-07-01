@@ -93,6 +93,14 @@ export type Middleware<
   props: MiddlewareProps<TCurrentContext, TNewContext, TInput, TMetadata>
 ) => Promise<MiddlewareOutput<unknown, TNewContext>>;
 
+/**
+ * Infer the context type that a middleware function will produce
+ * This extracts the context type from the return type of a middleware function
+ */
+export type InferMiddlewareContext<T> = T extends (props: any) => Promise<MiddlewareOutput<any, infer C>>
+  ? C
+  : never;
+
 // ========================================================================
 // LEGACY TYPE ALIASES (for backward compatibility)
 // ========================================================================
@@ -202,7 +210,7 @@ export type InferTupleFromSchemas<T extends readonly SchemaValidator<any>[]> = {
  * Configuration for creating a SafeFn client
  */
 export interface SafeFnClientConfig<TContext extends Context, TMetadata extends Metadata> {
-  defaultContext: TContext;
+  defaultContext?: TContext;
   metadataSchema?: SchemaValidator<TMetadata>;
   onError?: (error: Error, context: TContext) => void | Promise<void>;
 }
@@ -238,7 +246,7 @@ export interface SafeFn<
   TMetadata extends Metadata = Metadata,
 > {
   metadata<TNewMetadata extends Metadata>(metadata: TNewMetadata): SafeFn<TContext, TInput, TOutput, TNewMetadata>;
-  use(middleware: Middleware<TContext, TContext, TInput, TMetadata>): SafeFn<TContext, TInput, TOutput, TMetadata>;
+  use<TNewContext extends TContext>(middleware: Middleware<TContext, TNewContext, TInput, TMetadata>): SafeFn<TNewContext, TInput, TOutput, TMetadata>;
   // Overload for array of schemas (tuple inference)
   input<T extends readonly SchemaValidator<any>[]>(
     schema: T

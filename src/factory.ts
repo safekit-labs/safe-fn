@@ -22,8 +22,8 @@ import type { Context, Metadata, SafeFn, SafeFnClientConfig } from '@/types';
  * });
  * ```
  */
-export function createSafeFnClient<TContext extends Context, TMetadata extends Metadata>(
-  config: SafeFnClientConfig<TContext, TMetadata>,
+export function createSafeFnClient<TContext extends Context = Context, TMetadata extends Metadata = Metadata>(
+  config: SafeFnClientConfig<TContext, TMetadata> = {} as SafeFnClientConfig<TContext, TMetadata>,
 ): SafeFn<TContext, unknown, unknown, TMetadata> {
   const safeFn = createSafeFn<TContext, TMetadata>();
 

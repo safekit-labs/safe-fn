@@ -12,7 +12,7 @@ export type {
 } from '@/types';
 
 // Builder factory
-export { createBuilder } from '@/builder';
+export { createSafeFnClient } from '@/factory';
 
 // Direct SafeFn creation
 export { createSafeFn } from '@/safe-fn';

@@ -1,7 +1,5 @@
 ## Validation Options:
 
-I'm rethinking the code for this library, which do you think is best
-
 ### Option 1:
 
 ```ts

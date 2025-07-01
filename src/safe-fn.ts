@@ -220,9 +220,25 @@ export function createSafeFn<
       return newSafeFn;
     },
 
-    use(middleware: Middleware<TContext, any, any, TMetadata>): SafeFn<TContext, unknown, unknown, TMetadata> {
-      functionMiddlewares.push(middleware);
-      return safeFn;
+    use<TNewContext extends TContext>(middleware: Middleware<TContext, TNewContext, any, TMetadata>): SafeFn<TNewContext, unknown, unknown, TMetadata> {
+      const newSafeFn = createSafeFn<TNewContext, TMetadata>();
+
+      // Copy over current state
+      (newSafeFn as any)._currentMetadata = currentMetadata;
+      (newSafeFn as any)._inputValidator = inputValidator;
+      (newSafeFn as any)._outputValidator = outputValidator;
+      (newSafeFn as any)._functionMiddlewares = [...functionMiddlewares, middleware];
+      (newSafeFn as any)._errorHandler = errorHandler;
+      (newSafeFn as any)._metadataValidator = metadataValidator;
+      (newSafeFn as any)._isArrayInput = isArrayInput;
+
+      // Copy client configuration if present
+      (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
+      (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
+      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
+      (newSafeFn as any)._metadataParser = (safeFn as any)._metadataParser;
+
+      return newSafeFn;
     },
 
     input<TNewInput>(
