@@ -46,7 +46,7 @@ const safeFnClient = createSafeFnClient();
 export const createUser = safeFnClient
   .input(z.object({ username: z.string() }))
   .output(z.object({ id: z.string() }))
-  .handler(async ({ ctx, parsedInput }) => {
+  .handler(async ({ ctx, input }) => {
     // ...
   });
 ```
@@ -108,14 +108,14 @@ const authedClient = publicClient.use(async ({ ctx, metadata, next }) => {
 // Usage examples
 export const publicFunction = publicClient
   .input(z.object({ query: z.string() }))
-  .handler(async ({ parsedInput }) => {
+  .handler(async ({ input }) => {
     // ...
   });
 
 export const protectedFunction = authedClient
   .metadata({ requiresAuth: true })
   .input(z.object({ postId: z.string() }))
-  .handler(async ({ parsedInput, ctx }) => {
+  .handler(async ({ input, ctx }) => {
     // ...
   });
 
@@ -136,11 +136,11 @@ import { createSafeFnClient } from "@safekit/safe-fn";
 
 const safeFnClient = createSafeFnClient();
 
-// Object schemas - use `parsedInput` parameter
+// Object schemas - use `input` parameter
 const zodObjectFn = safeFnClient
   .input(z.object({ name: z.string(), age: z.number() }))
-  .handler(async ({ parsedInput }) => {
-    const { name, age } = parsedInput;
+  .handler(async ({ input }) => {
+    const { name, age } = input;
     // ...
   });
 
@@ -173,6 +173,7 @@ const safeFnClient = createSafeFnClient({
 - `.metadata(data)` - Set metadata
 - `.use(middleware)` - Add middleware
 - `.input(schema)` - Set input validation
+- `.args(schema)` - Set tuple input validation
 - `.output(schema)` - Set output validation
 - `.handler(fn)` - Define the function
 

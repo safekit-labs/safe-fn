@@ -85,20 +85,28 @@ export async function executeMiddlewareChain<
 }
 
 /**
- * Creates a standalone middleware function. It accepts a generic object with optional `ctx` and `metadata`
- * properties, if you need one or all of them to be typed. The type for each property that is passed as generic is the
- * **minimum** shape required to define the middleware function, but it can also be larger than that.
- *
- * Similar to next-safe-action's createMiddleware but adapted for safe-fn
+ * Creates a standalone middleware function with full type safety.
+ * 
+ * @param middlewareFn - The middleware function implementation
+ * @returns The same middleware function with proper typing
+ * 
+ * @example
+ * ```typescript
+ * // Simple middleware (types inferred)
+ * const timing = createMiddleware(async ({ next }) => {
+ *   return next({ ctx: { requestTime: Date.now() } });
+ * });
+ * 
+ * // Advanced middleware with explicit types
+ * const auth = createMiddleware<{}, AuthMetadata, UserContext>(middlewareFn);
+ * ```
  */
-export const createMiddleware = <BaseData extends { ctx?: Context; metadata?: any }>() => {
-  return {
-    define: <TNextCtx extends Context>(
-      middlewareFn: MiddlewareFn<
-        BaseData extends { metadata: infer MD } ? MD : any,
-        BaseData extends { ctx: infer Ctx extends Context } ? Ctx : {},
-        TNextCtx
-      >
-    ) => middlewareFn,
-  };
-};
+export function createMiddleware<
+  TCurrentCtx extends Context = {},
+  TMetadata extends Metadata = Metadata,
+  TNextCtx extends Context = Context
+>(
+  middlewareFn: MiddlewareFn<TMetadata, TCurrentCtx, TNextCtx>
+): typeof middlewareFn {
+  return middlewareFn;
+}

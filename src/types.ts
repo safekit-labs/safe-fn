@@ -72,6 +72,15 @@ export type MiddlewareNext = {
 };
 
 /**
+ * Clean type alias for middleware next function with proper overloads
+ * Provides a much more readable type display in IDEs
+ */
+export interface NextFunction<TCurrentCtx extends Context = {}> {
+  (): Promise<MiddlewareResult<unknown, TCurrentCtx>>;
+  <TNextCtx extends Context>(opts: { ctx: TNextCtx }): Promise<MiddlewareResult<unknown, Prettify<TCurrentCtx & TNextCtx>>>;
+}
+
+/**
  * Unified Middleware Props - contains all necessary information for middleware execution
  */
 export interface MiddlewareProps<
@@ -107,10 +116,7 @@ export type MiddlewareFn<
   parsedInput?: unknown;
   ctx: Prettify<TCurrentCtx>;
   metadata: TMetadata;
-  next: {
-    (): Promise<MiddlewareResult<unknown, TCurrentCtx>>;
-    <NC extends Context>(opts: { ctx: NC }): Promise<MiddlewareResult<unknown, Prettify<TCurrentCtx & NC>>>;
-  };
+  next: NextFunction<TCurrentCtx>;
 }) => Promise<MiddlewareResult<unknown, TNextCtx>>;
 
 /**

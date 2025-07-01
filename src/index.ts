@@ -10,6 +10,7 @@ export type {
   SafeFnBuilder,
   SafeFn,
   Prettify,
+  NextFunction,
 } from "@/types";
 
 // Builder factory

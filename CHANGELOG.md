@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added .args() to accept multiple arguments
 - Fixed middleware types inferring properly based on previous `.use()` calls
 - Middleware now stacks and is stateful. No need to spread previous middleware into the next one.
+- Cleaner types for middleware `ctx` and `next` properties
 
 ## [0.3.0-alpha.2] - 2025-07-01
 

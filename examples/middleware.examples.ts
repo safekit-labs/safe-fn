@@ -289,7 +289,7 @@ export const sideEffectMiddlewareExample = createSafeFnClient({
  */
 
 // Basic standalone middleware that works with any client
-const loggingMiddleware = createMiddleware().define(async ({ next, rawInput }) => {
+const loggingMiddleware = createMiddleware(async ({ next, rawInput }) => {
   console.log("🚀 Request started with input:", rawInput);
   const startTime = Date.now();
   
@@ -302,12 +302,12 @@ const loggingMiddleware = createMiddleware().define(async ({ next, rawInput }) =
 });
 
 // Simple middleware that adds timing info
-const timingMiddleware = createMiddleware().define(async ({ next }) => {
+const timingMiddleware = createMiddleware(async ({ next }) => {
   return next({ ctx: { requestTime: Date.now() } });
 });
 
 // Simple middleware that adds environment info
-const envMiddleware = createMiddleware().define(async ({ next }) => {
+const envMiddleware = createMiddleware(async ({ next }) => {
   return next({ ctx: { environment: "development" } });
 });
 
