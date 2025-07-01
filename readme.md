@@ -13,7 +13,7 @@ A lightweight type-safe function builder with interceptors, schema validation, a
 
 - 🔒 **Type-Safe**: Full TypeScript support with automatic type inference and structural typing
 - 🔗 **Middleware**: Chainable middleware for cross-cutting concerns
-- ✅ **Multi-Library Support**: Works with Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Scale Codec, Runtypes, and custom validators
+- ✅ **Multi-Library Support**: Works with Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Runtypes, and custom validators
 - 🎨 **Context Management**: Type-safe context passing through procedure chains
 - 🚀 **Lightweight**: Zero runtime dependencies
 
@@ -170,10 +170,10 @@ const safeFnClient = createSafeFnClient({
 
 ### Methods
 
+- `.metadata(data)` - Set metadata
 - `.use(middleware)` - Add middleware
 - `.input(schema)` - Set input validation
 - `.output(schema)` - Set output validation
-- `.metadata(data)` - Set metadata
 - `.handler(fn)` - Define the function
 
 ### Middleware Type
@@ -195,31 +195,27 @@ type Middleware<TContext> = (params: {
 
 ### Supported Validation Libraries
 
-| Library             | Status             | Notes                                      |
-| ------------------- | ------------------ | ------------------------------------------ |
-| **Zod v3**          | ✅ Full Support    | Most popular TypeScript validation library |
-| **Zod v4**          | ✅ Full Support    | Latest Zod with improved performance       |
-| **Yup**             | ✅ Full Support    | Popular form validation library            |
-| **Valibot**         | ✅ Full Support    | Modern, fast, and lightweight              |
-| **ArkType**         | ✅ Full Support    | TypeScript-first with excellent inference  |
-| **Effect Schema**   | ✅ Full Support    | Part of the Effect ecosystem               |
-| **Superstruct**     | ✅ Full Support    | Structural validation library              |
-| **Runtypes**        | ✅ Full Support    | Runtime type checking                      |
-| **Custom Function** | ✅ Partial Support | Objects only, no tuple support             |
+- Zodv3
+- Zodv4
+- Yup
+- Valibot
+- ArkType
+- Effect Schema
+- Superstruct
+- Runtypes
 
 For detailed examples of all supported validation libraries, see [examples/validation-libraries.ts](./examples/validation-libraries.ts).
 
-## Keeping `safe-fn` Simple: What’s Not Included
+## What’s *Not* Included in `safe-fn`
 
-`safe-fn` is purposefully kept lean and focused as a function wrapper. To preserve its simplicity and flexibility, it **does not** include the following features:
+To keep things simple and flexible, `safe-fn` leaves out a few features by design:
 
-- **Custom Error Classes:** Errors thrown by your functions are passed through untouched—`safe-fn` won’t wrap or modify them.
-- **Response Serialization:** The output from your function is returned as-is; `safe-fn` doesn’t alter or serialize responses.
-- **Request/Response Objects:** `safe-fn` operates on plain data. Handling HTTP-specific concerns remains the responsibility of your web framework.
-- **Built-in Logging:** Logging is left up to you—integrate your favorite logging solution via middleware if needed.
+- **Custom Error Classes:** Errors pass through just as your function throws them.
+- **Response Serialization:** Outputs are returned directly, unmodified.
+- **Logging:** Integrate your favorite logging solution via middleware if needed.
 
-**Design Philosophy:**
-`safe-fn` aims to add type safety and middleware support to your functions, while letting you keep full control over the rest of your stack. It’s designed to complement, not replace, your existing tools and workflows.
+**Philosophy:**
+`safe-fn` brings type safety and middleware support to your functions, while letting you stay in control of the rest of your stack. It’s here to complement, not replace, your existing setup.
 
 ## Inspiration
 
