@@ -202,7 +202,23 @@ export type SchemaValidator<T> =
 /**
  * Utility type to infer the output type of a schema validator
  */
-type InferSchemaOutput<T> = T extends SchemaValidator<infer U> ? U : never;
+export type InferSchemaOutput<T> = T extends StandardSchemaV1<any, infer Output>
+  ? Output
+  : T extends { parse: (input: unknown) => infer U }
+  ? U
+  : T extends { parseAsync: (input: unknown) => Promise<infer U> }
+  ? U
+  : T extends { validateSync: (input: unknown) => infer U }
+  ? U
+  : T extends { create: (input: unknown) => infer U }
+  ? U
+  : T extends { assert: (value: unknown) => asserts value is infer U }
+  ? U
+  : T extends (input: unknown) => infer U
+  ? U
+  : T extends SchemaValidator<infer U>
+  ? U
+  : never;
 
 /**
  * Utility type to convert array of schema validators to tuple of their output types
