@@ -8,7 +8,6 @@ import {
   valibotSchemas,
   arktypeSchemas,
   effectSchemas,
-  scaleSchemas,
   runtypesSchemas,
   testData,
 } from "./schemas";
@@ -27,7 +26,6 @@ const workingLibraries = [
 // Libraries that need conditional tests (no email validation)
 const conditionalLibraries = [
   { name: "Superstruct", schemas: superstructSchemas },
-  { name: "Scale", schemas: scaleSchemas },
   { name: "Runtypes", schemas: runtypesSchemas },
 ];
 

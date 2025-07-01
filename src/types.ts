@@ -181,13 +181,18 @@ export type SafeFnHandler<TInput, TOutput, TContext extends Context> = TInput ex
 // ========================================================================
 
 /**
- * Schema validation function type - focuses on Zod and custom functions
+ * Schema validation function type - supports multiple validation libraries
  *
- * Supports Zod schemas, custom functions, and Standard Schema spec.
+ * Supports Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Scale Codec, 
+ * Runtypes, custom functions, and Standard Schema spec.
  */
 export type SchemaValidator<T> =
   | { parse: (input: unknown) => T } // Zod schemas
-  | ((input: unknown) => T) // Plain validation functions
+  | { parseAsync: (input: unknown) => Promise<T> } // Zod async
+  | { validateSync: (input: unknown) => T } // Yup schemas
+  | { create: (input: unknown) => T } // Superstruct schemas
+  | { assert: (value: unknown) => asserts value is T } // Scale Codec schemas
+  | ((input: unknown) => T) // Plain validation functions & ArkType
   | StandardSchemaV1<T>; // Standard Schema spec
 
 // ========================================================================

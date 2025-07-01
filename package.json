@@ -1,6 +1,6 @@
 {
   "name": "@safekit/safe-fn",
-  "version": "0.3.0-alpha.1",
+  "version": "0.3.0-alpha.2",
   "author": "safekit",
   "repository": {
     "type": "git",
@@ -18,7 +18,6 @@
     "eslint-config-prettier": "^10.1.5",
     "prettier": "^3.6.2",
     "runtypes": "^7.0.4",
-    "scale-codec": "^0.13.0",
     "superstruct": "^2.0.2",
     "tsc-alias": "^1.8.16",
     "typescript": "^5.8.3",

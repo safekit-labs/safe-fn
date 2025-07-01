@@ -13,7 +13,6 @@
         "eslint-config-prettier": "^10.1.5",
         "prettier": "^3.6.2",
         "runtypes": "^7.0.4",
-        "scale-codec": "^0.13.0",
         "superstruct": "^2.0.2",
         "tsc-alias": "^1.8.16",
         "typescript": "^5.8.3",
@@ -529,8 +528,6 @@
     "safe-buffer": ["safe-buffer@5.2.1", "", {}, "sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ=="],
 
     "safer-buffer": ["safer-buffer@2.1.2", "", {}, "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg=="],
-
-    "scale-codec": ["scale-codec@0.13.0", "", {}, "sha512-HxLaGxglkZP7SwjCLZPMsWGKN8Q/h5bjIH9YLFRcsG3Fmh+qsCOZYRLhntvTyP6B/Q7xHPBc2YKODOSfH0rH8g=="],
 
     "semver": ["semver@7.7.2", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA=="],
 

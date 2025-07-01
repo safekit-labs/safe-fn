@@ -5,7 +5,6 @@ import * as st from "superstruct";
 import * as v from "valibot";
 import * as arktype from "arktype";
 import { Schema } from "effect";
-import * as $ from "scale-codec";
 import * as T from "runtypes";
 
 /**
@@ -32,7 +31,8 @@ export interface TestSchemas {
   };
 }
 
-// Zod v3 schemas
+// ------------------ ZOD v3 SCHEMAS ------------------
+
 export const zod3Schemas: TestSchemas = {
   objectSchemas: {
     userSchema: zod3.object({ name: zod3.string(), age: zod3.number() }),
@@ -52,7 +52,8 @@ export const zod3Schemas: TestSchemas = {
   },
 };
 
-// Zod v4 schemas
+// ------------------ ZOD v4 SCHEMAS ------------------
+
 export const zod4Schemas: TestSchemas = {
   objectSchemas: {
     userSchema: zod4.object({ name: zod4.string(), age: zod4.number() }),
@@ -72,7 +73,8 @@ export const zod4Schemas: TestSchemas = {
   },
 };
 
-// Yup schemas
+// ------------------ YUP SCHEMAS ------------------
+
 export const yupSchemas: TestSchemas = {
   objectSchemas: {
     userSchema: yup.object({ name: yup.string().required(), age: yup.number().required() }),
@@ -92,7 +94,8 @@ export const yupSchemas: TestSchemas = {
   },
 };
 
-// Superstruct schemas
+// ------------------ SUPERSTRUCT SCHEMAS ------------------
+
 export const superstructSchemas: TestSchemas = {
   objectSchemas: {
     userSchema: st.object({ name: st.string(), age: st.number() }),
@@ -112,7 +115,8 @@ export const superstructSchemas: TestSchemas = {
   },
 };
 
-// Valibot schemas
+// ------------------ VALIBOT SCHEMAS ------------------
+
 export const valibotSchemas: TestSchemas = {
   objectSchemas: {
     userSchema: v.object({ name: v.string(), age: v.number() }),
@@ -132,7 +136,8 @@ export const valibotSchemas: TestSchemas = {
   },
 };
 
-// ArkType schemas
+// ------------------ ARKTYPE SCHEMAS ------------------
+
 export const arktypeSchemas: TestSchemas = {
   objectSchemas: {
     userSchema: arktype.type({ name: "string", age: "number" }),
@@ -152,7 +157,8 @@ export const arktypeSchemas: TestSchemas = {
   },
 };
 
-// Effect Schema schemas (with standard schema wrapper)
+// ------------------ EFFECT SCHEMA SCHEMAS ------------------
+
 export const effectSchemas: TestSchemas = {
   objectSchemas: {
     userSchema: Schema.standardSchemaV1(Schema.Struct({ name: Schema.String, age: Schema.Number })),
@@ -175,27 +181,8 @@ export const effectSchemas: TestSchemas = {
   },
 };
 
-// Scale Codec schemas
-export const scaleSchemas: TestSchemas = {
-  objectSchemas: {
-    userSchema: $.object($.field("name", $.str), $.field("age", $.i32)),
-    emailSchema: $.object($.field("email", $.str)), // scale-codec doesn't have email validation
-  },
-  argumentSchemas: {
-    stringNumberArray: [$.str, $.i32],
-    emptyArray: [],
-    stringMinArray: [$.str], // scale-codec doesn't have string length validation
-  },
-  outputSchemas: {
-    numberTransform: $.object($.field("result", $.i32)),
-  },
-  metadataSchemas: {
-    operationSchema: $.object($.field("op", $.str)),
-    authSchema: $.object($.field("op", $.str), $.field("auth", $.bool)),
-  },
-};
+// ------------------ RUNTYPES SCHEMAS ------------------
 
-// Runtypes schemas
 export const runtypesSchemas: TestSchemas = {
   objectSchemas: {
     userSchema: T.Object({ name: T.String, age: T.Number }),
@@ -215,7 +202,8 @@ export const runtypesSchemas: TestSchemas = {
   },
 };
 
-// Test data for validation scenarios
+// ------------------ TEST DATA ------------------
+
 export const testData = {
   validUser: { name: "John", age: 25 },
   validEmail: { email: "test@example.com" },
