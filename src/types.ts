@@ -39,88 +39,82 @@ export interface ClientConfig<TContext extends Context = Context, TMetadata exte
 }
 
 // ========================================================================
-// INTERCEPTOR TYPES (STAGE 1: PRE-VALIDATION)
+// UNIFIED MIDDLEWARE SYSTEM
 // ========================================================================
 
 /**
- * Output from interceptor execution
+ * Output from middleware execution
  */
-export interface InterceptorOutput<TOutput, TContext extends Context> {
+export interface MiddlewareOutput<TOutput, TContext extends Context> {
   output: TOutput;
   context: TContext;
 }
 
 /**
- * The next function
+ * Next function for the unified middleware system
  */
-export type InterceptorNext<TNewContext extends Context> = (params?: {
-  ctx: TNewContext;
-}) => Promise<InterceptorOutput<unknown, TNewContext>>;
+export type MiddlewareNext<TContext extends Context> = (params?: {
+  ctx: TContext;
+}) => Promise<MiddlewareOutput<unknown, TContext>>;
 
 /**
- * Typed next function for the new interceptor system
+ * Unified Middleware Props - contains all necessary information for middleware execution
  */
-export type TypedNext<TCurrentContext extends Context> = (params: {
+export interface MiddlewareProps<
+  TCurrentContext extends Context = Context,
+  TNewContext extends Context = Context,
+  TInput = unknown,
+  TMetadata extends Metadata = Metadata,
+> {
+  /** Raw input before validation - always available */
   rawInput: unknown;
+  /** Parsed input after validation - only available post-validation */
+  parsedInput?: TInput;
+  /** Current context */
   ctx: TCurrentContext;
-}) => Promise<InterceptorOutput<any, TCurrentContext>>;
+  /** Metadata information */
+  metadata: TMetadata;
+  /** Next function in the middleware chain */
+  next: MiddlewareNext<TNewContext>;
+}
 
 /**
- * STAGE 1: Pre-validation Interceptor (runs on client)
- * Handles cross-cutting concerns that do NOT depend on validated input shape
+ * Unified Middleware Type
+ * Replaces both Interceptor and Middleware - works pre and post validation
+ * - Before validation: only rawInput is available, parsedInput is undefined
+ * - After validation: both rawInput and parsedInput are available
+ */
+export type Middleware<
+  TCurrentContext extends Context = Context,
+  TNewContext extends Context = Context,
+  TInput = unknown,
+  TMetadata extends Metadata = Metadata,
+> = (
+  props: MiddlewareProps<TCurrentContext, TNewContext, TInput, TMetadata>
+) => Promise<MiddlewareOutput<unknown, TNewContext>>;
+
+// ========================================================================
+// LEGACY TYPE ALIASES (for backward compatibility)
+// ========================================================================
+
+/**
+ * @deprecated Use Middleware instead
  */
 export type Interceptor<
   TCurrentContext extends Context = Context,
   TNewContext extends Context = Context,
   TMetadata extends Metadata = Metadata,
-> = (params: {
-  rawInput: unknown; // Correctly typed as unknown for unvalidated data
-  ctx: TCurrentContext;
-  metadata: TMetadata;
-  next: InterceptorNext<TNewContext>;
-}) => Promise<InterceptorOutput<unknown, TNewContext>>;
+> = Middleware<TCurrentContext, TNewContext, unknown, TMetadata>;
 
 /**
- * The Interceptor for type inference - takes current context and returns new context
- * TCurrentContext: The context type coming into this interceptor
- * TNewContext: The context type coming out of this interceptor (inferred from return value)
- * TMetadata: The metadata type
+ * @deprecated Use MiddlewareOutput instead
  */
-export type TypedInterceptor<
-  TCurrentContext extends Context,
-  TNewContext extends TCurrentContext,
-  TMetadata extends Metadata = Metadata,
-> = (params: {
-  rawInput: unknown;
-  ctx: TCurrentContext;
-  metadata: TMetadata;
-  next: TypedNext<TNewContext>; // next receives the NEW context shape
-}) => Promise<InterceptorOutput<any, TNewContext>>;
-
-// ========================================================================
-// MIDDLEWARE TYPES (STAGE 2: POST-VALIDATION)
-// ========================================================================
+export type InterceptorOutput<TOutput, TContext extends Context> = MiddlewareOutput<TOutput, TContext>;
 
 /**
- * Represents the next function in a middleware chain
+ * @deprecated Use MiddlewareNext instead
  */
-export type MiddlewareNext<TInput> = (modifiedInput: TInput) => Promise<any>;
-
-/**
- * STAGE 2: Post-validation Middleware (runs on builder)
- * Handles logic that REQUIRES the validated and typed input
- * Examples: input-based authorization, business logic validation
- */
-export type Middleware<
-  TContext extends Context = Context,
-  TInput = unknown,
-  TMetadata extends Metadata = Metadata,
-> = (params: {
-  next: MiddlewareNext<TInput>;
-  parsedInput: TInput; // Correctly typed as validated input
-  ctx: TContext;
-  metadata: TMetadata;
-}) => Promise<any>;
+export type InterceptorNext<TNewContext extends Context> = MiddlewareNext<TNewContext>;
 
 // ========================================================================
 // HANDLER INPUT TYPES
@@ -185,22 +179,52 @@ export type SchemaValidator<T> =
   | StandardSchemaV1<T>; // Standard Schema spec
 
 // ========================================================================
+// TUPLE INFERENCE UTILITIES
+// ========================================================================
+
+/**
+ * Utility type to infer the output type of a schema validator
+ */
+type InferSchemaOutput<T> = T extends SchemaValidator<infer U> ? U : never;
+
+/**
+ * Utility type to convert array of schema validators to tuple of their output types
+ */
+export type InferTupleFromSchemas<T extends readonly SchemaValidator<any>[]> = {
+  readonly [K in keyof T]: InferSchemaOutput<T[K]>;
+};
+
+// ========================================================================
+// SAFEFN CLIENT TYPES
+// ========================================================================
+
+/**
+ * Configuration for creating a SafeFn client
+ */
+export interface SafeFnClientConfig<TContext extends Context, TMetadata extends Metadata> {
+  defaultContext: TContext;
+  metadataSchema?: SchemaValidator<TMetadata>;
+  onError?: (error: Error, context: TContext) => void | Promise<void>;
+}
+
+
+// ========================================================================
 // CLIENT & PROCEDURE INTERFACES
 // ========================================================================
 
 /**
  * Safe function builder
  */
-export interface SafeBuilder<TContext extends Context, TMetadata extends Metadata> {
+export interface SafeFnBuilder<TContext extends Context, TMetadata extends Metadata> {
   use<TNewContext extends TContext>(
-    interceptor: Interceptor<TContext, TNewContext, TMetadata>,
-  ): SafeBuilder<TNewContext, TMetadata>;
+    middleware: Middleware<TContext, TNewContext, unknown, TMetadata>,
+  ): SafeFnBuilder<TNewContext, TMetadata>;
   context<TNewContext extends Context = TContext>(
     defaultContext?: TNewContext
-  ): SafeBuilder<TNewContext, TMetadata>;
+  ): SafeFnBuilder<TNewContext, TMetadata>;
   metadataSchema<TNewMetadata extends Metadata = TMetadata>(
     schema?: SchemaValidator<TNewMetadata>
-  ): SafeBuilder<TContext, TNewMetadata>;
+  ): SafeFnBuilder<TContext, TNewMetadata>;
   create(): SafeFn<TContext, unknown, unknown, TMetadata>;
 }
 
@@ -214,9 +238,14 @@ export interface SafeFn<
   TMetadata extends Metadata = Metadata,
 > {
   metadata<TNewMetadata extends Metadata>(metadata: TNewMetadata): SafeFn<TContext, TInput, TOutput, TNewMetadata>;
-  use(middleware: Middleware<TContext, TInput, TMetadata>): SafeFn<TContext, TInput, TOutput, TMetadata>;
+  use(middleware: Middleware<TContext, TContext, TInput, TMetadata>): SafeFn<TContext, TInput, TOutput, TMetadata>;
+  // Overload for array of schemas (tuple inference)
+  input<T extends readonly SchemaValidator<any>[]>(
+    schema: T
+  ): SafeFn<TContext, InferTupleFromSchemas<T>, TOutput, TMetadata>;
+  // Overload for single schema
   input<TNewInput>(
-    schema: SchemaValidator<TNewInput>,
+    schema: SchemaValidator<TNewInput>
   ): SafeFn<TContext, TNewInput, TOutput, TMetadata>;
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,

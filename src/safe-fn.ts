@@ -12,7 +12,7 @@ import type {
   SafeFnSignature,
 } from '@/types';
 
-import { executeInterceptorChain } from '@/interceptor';
+import { executeMiddlewareChain } from '@/middleware';
 import { createParseFn, type ParseFn } from '@/libs/parser';
 
 // ========================================================================
@@ -30,49 +30,6 @@ function createDefaultErrorHandler<TContext extends Context>() {
   };
 }
 
-// ========================================================================
-// MIDDLEWARE EXECUTION UTILITIES
-// ========================================================================
-
-// ------------------ MIDDLEWARE CHAIN EXECUTOR ------------------
-
-/**
- * Executes the middleware chain for post-validation processing
- */
-async function executeMiddlewareChain<
-  TInput,
-  TOutput,
-  TContext extends Context,
-  TMetadata extends Metadata,
->(
-  middlewares: Middleware<TContext, TInput, TMetadata>[],
-  parsedInput: TInput,
-  context: TContext,
-  metadata: TMetadata,
-  finalHandler: (input: TInput) => Promise<TOutput>,
-): Promise<TOutput> {
-  if (middlewares.length === 0) {
-    return finalHandler(parsedInput);
-  }
-
-  let index = 0;
-
-  const next = async (modifiedInput: TInput): Promise<TOutput> => {
-    if (index >= middlewares.length) {
-      return finalHandler(modifiedInput);
-    }
-
-    const middleware = middlewares[index++];
-    return middleware({
-      next,
-      parsedInput: modifiedInput,
-      ctx: context,
-      metadata,
-    });
-  };
-
-  return next(parsedInput);
-}
 
 // ========================================================================
 // HANDLER EXECUTION UTILITIES
@@ -87,10 +44,10 @@ interface ArrayInputHandlerOptions<THandlerOutput, TContext extends Context, TMe
   args: any[];
   defaultContext: TContext;
   metadata: TMetadata;
-  clientInterceptors: any[];
+  clientMiddlewares: Middleware<any, any, any, TMetadata>[];
   inputValidator: ParseFn<any> | undefined;
   outputValidator: ParseFn<any> | undefined;
-  middlewares: Middleware<TContext, any, TMetadata>[];
+  functionMiddlewares: Middleware<TContext, any, any, TMetadata>[];
   handler: SafeFnHandler<any, THandlerOutput, TContext>;
   errorHandlerFn: (error: Error, context: TContext) => void;
 }
@@ -103,10 +60,10 @@ interface ObjectInputHandlerOptions<THandlerInput, THandlerOutput, TContext exte
   context: Partial<TContext>;
   defaultContext: TContext;
   metadata: TMetadata;
-  clientInterceptors: any[];
+  clientMiddlewares: Middleware<any, any, any, TMetadata>[];
   inputValidator: ParseFn<any> | undefined;
   outputValidator: ParseFn<any> | undefined;
-  middlewares: Middleware<TContext, any, TMetadata>[];
+  functionMiddlewares: Middleware<TContext, any, any, TMetadata>[];
   handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>;
   errorHandlerFn: (error: Error, context: TContext) => void;
 }
@@ -127,10 +84,10 @@ async function executeArrayInputHandler<
     args,
     defaultContext,
     metadata,
-    clientInterceptors,
+    clientMiddlewares,
     inputValidator,
     outputValidator,
-    middlewares,
+    functionMiddlewares,
     handler,
     errorHandlerFn,
   } = options;
@@ -138,30 +95,23 @@ async function executeArrayInputHandler<
   const fullContext = { ...defaultContext } as TContext;
 
   try {
-    // For array schemas, pass the args array directly to interceptors (raw input)
-    const result = await executeInterceptorChain<THandlerOutput, TContext, TMetadata>(
-      clientInterceptors,
-      args,
-      fullContext,
-      metadata,
-      async (processedInput: unknown, processedContext: TContext) => {
-        // Validate the processed input from interceptors
-        const validatedInput = inputValidator
-          ? await inputValidator(processedInput)
-          : processedInput;
+    // Combine client and function middlewares
+    const allMiddlewares = [...clientMiddlewares, ...functionMiddlewares];
 
-        // Execute middleware chain with validated input
-        return executeMiddlewareChain(
-          middlewares,
-          validatedInput as any,
-          processedContext,
-          metadata,
-          async (finalInput: any) => {
-            return handler({ ctx: processedContext, parsedInput: finalInput } as any);
-          },
-        );
+    // Validate input first
+    const validatedInput = inputValidator ? await inputValidator(args) : args;
+
+    // Execute unified middleware chain with both raw and parsed input
+    const result = await executeMiddlewareChain<THandlerOutput, TContext, TMetadata>({
+      middlewares: allMiddlewares,
+      rawInput: args,
+      parsedInput: validatedInput,
+      context: fullContext,
+      metadata,
+      handler: async (finalInput: unknown, finalContext: TContext) => {
+        return handler({ ctx: finalContext, args: finalInput } as any);
       },
-    );
+    });
 
     const validatedOutput = outputValidator ? await outputValidator(result) : result;
     return validatedOutput as THandlerOutput;
@@ -190,10 +140,10 @@ async function executeObjectInputHandler<
     context,
     defaultContext,
     metadata,
-    clientInterceptors,
+    clientMiddlewares,
     inputValidator,
     outputValidator,
-    middlewares,
+    functionMiddlewares,
     handler,
     errorHandlerFn,
   } = options;
@@ -201,30 +151,23 @@ async function executeObjectInputHandler<
   const fullContext = { ...defaultContext, ...context } as TContext;
 
   try {
-    // For object schemas, pass the input directly to interceptors (raw input)
-    const result = await executeInterceptorChain<THandlerOutput, TContext, TMetadata>(
-      clientInterceptors,
-      input,
-      fullContext,
-      metadata,
-      async (processedInput: unknown, processedContext: TContext) => {
-        // Validate the processed input from interceptors
-        const validatedInput = inputValidator
-          ? await inputValidator(processedInput)
-          : processedInput;
+    // Combine client and function middlewares
+    const allMiddlewares = [...clientMiddlewares, ...functionMiddlewares];
 
-        // Execute middleware chain with validated input
-        return executeMiddlewareChain(
-          middlewares,
-          validatedInput as any,
-          processedContext,
-          metadata,
-          async (finalInput: any) => {
-            return handler({ ctx: processedContext, parsedInput: finalInput } as any);
-          },
-        );
+    // Validate input first
+    const validatedInput = inputValidator ? await inputValidator(input) : input;
+
+    // Execute unified middleware chain with both raw and parsed input
+    const result = await executeMiddlewareChain<THandlerOutput, TContext, TMetadata>({
+      middlewares: allMiddlewares,
+      rawInput: input,
+      parsedInput: validatedInput,
+      context: fullContext,
+      metadata,
+      handler: async (finalInput: unknown, finalContext: TContext) => {
+        return handler({ ctx: finalContext, parsedInput: finalInput } as any);
       },
-    );
+    });
 
     const validatedOutput = outputValidator ? await outputValidator(result) : result;
     return validatedOutput as THandlerOutput;
@@ -251,7 +194,7 @@ export function createSafeFn<
   let currentMetadata: TMetadata | undefined;
   let inputValidator: ParseFn<any> | undefined;
   let outputValidator: ParseFn<any> | undefined;
-  let middlewares: Middleware<TContext, any, TMetadata>[] = [];
+  let functionMiddlewares: Middleware<TContext, any, any, TMetadata>[] = [];
   let errorHandler: ((error: Error, context: TContext) => void) | undefined;
   let metadataValidator: ParseFn<TMetadata> | undefined;
   let isArrayInput = false;
@@ -264,12 +207,12 @@ export function createSafeFn<
       (newSafeFn as any)._currentMetadata = metadataValidator ? metadataValidator(metadata) : metadata;
       (newSafeFn as any)._inputValidator = inputValidator;
       (newSafeFn as any)._outputValidator = outputValidator;
-      (newSafeFn as any)._middlewares = middlewares;
+      (newSafeFn as any)._functionMiddlewares = functionMiddlewares;
       (newSafeFn as any)._errorHandler = errorHandler;
       (newSafeFn as any)._metadataValidator = metadataValidator;
 
       // Copy client configuration if present
-      (newSafeFn as any)._clientInterceptors = (safeFn as any)._clientInterceptors;
+      (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
       (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
       (newSafeFn as any)._inputSchema = (safeFn as any)._inputSchema;
@@ -277,8 +220,8 @@ export function createSafeFn<
       return newSafeFn;
     },
 
-    use(middleware: Middleware<TContext, any, TMetadata>): SafeFn<TContext, unknown, unknown, TMetadata> {
-      middlewares.push(middleware);
+    use(middleware: Middleware<TContext, any, any, TMetadata>): SafeFn<TContext, unknown, unknown, TMetadata> {
+      functionMiddlewares.push(middleware);
       return safeFn;
     },
 
@@ -288,18 +231,35 @@ export function createSafeFn<
       if (Array.isArray(schema)) {
         isArrayInput = true;
         // For array of schemas, create a validator that handles each argument
-        inputValidator = (input: unknown) => {
+        inputValidator = async (input: unknown) => {
           if (!Array.isArray(input)) {
             throw new Error('Expected array input for multiple argument validation');
           }
-          return input.map((arg, index) => {
-            if (index >= schema.length) {
+          
+          // Handle empty schema array (zero arguments)
+          if (schema.length === 0) {
+            if (input.length > 0) {
               throw new Error(
-                `Too many arguments provided. Expected ${schema.length}, got ${input.length}`,
+                `No arguments expected, but got ${input.length}`,
               );
             }
-            return createParseFn(schema[index])(arg);
+            return [];
+          }
+          
+          // Handle mismatched argument count
+          if (input.length !== schema.length) {
+            throw new Error(
+              `Expected ${schema.length} arguments, but got ${input.length}`,
+            );
+          }
+          
+          // Parse each argument and await all results
+          const parsePromises = input.map((arg, index) => {
+            const parseFn = createParseFn(schema[index]);
+            return Promise.resolve(parseFn(arg));
           });
+          
+          return Promise.all(parsePromises);
         };
       } else {
         isArrayInput = false;
@@ -330,8 +290,8 @@ export function createSafeFn<
       const errorHandlerFn =
         errorHandler || clientErrorHandler || createDefaultErrorHandler<TContext>();
 
-      // Use client interceptors if available
-      const clientInterceptors = (safeFn as any)._clientInterceptors || [];
+      // Use client middlewares if available
+      const clientMiddlewares = (safeFn as any)._clientMiddlewares || [];
 
       // Create the function implementation based on input type
       const finalFn = isArrayInput
@@ -340,10 +300,10 @@ export function createSafeFn<
               args,
               defaultContext,
               metadata,
-              clientInterceptors,
+              clientMiddlewares,
               inputValidator,
               outputValidator,
-              middlewares,
+              functionMiddlewares,
               handler,
               errorHandlerFn,
             });
@@ -354,10 +314,10 @@ export function createSafeFn<
               context,
               defaultContext,
               metadata,
-              clientInterceptors,
+              clientMiddlewares,
               inputValidator,
               outputValidator,
-              middlewares,
+              functionMiddlewares,
               handler,
               errorHandlerFn,
             });

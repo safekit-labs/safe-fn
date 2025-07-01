@@ -1,0 +1,2 @@
+Similar to @src/safe-fn.builder.ts Help me create a factory function that creates a safeFn. I want it to have the properties defaultContext and metadataSchema. The              │
+│   createFactory function should accept a generic of TContext and TMetadata. In this case, that  

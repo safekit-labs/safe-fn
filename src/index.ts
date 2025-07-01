@@ -7,7 +7,12 @@ export type {
   Middleware,
   InterceptorOutput,
   SchemaValidator,
+  SafeFnBuilder,
+  SafeFn,
 } from '@/types';
 
-// Client factory
-export { createSafeBuilder } from '@/builder/builder.class';
+// Builder factory
+export { createBuilder } from '@/builder';
+
+// Direct SafeFn creation
+export { createSafeFn } from '@/safe-fn';
