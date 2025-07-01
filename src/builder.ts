@@ -2,10 +2,17 @@
 // SAFEFN BUILDER FACTORY AND IMPLEMENTATION
 // ========================================================================
 
-import { createSafeFn } from '@/safe-fn';
-import { createParseFn, type ParseFn } from '@/libs/parser';
+import { createSafeFn } from "@/safe-fn";
+import { createParseFn, type ParseFn } from "@/libs/parser";
 
-import type { SafeFnBuilder, Context, Middleware, SafeFn, SchemaValidator, Metadata } from '@/types';
+import type {
+  SafeFnBuilder,
+  Context,
+  Middleware,
+  SafeFn,
+  SchemaValidator,
+  Metadata,
+} from "@/types";
 
 // ========================================================================
 // BUILDER CLASS IMPLEMENTATION
@@ -93,7 +100,7 @@ class SafeFnBuilderImpl<TContext extends Context, TMetadata extends Metadata>
 
 /**
  * Creates a new SafeFnBuilder instance with optional context and metadata types
- * 
+ *
  * @deprecated Use `createSafeFnClient` instead for a simpler API that directly returns a configured SafeFn client
  */
 export function createBuilder<

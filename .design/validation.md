@@ -59,6 +59,6 @@ CONS:
 - Any updates to adapters would require updating the core library
 - Adding new validation libraries would require updating the core library
 
-
 Recommendation:
+
 - Option 1 is too generic. .use() could be anything, making the API less discoverable and harder to understand at a glance.

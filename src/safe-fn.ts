@@ -10,10 +10,10 @@ import type {
   SafeFn,
   SchemaValidator,
   SafeFnSignature,
-} from '@/types';
+} from "@/types";
 
-import { executeMiddlewareChain } from '@/middleware';
-import { createParseFn, type ParseFn } from '@/libs/parser';
+import { executeMiddlewareChain } from "@/middleware";
+import { createParseFn, type ParseFn } from "@/libs/parser";
 
 // ========================================================================
 // ERROR HANDLING UTILITIES
@@ -26,10 +26,9 @@ import { createParseFn, type ParseFn } from '@/libs/parser';
  */
 function createDefaultErrorHandler<TContext extends Context>() {
   return (error: Error, context: TContext) => {
-    console.error('SafeFn Error:', error.message, { context });
+    console.error("SafeFn Error:", error.message, { context });
   };
 }
-
 
 // ========================================================================
 // HANDLER EXECUTION UTILITIES
@@ -40,7 +39,11 @@ function createDefaultErrorHandler<TContext extends Context>() {
 /**
  * Options for executing array input handlers
  */
-interface ArrayInputHandlerOptions<THandlerOutput, TContext extends Context, TMetadata extends Metadata> {
+interface ArrayInputHandlerOptions<
+  THandlerOutput,
+  TContext extends Context,
+  TMetadata extends Metadata,
+> {
   args: any[];
   defaultContext: TContext;
   metadata: TMetadata;
@@ -55,7 +58,12 @@ interface ArrayInputHandlerOptions<THandlerOutput, TContext extends Context, TMe
 /**
  * Options for executing object input handlers
  */
-interface ObjectInputHandlerOptions<THandlerInput, THandlerOutput, TContext extends Context, TMetadata extends Metadata> {
+interface ObjectInputHandlerOptions<
+  THandlerInput,
+  THandlerOutput,
+  TContext extends Context,
+  TMetadata extends Metadata,
+> {
   input: THandlerInput;
   context: Partial<TContext>;
   defaultContext: TContext;
@@ -77,9 +85,7 @@ async function executeArrayInputHandler<
   THandlerOutput,
   TContext extends Context,
   TMetadata extends Metadata,
->(
-  options: ArrayInputHandlerOptions<THandlerOutput, TContext, TMetadata>,
-): Promise<THandlerOutput> {
+>(options: ArrayInputHandlerOptions<THandlerOutput, TContext, TMetadata>): Promise<THandlerOutput> {
   const {
     args,
     defaultContext,
@@ -200,11 +206,15 @@ export function createSafeFn<
   let isArrayInput = false;
 
   const safeFn: SafeFn<TContext, unknown, unknown, TMetadata> = {
-    metadata<TNewMetadata extends Metadata>(metadata: TNewMetadata): SafeFn<TContext, unknown, unknown, TNewMetadata> {
+    metadata<TNewMetadata extends Metadata>(
+      metadata: TNewMetadata,
+    ): SafeFn<TContext, unknown, unknown, TNewMetadata> {
       const newSafeFn = createSafeFn<TContext, TNewMetadata>();
 
       // Copy over current state
-      (newSafeFn as any)._currentMetadata = metadataValidator ? metadataValidator(metadata) : metadata;
+      (newSafeFn as any)._currentMetadata = metadataValidator
+        ? metadataValidator(metadata)
+        : metadata;
       (newSafeFn as any)._inputValidator = inputValidator;
       (newSafeFn as any)._outputValidator = outputValidator;
       (newSafeFn as any)._functionMiddlewares = functionMiddlewares;
@@ -220,7 +230,9 @@ export function createSafeFn<
       return newSafeFn;
     },
 
-    use<TNewContext extends TContext>(middleware: Middleware<TContext, TNewContext, any, TMetadata>): SafeFn<TNewContext, unknown, unknown, TMetadata> {
+    use<TNewContext extends TContext>(
+      middleware: Middleware<TContext, TNewContext, any, TMetadata>,
+    ): SafeFn<TNewContext, unknown, unknown, TMetadata> {
       const newSafeFn = createSafeFn<TNewContext, TMetadata>();
 
       // Copy over current state
@@ -249,32 +261,28 @@ export function createSafeFn<
         // For array of schemas, create a validator that handles each argument
         inputValidator = async (input: unknown) => {
           if (!Array.isArray(input)) {
-            throw new Error('Expected array input for multiple argument validation');
+            throw new Error("Expected array input for multiple argument validation");
           }
-          
+
           // Handle empty schema array (zero arguments)
           if (schema.length === 0) {
             if (input.length > 0) {
-              throw new Error(
-                `No arguments expected, but got ${input.length}`,
-              );
+              throw new Error(`No arguments expected, but got ${input.length}`);
             }
             return [];
           }
-          
+
           // Handle mismatched argument count
           if (input.length !== schema.length) {
-            throw new Error(
-              `Expected ${schema.length} arguments, but got ${input.length}`,
-            );
+            throw new Error(`Expected ${schema.length} arguments, but got ${input.length}`);
           }
-          
+
           // Parse each argument and await all results
           const parsePromises = input.map((arg, index) => {
             const parseFn = createParseFn(schema[index]);
             return Promise.resolve(parseFn(arg));
           });
-          
+
           return Promise.all(parsePromises);
         };
       } else {

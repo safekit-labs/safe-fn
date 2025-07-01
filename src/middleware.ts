@@ -1,7 +1,7 @@
 /**
  * Unified middleware execution system
  */
-import type { Middleware, MiddlewareOutput, Context, Metadata } from '@/types';
+import type { Middleware, MiddlewareOutput, Context, Metadata } from "@/types";
 
 /**
  * Parameters for executeMiddlewareChain
@@ -27,9 +27,7 @@ export async function executeMiddlewareChain<
   TOutput,
   TContext extends Context,
   TMetadata extends Metadata,
->(
-  params: ExecuteMiddlewareChainParams<TOutput, TContext, TMetadata>
-): Promise<TOutput> {
+>(params: ExecuteMiddlewareChainParams<TOutput, TContext, TMetadata>): Promise<TOutput> {
   const { middlewares, rawInput, parsedInput, context, metadata, handler } = params;
 
   // Fast path for no middlewares
@@ -39,9 +37,7 @@ export async function executeMiddlewareChain<
 
   let index = -1;
 
-  const executeNext = async (
-    currentContext: Context,
-  ): Promise<MiddlewareOutput<any, Context>> => {
+  const executeNext = async (currentContext: Context): Promise<MiddlewareOutput<any, Context>> => {
     index++;
 
     // Base case: all middlewares executed, call the handler
@@ -83,5 +79,5 @@ export const createMiddleware = <
   TInput = unknown,
   TMetadata extends Metadata = Metadata,
 >(
-  middleware: Middleware<TCurrentContext, TNewContext, TInput, TMetadata>
+  middleware: Middleware<TCurrentContext, TNewContext, TInput, TMetadata>,
 ): Middleware<TCurrentContext, TNewContext, TInput, TMetadata> => middleware;

@@ -1,16 +1,16 @@
-import { describe, it, expect } from 'vitest';
-import { z } from 'zod/v4';
-import { createSafeFnClient } from '@/factory';
+import { describe, it, expect } from "vitest";
+import { z } from "zod/v4";
+import { createSafeFnClient } from "@/factory";
 
 // ========================================================================
 // BASIC MIDDLEWARE FUNCTIONALITY TESTS
 // ========================================================================
 
-describe('Middleware Support', () => {
-  describe('basic middleware usage', () => {
-    it('should support .use() chaining', async () => {
+describe("Middleware Support", () => {
+  describe("basic middleware usage", () => {
+    it("should support .use() chaining", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { userId: 'test' }
+        defaultContext: { userId: "test" },
       });
 
       // Test that .use() doesn't break the chain
@@ -19,12 +19,12 @@ describe('Middleware Support', () => {
         .handler(async ({ ctx }) => `Hello ${ctx.userId}`);
 
       const result = await fn({}, {});
-      expect(result).toBe('Hello test');
+      expect(result).toBe("Hello test");
     });
 
-    it('should support multiple .use() calls', async () => {
+    it("should support multiple .use() calls", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { service: 'api' }
+        defaultContext: { service: "api" },
       });
 
       // Test that multiple .use() calls work
@@ -35,12 +35,12 @@ describe('Middleware Support', () => {
         .handler(async ({ ctx }) => `Service: ${ctx.service}`);
 
       const result = await fn({}, {});
-      expect(result).toBe('Service: api');
+      expect(result).toBe("Service: api");
     });
 
-    it('should work with middleware and input validation', async () => {
+    it("should work with middleware and input validation", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { prefix: 'Mr.' }
+        defaultContext: { prefix: "Mr." },
       });
 
       const fn = safeFnClient
@@ -48,43 +48,43 @@ describe('Middleware Support', () => {
         .input(z.object({ name: z.string() }))
         .handler(async ({ parsedInput, ctx }) => `${ctx.prefix} ${parsedInput.name}`);
 
-      const result = await fn({ name: 'Smith' }, {});
-      expect(result).toBe('Mr. Smith');
+      const result = await fn({ name: "Smith" }, {});
+      expect(result).toBe("Mr. Smith");
     });
 
-    it('should work with middleware and output validation', async () => {
+    it("should work with middleware and output validation", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient
         .use(async ({ next }) => next())
         .output(z.object({ greeting: z.string() }))
-        .handler(async () => ({ greeting: 'Hello World' }));
+        .handler(async () => ({ greeting: "Hello World" }));
 
       const result = await fn({}, {});
-      expect(result).toEqual({ greeting: 'Hello World' });
+      expect(result).toEqual({ greeting: "Hello World" });
     });
   });
 
-  describe('middleware with context', () => {
-    it('should provide context from factory to middleware and handlers', async () => {
+  describe("middleware with context", () => {
+    it("should provide context from factory to middleware and handlers", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { apiKey: 'secret', version: 'v1' }
+        defaultContext: { apiKey: "secret", version: "v1" },
       });
 
       const fn = safeFnClient
         .use(async ({ next }) => next())
         .handler(async ({ ctx }) => ({
           authenticated: !!ctx.apiKey,
-          version: ctx.version
+          version: ctx.version,
         }));
 
       const result = await fn({}, {});
-      expect(result).toEqual({ authenticated: true, version: 'v1' });
+      expect(result).toEqual({ authenticated: true, version: "v1" });
     });
 
-    it('should merge runtime context properly', async () => {
+    it("should merge runtime context properly", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { service: 'auth', env: 'prod' }
+        defaultContext: { service: "auth", env: "prod" },
       });
 
       const fn = safeFnClient
@@ -92,48 +92,48 @@ describe('Middleware Support', () => {
         .handler(async ({ ctx }) => ({
           service: ctx.service,
           env: ctx.env,
-          requestId: (ctx as any).requestId
+          requestId: (ctx as any).requestId,
         }));
 
-      const result = await fn({}, { requestId: 'req-123' } as any);
+      const result = await fn({}, { requestId: "req-123" } as any);
       expect(result).toEqual({
-        service: 'auth',
-        env: 'prod', 
-        requestId: 'req-123'
+        service: "auth",
+        env: "prod",
+        requestId: "req-123",
       });
     });
   });
 
-  describe('middleware with metadata', () => {
-    it('should work with metadata validation', async () => {
+  describe("middleware with metadata", () => {
+    it("should work with metadata validation", async () => {
       const safeFnClient = createSafeFnClient({
-        metadataSchema: z.object({ operation: z.string(), priority: z.number() })
+        metadataSchema: z.object({ operation: z.string(), priority: z.number() }),
       });
 
       const fn = safeFnClient
         .use(async ({ next }) => next())
-        .metadata({ operation: 'create-user', priority: 1 })
-        .handler(async () => 'operation completed');
+        .metadata({ operation: "create-user", priority: 1 })
+        .handler(async () => "operation completed");
 
       const result = await fn({}, {});
-      expect(result).toBe('operation completed');
+      expect(result).toBe("operation completed");
     });
 
-    it('should work with unvalidated metadata', async () => {
+    it("should work with unvalidated metadata", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient
         .use(async ({ next }) => next())
-        .metadata({ custom: 'value', tags: ['important'] })
-        .handler(async () => 'metadata accepted');
+        .metadata({ custom: "value", tags: ["important"] })
+        .handler(async () => "metadata accepted");
 
       const result = await fn({}, {});
-      expect(result).toBe('metadata accepted');
+      expect(result).toBe("metadata accepted");
     });
   });
 
-  describe('middleware with different input types', () => {
-    it('should work with object input', async () => {
+  describe("middleware with different input types", () => {
+    it("should work with object input", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient
@@ -141,11 +141,11 @@ describe('Middleware Support', () => {
         .input(z.object({ message: z.string() }))
         .handler(async ({ parsedInput }) => `Received: ${parsedInput.message}`);
 
-      const result = await fn({ message: 'hello' }, {});
-      expect(result).toBe('Received: hello');
+      const result = await fn({ message: "hello" }, {});
+      expect(result).toBe("Received: hello");
     });
 
-    it('should work with tuple arguments', async () => {
+    it("should work with tuple arguments", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient
@@ -153,11 +153,11 @@ describe('Middleware Support', () => {
         .input([z.string(), z.number()])
         .handler(async ({ args }) => `${args[0]}: ${args[1]}`);
 
-      const result = await fn('count', 42);
-      expect(result).toBe('count: 42');
+      const result = await fn("count", 42);
+      expect(result).toBe("count: 42");
     });
 
-    it('should work with empty arguments', async () => {
+    it("should work with empty arguments", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient
@@ -166,12 +166,12 @@ describe('Middleware Support', () => {
         .handler(async ({ args }) => `Args length: ${args.length}`);
 
       const result = await fn();
-      expect(result).toBe('Args length: 0');
+      expect(result).toBe("Args length: 0");
     });
   });
 
-  describe('middleware error scenarios', () => {
-    it('should handle input validation errors', async () => {
+  describe("middleware error scenarios", () => {
+    it("should handle input validation errors", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient
@@ -179,10 +179,10 @@ describe('Middleware Support', () => {
         .input(z.object({ age: z.number() }))
         .handler(async ({ parsedInput }) => `Age: ${parsedInput.age}`);
 
-      await expect(fn({ age: 'not-a-number' as any }, {})).rejects.toThrow();
+      await expect(fn({ age: "not-a-number" as any }, {})).rejects.toThrow();
     });
 
-    it('should handle output validation errors', async () => {
+    it("should handle output validation errors", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient
@@ -193,17 +193,17 @@ describe('Middleware Support', () => {
       await expect(fn({}, {})).rejects.toThrow();
     });
 
-    it('should work with metadata schema validation', async () => {
+    it("should work with metadata schema validation", async () => {
       const safeFnClient = createSafeFnClient({
-        metadataSchema: z.object({ operation: z.string().min(1) })
+        metadataSchema: z.object({ operation: z.string().min(1) }),
       });
 
       const fn = safeFnClient
-        .metadata({ operation: 'valid-operation' })
-        .handler(async () => 'validation passed');
+        .metadata({ operation: "valid-operation" })
+        .handler(async () => "validation passed");
 
       const result = await fn({}, {});
-      expect(result).toBe('validation passed');
+      expect(result).toBe("validation passed");
     });
   });
 });
@@ -212,41 +212,40 @@ describe('Middleware Support', () => {
 // INTEGRATION TESTS
 // ========================================================================
 
-describe('Middleware Integration', () => {
-  describe('full feature integration', () => {
-    it('should work with all features combined', async () => {
+describe("Middleware Integration", () => {
+  describe("full feature integration", () => {
+    it("should work with all features combined", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { service: 'user-service', version: '1.0' },
-        metadataSchema: z.object({ operation: z.string(), userId: z.string() })
+        defaultContext: { service: "user-service", version: "1.0" },
+        metadataSchema: z.object({ operation: z.string(), userId: z.string() }),
       });
 
       const fn = safeFnClient
         .use(async ({ next }) => next())
         .use(async ({ next }) => next())
-        .metadata({ operation: 'create-user', userId: 'admin' })
+        .metadata({ operation: "create-user", userId: "admin" })
         .input(z.object({ name: z.string(), email: z.string() }))
         .output(z.object({ id: z.string(), name: z.string(), created: z.boolean() }))
         .handler(async ({ parsedInput, ctx }) => ({
           id: `${ctx.service}-${Date.now()}`,
           name: parsedInput.name,
-          created: true
+          created: true,
         }));
 
-      const result = await fn(
-        { name: 'John Doe', email: 'john@example.com' },
-        { requestId: 'req-456' } as any
-      );
+      const result = await fn({ name: "John Doe", email: "john@example.com" }, {
+        requestId: "req-456",
+      } as any);
 
       expect(result).toMatchObject({
-        name: 'John Doe',
-        created: true
+        name: "John Doe",
+        created: true,
       });
       expect(result.id).toMatch(/^user-service-\d+$/);
     });
 
-    it('should work with factory config and runtime overrides', async () => {
+    it("should work with factory config and runtime overrides", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { env: 'dev', debug: true }
+        defaultContext: { env: "dev", debug: true },
       });
 
       const fn = safeFnClient
@@ -255,25 +254,25 @@ describe('Middleware Integration', () => {
           environment: ctx.env,
           debugMode: ctx.debug,
           requestId: (ctx as any).requestId,
-          overridden: ctx.env !== 'dev'
+          overridden: ctx.env !== "dev",
         }));
 
       const result = await fn({}, {
-        env: 'production',
-        requestId: 'prod-123'
+        env: "production",
+        requestId: "prod-123",
       } as any);
 
       expect(result).toEqual({
-        environment: 'production',
+        environment: "production",
         debugMode: true,
-        requestId: 'prod-123',
-        overridden: true
+        requestId: "prod-123",
+        overridden: true,
       });
     });
   });
 
-  describe('middleware method chaining', () => {
-    it('should support chaining in different orders', async () => {
+  describe("middleware method chaining", () => {
+    it("should support chaining in different orders", async () => {
       const safeFnClient = createSafeFnClient();
 
       // Test different chaining orders
@@ -293,18 +292,18 @@ describe('Middleware Integration', () => {
         .input(z.string())
         .handler(async ({ parsedInput }) => `Order 3: ${parsedInput}`);
 
-      const result1 = await fn1('test1', {});
-      const result2 = await fn2('test2', {});
-      const result3 = await fn3('test3', {});
+      const result1 = await fn1("test1", {});
+      const result2 = await fn2("test2", {});
+      const result3 = await fn3("test3", {});
 
-      expect(result1).toBe('Order 1: test1');
-      expect(result2).toBe('Order 2: test2');
-      expect(result3).toBe('Order 3: test3');
+      expect(result1).toBe("Order 1: test1");
+      expect(result2).toBe("Order 2: test2");
+      expect(result3).toBe("Order 3: test3");
     });
 
-    it('should handle complex chaining scenarios', async () => {
+    it("should handle complex chaining scenarios", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { base: 'value' }
+        defaultContext: { base: "value" },
       });
 
       const fn = safeFnClient
@@ -315,11 +314,11 @@ describe('Middleware Integration', () => {
         .use(async ({ next }) => next())
         .output(z.object({ processed: z.string() }))
         .handler(async ({ parsedInput, ctx }) => ({
-          processed: `${ctx.base}-${parsedInput.data}`
+          processed: `${ctx.base}-${parsedInput.data}`,
         }));
 
-      const result = await fn({ data: 'input' }, {});
-      expect(result).toEqual({ processed: 'value-input' });
+      const result = await fn({ data: "input" }, {});
+      expect(result).toEqual({ processed: "value-input" });
     });
   });
 });

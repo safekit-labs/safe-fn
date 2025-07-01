@@ -6,7 +6,7 @@
 const safeFn = createSafeFn().use(tracingMiddleware).use(authenticationMiddleware);
 
 const myFn = safeFn
-  .use(loggingMiddleware({ operationName: 'myFn' }))
+  .use(loggingMiddleware({ operationName: "myFn" }))
   .input(zValidator(z.object({ name: z.string() })))
   .output(zValidator(z.object({ name: z.string() })))
   .handler(async ({ ctx, parsedInput, metadata }) => {});
@@ -32,7 +32,7 @@ const safeFn = createSafeFn({
 });
 
 const myFn = safeFn
-  .metadata({ operationName: 'myFn' })
+  .metadata({ operationName: "myFn" })
   .use(loggingMiddleware())
   .input(zValidator(z.object({ name: z.string() })))
   .output(zValidator(z.object({ name: z.string() })))
@@ -58,13 +58,12 @@ const safeFn = initSafeFn
   .create();
 
 const myFn = safeFn.procedure
-  .metadata({ operationName: 'myFn' })
+  .metadata({ operationName: "myFn" })
   .use(loggingMiddleware())
   .input(zValidator(z.object({ name: z.string() })))
   .output(zValidator(z.object({ name: z.string() })))
   .handler(async ({ ctx, parsedInput, metadata }) => {});
 ```
-
 
 ### Option 4: Builder Pattern Refined
 
@@ -79,13 +78,12 @@ const safeFn = initSafeFn
   .create();
 
 const myFn = safeFn
-  .metadata({ operationName: 'myFn' })
+  .metadata({ operationName: "myFn" })
   .use(loggingMiddleware())
   .input(z.object({ name: z.string() }))
   .output(z.object({ name: z.string() }))
   .handler(async ({ ctx, parsedInput, metadata }) => {});
 ```
-
 
 ### Questions
 
@@ -100,7 +98,7 @@ const myFn = safeFn
 Option 1:
 
 ```ts
-import { initSafeClient } from '@safekit/safe-fn';
+import { initSafeClient } from "@safekit/safe-fn";
 
 const s = initSafeClient()
   .context()
@@ -121,7 +119,7 @@ const getUser = s.fn.metadata().use().input().output().use().handler();
 Option 2:
 
 ```ts
-import { initSafeClient } from '@safekit/safe-fn';
+import { initSafeClient } from "@safekit/safe-fn";
 
 const s = initSafeClient()
   .context()

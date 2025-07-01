@@ -9,36 +9,43 @@ SafeFn (@safekit/safe-fn) is a lightweight TypeScript library that provides a ty
 ## Development Commands
 
 ### Building and Type Checking
+
 - `bun run build` - Full build (TypeScript compilation + path resolution)
 - `bun run typecheck` - Type checking without output
 - `bun run dev` - Development watch mode
 
 ### Code Quality
+
 - `bun run lint` - ESLint checking
 - `bun run format` - Prettier formatting
 - `bun run test` - Run Vitest tests
 
 ### Utilities
+
 - `bun run clean` - Remove dist directory
 
 ## Architecture
 
 ### Core Components
+
 - **src/builder.ts** - Main safe function builder implementation with chainable API
 - **src/client.ts** - Client factory for shared interceptor and context management
 - **src/types.ts** - Type definitions for safe functions, contexts, and interceptors
 
 ### Directory Structure
+
 - `src/` - Core library source code
 - `examples/` - Usage examples including CQRS patterns and API integration
 - `__tests__/` - Integration tests using Vitest
 - `dist/` - Build output (TypeScript compilation)
 
 ### Safe Function Pattern
+
 - **handler()** - Unified method for any type of function
 - Function types can be differentiated using metadata (e.g., `type: 'mutation'`, `type: 'query'`, `type: 'service'`)
 
 ### Key Features
+
 - Standard Schema validation with type inference (supports Zod and other validators)
 - Interceptor middleware system for cross-cutting concerns
 - Type-safe context passing between interceptors and handlers

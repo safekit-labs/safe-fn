@@ -2,8 +2,8 @@
  * Factory Setup Examples
  * Different ways to configure your SafeFn clients
  */
-import { createSafeFnClient } from '@/factory';
-import { z } from 'zod';
+import { createSafeFnClient } from "@/factory";
+import { z } from "zod";
 
 // ========================================================================
 // FACTORY SETUP EXAMPLES
@@ -12,27 +12,27 @@ import { z } from 'zod';
 // ------------------ 1. BASIC CLIENT ------------------
 
 export const basicClient = createSafeFnClient({
-  defaultContext: {}
+  defaultContext: {},
 });
 
 // ------------------ 2. WITH DEFAULT CONTEXT ------------------
 
 export const clientWithDefaults = createSafeFnClient({
   defaultContext: {
-    requestId: 'default',
-    version: '1.0.0',
-  }
+    requestId: "default",
+    version: "1.0.0",
+  },
 });
 
 // ------------------ 3. WITH ERROR HANDLING ------------------
 
 export const clientWithErrorHandler = createSafeFnClient({
-  defaultContext: { requestId: 'default' },
+  defaultContext: { requestId: "default" },
   onError: (error, context) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Request ${context.requestId || 'unknown'} failed:`, errorMessage);
+    console.error(`Request ${context.requestId || "unknown"} failed:`, errorMessage);
     // Send to monitoring service
-  }
+  },
 });
 
 // ------------------ 4. WITH METADATA SCHEMA ------------------
@@ -44,10 +44,10 @@ const operationMetaSchema = z.object({
 });
 
 export const clientWithMetadata = createSafeFnClient({
-  defaultContext: { 
-    userId: undefined as string | undefined 
+  defaultContext: {
+    userId: undefined as string | undefined,
   },
-  metadataSchema: operationMetaSchema
+  metadataSchema: operationMetaSchema,
 });
 
 // ------------------ 5. FULL CONFIGURATION WITH CONTEXT INFERENCE ------------------
@@ -61,13 +61,13 @@ const appMetaSchema = z.object({
 export const fullConfigClient = createSafeFnClient({
   defaultContext: {
     userId: undefined as string | undefined,
-    requestId: 'default',
+    requestId: "default",
     permissions: [] as string[],
   },
   metadataSchema: appMetaSchema,
   onError: (error, context) => {
     console.error(`Request ${context.requestId} failed:`, error.message);
-  }
+  },
 });
 
 // ------------------ 6. USAGE EXAMPLES WITH MIDDLEWARE ------------------
@@ -75,7 +75,7 @@ export const fullConfigClient = createSafeFnClient({
 // Example function using the client with inline middleware
 export const exampleFunction = clientWithMetadata
   .input(z.object({ data: z.string() }))
-  .metadata({ operation: 'process-data', requiresAuth: true })
+  .metadata({ operation: "process-data", requiresAuth: true })
   .handler(async ({ parsedInput, ctx }) => {
     return { processed: parsedInput.data, userId: ctx.userId };
   });
@@ -84,29 +84,29 @@ export const exampleFunction = clientWithMetadata
 
 // Client for public API functions
 export const publicApiClient = createSafeFnClient({
-  defaultContext: { 
+  defaultContext: {
     isPublic: true,
-    rateLimit: 1000
+    rateLimit: 1000,
   },
   onError: (error) => {
-    console.error('Public API error:', error.message);
-  }
+    console.error("Public API error:", error.message);
+  },
 });
 
 // Client for admin functions
 export const adminClient = createSafeFnClient({
   defaultContext: {
     userId: undefined as string | undefined,
-    role: 'admin' as const,
-    permissions: ['read', 'write', 'delete'] as const
+    role: "admin" as const,
+    permissions: ["read", "write", "delete"] as const,
   },
   metadataSchema: z.object({
     operation: z.string(),
-    requiresAdmin: z.boolean().optional()
+    requiresAdmin: z.boolean().optional(),
   }),
   onError: (error, context) => {
     console.error(`Admin operation failed for user ${context.userId}:`, error.message);
-  }
+  },
 });
 
 // Example usage with different clients
@@ -118,11 +118,11 @@ export const publicFunction = publicApiClient
 
 export const adminFunction = adminClient
   .input(z.object({ action: z.string() }))
-  .metadata({ operation: 'admin-action', requiresAdmin: true })
+  .metadata({ operation: "admin-action", requiresAdmin: true })
   .handler(async ({ parsedInput, ctx }) => {
-    return { 
-      action: parsedInput.action, 
-      executedBy: ctx.userId, 
-      role: ctx.role 
+    return {
+      action: parsedInput.action,
+      executedBy: ctx.userId,
+      role: ctx.role,
     };
   });

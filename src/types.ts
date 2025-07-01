@@ -2,7 +2,7 @@
  * Core types for the SafeFn library
  */
 
-import type { StandardSchemaV1 } from '@standard-schema/spec';
+import type { StandardSchemaV1 } from "@/libs/standard-schema-v1/spec";
 
 // ========================================================================
 // CORE CONTEXT & METADATA TYPES
@@ -32,7 +32,10 @@ export interface Metadata {
 /**
  * Configuration for the SafeFn client
  */
-export interface ClientConfig<TContext extends Context = Context, TMetadata extends Metadata = Metadata> {
+export interface ClientConfig<
+  TContext extends Context = Context,
+  TMetadata extends Metadata = Metadata,
+> {
   defaultContext?: TContext;
   errorHandler?: (error: Error, context: TContext) => void | Promise<void>;
   metadataSchema?: SchemaValidator<TMetadata>;
@@ -90,14 +93,16 @@ export type Middleware<
   TInput = unknown,
   TMetadata extends Metadata = Metadata,
 > = (
-  props: MiddlewareProps<TCurrentContext, TNewContext, TInput, TMetadata>
+  props: MiddlewareProps<TCurrentContext, TNewContext, TInput, TMetadata>,
 ) => Promise<MiddlewareOutput<unknown, TNewContext>>;
 
 /**
  * Infer the context type that a middleware function will produce
  * This extracts the context type from the return type of a middleware function
  */
-export type InferMiddlewareContext<T> = T extends (props: any) => Promise<MiddlewareOutput<any, infer C>>
+export type InferMiddlewareContext<T> = T extends (
+  props: any,
+) => Promise<MiddlewareOutput<any, infer C>>
   ? C
   : never;
 
@@ -117,7 +122,10 @@ export type Interceptor<
 /**
  * @deprecated Use MiddlewareOutput instead
  */
-export type InterceptorOutput<TOutput, TContext extends Context> = MiddlewareOutput<TOutput, TContext>;
+export type InterceptorOutput<TOutput, TContext extends Context> = MiddlewareOutput<
+  TOutput,
+  TContext
+>;
 
 /**
  * @deprecated Use MiddlewareNext instead
@@ -164,11 +172,7 @@ export type SafeFnSignature<
 /**
  * Safe function handler type - conditionally uses args or parsedInput based on input type
  */
-export type SafeFnHandler<
-  TInput,
-  TOutput,
-  TContext extends Context,
-> = TInput extends readonly any[]
+export type SafeFnHandler<TInput, TOutput, TContext extends Context> = TInput extends readonly any[]
   ? (input: TupleHandlerInput<TInput, TContext>) => Promise<TOutput>
   : (input: HandlerInput<TInput, TContext>) => Promise<TOutput>;
 
@@ -215,7 +219,6 @@ export interface SafeFnClientConfig<TContext extends Context, TMetadata extends 
   onError?: (error: Error, context: TContext) => void | Promise<void>;
 }
 
-
 // ========================================================================
 // CLIENT & PROCEDURE INTERFACES
 // ========================================================================
@@ -228,10 +231,10 @@ export interface SafeFnBuilder<TContext extends Context, TMetadata extends Metad
     middleware: Middleware<TContext, TNewContext, unknown, TMetadata>,
   ): SafeFnBuilder<TNewContext, TMetadata>;
   context<TNewContext extends Context = TContext>(
-    defaultContext?: TNewContext
+    defaultContext?: TNewContext,
   ): SafeFnBuilder<TNewContext, TMetadata>;
   metadataSchema<TNewMetadata extends Metadata = TMetadata>(
-    schema?: SchemaValidator<TNewMetadata>
+    schema?: SchemaValidator<TNewMetadata>,
   ): SafeFnBuilder<TContext, TNewMetadata>;
   create(): SafeFn<TContext, unknown, unknown, TMetadata>;
 }
@@ -245,15 +248,19 @@ export interface SafeFn<
   TOutput = unknown,
   TMetadata extends Metadata = Metadata,
 > {
-  metadata<TNewMetadata extends Metadata>(metadata: TNewMetadata): SafeFn<TContext, TInput, TOutput, TNewMetadata>;
-  use<TNewContext extends TContext>(middleware: Middleware<TContext, TNewContext, TInput, TMetadata>): SafeFn<TNewContext, TInput, TOutput, TMetadata>;
+  metadata<TNewMetadata extends Metadata>(
+    metadata: TNewMetadata,
+  ): SafeFn<TContext, TInput, TOutput, TNewMetadata>;
+  use<TNewContext extends TContext>(
+    middleware: Middleware<TContext, TNewContext, TInput, TMetadata>,
+  ): SafeFn<TNewContext, TInput, TOutput, TMetadata>;
   // Overload for array of schemas (tuple inference)
   input<T extends readonly SchemaValidator<any>[]>(
-    schema: T
+    schema: T,
   ): SafeFn<TContext, InferTupleFromSchemas<T>, TOutput, TMetadata>;
   // Overload for single schema
   input<TNewInput>(
-    schema: SchemaValidator<TNewInput>
+    schema: SchemaValidator<TNewInput>,
   ): SafeFn<TContext, TNewInput, TOutput, TMetadata>;
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,

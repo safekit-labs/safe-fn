@@ -13,7 +13,7 @@ export class StandardSchemaV1Error extends Error {
    */
   constructor(issues: ReadonlyArray<StandardSchemaV1.Issue>) {
     super(issues[0]?.message);
-    this.name = 'SchemaError';
+    this.name = "SchemaError";
     this.issues = issues;
   }
 }

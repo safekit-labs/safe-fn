@@ -2,10 +2,10 @@
 // SAFEFN FACTORY IMPLEMENTATION
 // ========================================================================
 
-import { createSafeFn } from '@/safe-fn';
-import { createParseFn } from '@/libs/parser';
+import { createSafeFn } from "@/safe-fn";
+import { createParseFn } from "@/libs/parser";
 
-import type { Context, Metadata, SafeFn, SafeFnClientConfig } from '@/types';
+import type { Context, Metadata, SafeFn, SafeFnClientConfig } from "@/types";
 
 // ========================================================================
 // SAFEFN CLIENT FUNCTION
@@ -22,7 +22,10 @@ import type { Context, Metadata, SafeFn, SafeFnClientConfig } from '@/types';
  * });
  * ```
  */
-export function createSafeFnClient<TContext extends Context = Context, TMetadata extends Metadata = Metadata>(
+export function createSafeFnClient<
+  TContext extends Context = Context,
+  TMetadata extends Metadata = Metadata,
+>(
   config: SafeFnClientConfig<TContext, TMetadata> = {} as SafeFnClientConfig<TContext, TMetadata>,
 ): SafeFn<TContext, unknown, unknown, TMetadata> {
   const safeFn = createSafeFn<TContext, TMetadata>();

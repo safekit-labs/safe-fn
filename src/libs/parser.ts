@@ -2,10 +2,10 @@
 // SCHEMA PARSING UTILITIES
 // ========================================================================
 
-import { StandardSchemaV1Error } from '@/standard-schema-v1/error';
+import { StandardSchemaV1Error } from "@/libs/standard-schema-v1/error";
 
-import type { StandardSchemaV1 } from '@/standard-schema-v1/spec';
-import type { SchemaValidator } from '@/types';
+import type { StandardSchemaV1 } from "@/libs/standard-schema-v1/spec";
+import type { SchemaValidator } from "@/types";
 
 // ========================================================================
 // VALIDATOR TYPE DEFINITIONS
@@ -52,9 +52,7 @@ export type ParserSuperstructEsque<TInput> = {
 };
 
 // Custom validator function
-export type ParserCustomValidatorEsque<TInput> = (
-  input: unknown,
-) => Promise<TInput> | TInput;
+export type ParserCustomValidatorEsque<TInput> = (input: unknown) => Promise<TInput> | TInput;
 
 // Yup
 export type ParserYupEsque<TInput> = {
@@ -101,40 +99,40 @@ export type ParseFn<TType> = (value: unknown) => Promise<TType> | TType;
  */
 export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
   const parser = schema as any;
-  const isStandardSchema = '~standard' in parser;
+  const isStandardSchema = "~standard" in parser;
 
   // ArkType - has both function call and assert method
-  if (typeof parser === 'function' && typeof parser.assert === 'function') {
+  if (typeof parser === "function" && typeof parser.assert === "function") {
     return parser.assert.bind(parser);
   }
 
   // Custom validator function (but not Standard Schema)
-  if (typeof parser === 'function' && !isStandardSchema) {
+  if (typeof parser === "function" && !isStandardSchema) {
     return parser;
   }
 
   // Zod async parsing
-  if (typeof parser.parseAsync === 'function') {
+  if (typeof parser.parseAsync === "function") {
     return parser.parseAsync.bind(parser);
   }
 
   // Zod/Valibot sync parsing
-  if (typeof parser.parse === 'function') {
+  if (typeof parser.parse === "function") {
     return parser.parse.bind(parser);
   }
 
   // Yup validation
-  if (typeof parser.validateSync === 'function') {
+  if (typeof parser.validateSync === "function") {
     return parser.validateSync.bind(parser);
   }
 
   // Superstruct
-  if (typeof parser.create === 'function') {
+  if (typeof parser.create === "function") {
     return parser.create.bind(parser);
   }
 
   // Scale assert
-  if (typeof parser.assert === 'function') {
+  if (typeof parser.assert === "function") {
     return (value) => {
       parser.assert(value);
       return value as T;
@@ -144,7 +142,7 @@ export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
   // Standard Schema - only case where we need to create our own error
   if (isStandardSchema) {
     return async (value: unknown) => {
-      const result = await parser['~standard'].validate(value);
+      const result = await parser["~standard"].validate(value);
       if (result.issues) {
         throw new StandardSchemaV1Error(result.issues);
       }
@@ -152,6 +150,5 @@ export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
     };
   }
 
-  throw new Error('Could not find a compatible parser method');
+  throw new Error("Could not find a compatible parser method");
 }
-

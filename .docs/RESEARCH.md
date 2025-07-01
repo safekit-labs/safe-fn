@@ -90,18 +90,18 @@ References:
 - createMiddleware(async (c, next) => {})
 
 ```ts
-import { zValidator } from '@hono/zod-validator';
+import { zValidator } from "@hono/zod-validator";
 
 const route = app.post(
-  '/posts',
+  "/posts",
   zValidator(
-    'form',
+    "form",
     z.object({
       body: z.string(),
     }),
   ),
   (c) => {
-    const validated = c.req.valid('form');
+    const validated = c.req.valid("form");
     // ... use your validated data
   },
 );
@@ -140,7 +140,7 @@ export const appRouter = t.router({
 ## Drizzle-ORM
 
 ```ts
-import { drizzle } from 'drizzle-orm/...'; // driver specific
+import { drizzle } from "drizzle-orm/..."; // driver specific
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

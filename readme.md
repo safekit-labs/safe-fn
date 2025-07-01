@@ -15,7 +15,7 @@ A lightweight type-safe function builder with interceptors, schema validation, a
 - 🔗 **Middleware**: Chainable middleware for cross-cutting concerns
 - ✅ **Multi-Library Support**: Works with Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Scale Codec, Runtypes, and custom validators
 - 🎨 **Context Management**: Type-safe context passing through procedure chains
-- 🚀 **Lightweight**: Single runtime dependency (@standard-schema/spec)
+- 🚀 **Lightweight**: Zero runtime dependencies
 
 ## Installation
 
@@ -33,6 +33,7 @@ bun add @safekit/safe-fn
 ## 📚 Quick Navigation
 
 **Quick Start Examples:**
+
 - [Common Setup](#common-setup)
 - [Single Object Pattern](#1-single-object-pattern)
 - [Multiple Arguments Pattern](#2-multiple-arguments-pattern)
@@ -40,6 +41,7 @@ bun add @safekit/safe-fn
 - [Without Schema Validation](#4-without-schema-validation)
 
 **Client Configuration:**
+
 - [Basic Client](#1-basic-client)
 - [With Default Context](#2-with-default-context)
 - [With Error Handler](#3-with-error-handler)
@@ -47,6 +49,7 @@ bun add @safekit/safe-fn
 - [Full Configuration](#5-full-configuration)
 
 **Advanced Features:**
+
 - [Metadata and Output Schema](#1-with-metadata-and-output-schema)
 - [Function-Level Middleware](#2-with-function-level-middleware)
 - [Tuple with Middleware](#3-tuple-with-middleware)
@@ -57,23 +60,23 @@ bun add @safekit/safe-fn
 Here's a complete example showing SafeFn in action with client setup, middleware, and various function patterns:
 
 ```typescript
-import { z } from 'zod';
-import { createSafeFnClient } from '@safekit/safe-fn';
+import { z } from "zod";
+import { createSafeFnClient } from "@safekit/safe-fn";
 
 // 1. Create a SafeFn client with configuration
 const safeFnClient = createSafeFnClient({
-  defaultContext: { 
+  defaultContext: {
     userId: undefined as string | undefined,
-    requestId: 'default' 
+    requestId: "default",
   },
   onError: (error, context) => {
     console.error(`[${context.requestId}] Error:`, error.message);
   },
 }).use(async ({ next, rawInput, metadata }) => {
   // Global middleware for logging
-  console.log(`[${metadata?.operation || 'unknown'}] Starting with input:`, rawInput);
+  console.log(`[${metadata?.operation || "unknown"}] Starting with input:`, rawInput);
   const result = await next();
-  console.log(`[${metadata?.operation || 'unknown'}] Completed`);
+  console.log(`[${metadata?.operation || "unknown"}] Completed`);
   return result;
 });
 
@@ -86,17 +89,19 @@ const userSchema = z.object({
 
 // 3. Create a safe function with validation and metadata
 export const createUser = safeFnClient
-  .metadata({ operation: 'create-user', requiresAuth: true })
+  .metadata({ operation: "create-user", requiresAuth: true })
   .input(userSchema)
-  .output(z.object({ 
-    id: z.string(), 
-    username: z.string(), 
-    success: z.boolean() 
-  }))
+  .output(
+    z.object({
+      id: z.string(),
+      username: z.string(),
+      success: z.boolean(),
+    }),
+  )
   .handler(async ({ parsedInput, ctx }) => {
     // Simulate user creation logic
-    if (parsedInput.username === 'admin' && !ctx.userId) {
-      throw new Error('Admin creation requires authentication');
+    if (parsedInput.username === "admin" && !ctx.userId) {
+      throw new Error("Admin creation requires authentication");
     }
 
     // Your business logic here
@@ -123,23 +128,21 @@ export const calculateTotal = safeFnClient
   });
 
 // 5. Zero arguments pattern
-export const getServerTime = safeFnClient
-  .input([])
-  .handler(async () => ({ 
-    timestamp: new Date().toISOString(),
-    timezone: 'UTC' 
-  }));
+export const getServerTime = safeFnClient.input([]).handler(async () => ({
+  timestamp: new Date().toISOString(),
+  timezone: "UTC",
+}));
 
 // 6. Usage examples
 async function examples() {
   // Object input with context
   const user = await createUser(
-    { username: 'johndoe', email: 'john@example.com', age: 25 },
-    { userId: 'admin-123', requestId: 'req-456' }
+    { username: "johndoe", email: "john@example.com", age: 25 },
+    { userId: "admin-123", requestId: "req-456" },
   );
 
   // Multiple arguments
-  const total = await calculateTotal(100, 8.5, 'USD');
+  const total = await calculateTotal(100, 8.5, "USD");
 
   // Zero arguments
   const time = await getServerTime();
@@ -153,28 +156,28 @@ async function examples() {
 SafeFn clients are created with `createSafeFnClient()` and support three main configuration options:
 
 ```typescript
-import { z } from 'zod';
-import { createSafeFnClient } from '@safekit/safe-fn';
+import { z } from "zod";
+import { createSafeFnClient } from "@safekit/safe-fn";
 
 const safeFnClient = createSafeFnClient({
   // Default context available in all functions
   defaultContext: {
     userId: undefined as string | undefined,
-    requestId: 'default',
-    service: 'api'
+    requestId: "default",
+    service: "api",
   },
 
   // Schema validation for metadata
   metadataSchema: z.object({
     operation: z.string(),
-    requiresAuth: z.boolean().optional()
+    requiresAuth: z.boolean().optional(),
   }),
 
   // Global error handler
   onError: (error, context) => {
     console.error(`[${context.requestId}] ${context.service}:`, error.message);
     // Send to monitoring service
-  }
+  },
 });
 ```
 
@@ -186,12 +189,12 @@ const basicClient = createSafeFnClient();
 
 // Just default context
 const contextClient = createSafeFnClient({
-  defaultContext: { env: 'production' }
+  defaultContext: { env: "production" },
 });
 
 // Just error handling
 const errorClient = createSafeFnClient({
-  onError: (error, context) => console.error('Function failed:', error.message)
+  onError: (error, context) => console.error("Function failed:", error.message),
 });
 ```
 
@@ -200,15 +203,15 @@ const errorClient = createSafeFnClient({
 Middleware functions run before your handler and can modify context, validate permissions, log requests, and more. Create specialized clients by chaining `.use()`:
 
 ```typescript
-import { z } from 'zod';
-import { createSafeFnClient } from '@safekit/safe-fn';
+import { z } from "zod";
+import { createSafeFnClient } from "@safekit/safe-fn";
 
 // Base client
 const safeFnClient = createSafeFnClient({
-  defaultContext: { 
+  defaultContext: {
     userId: undefined as string | undefined,
-    role: undefined as string | undefined 
-  }
+    role: undefined as string | undefined,
+  },
 });
 
 // Authenticated client with middleware
@@ -216,14 +219,14 @@ const authedSafeFnClient = safeFnClient
   .use(async ({ next, ctx, metadata }) => {
     // Authentication middleware
     if (metadata?.requiresAuth && !ctx.userId) {
-      throw new Error('Authentication required');
+      throw new Error("Authentication required");
     }
     return next();
   })
   .use(async ({ next, ctx, metadata }) => {
-    // Authorization middleware  
-    if (metadata?.requiresAdmin && ctx.role !== 'admin') {
-      throw new Error('Admin access required');
+    // Authorization middleware
+    if (metadata?.requiresAdmin && ctx.role !== "admin") {
+      throw new Error("Admin access required");
     }
     return next();
   });
@@ -250,16 +253,13 @@ export const adminFunction = authedSafeFnClient
   });
 
 // Function calls
-const search = await publicFunction({ query: 'hello' });
+const search = await publicFunction({ query: "hello" });
 
-const post = await protectedFunction(
-  { postId: '123' }, 
-  { userId: 'user-456', role: 'user' }
-);
+const post = await protectedFunction({ postId: "123" }, { userId: "user-456", role: "user" });
 
 const admin = await adminFunction(
-  { action: 'delete-user' },
-  { userId: 'admin-789', role: 'admin' }
+  { action: "delete-user" },
+  { userId: "admin-789", role: "admin" },
 );
 ```
 
@@ -268,11 +268,11 @@ const admin = await adminFunction(
 SafeFn supports 10 popular validation libraries, giving you flexibility to use your preferred validation approach. All libraries support both object schemas and tuple schemas (multiple arguments):
 
 ```typescript
-import { z } from 'zod';
-import * as yup from 'yup';
-import * as v from 'valibot';
-import { type } from 'arktype';
-import { createSafeFnClient } from '@safekit/safe-fn';
+import { z } from "zod";
+import * as yup from "yup";
+import * as v from "valibot";
+import { type } from "arktype";
+import { createSafeFnClient } from "@safekit/safe-fn";
 
 const safeFnClient = createSafeFnClient();
 
@@ -287,7 +287,7 @@ const yupObjectFn = safeFnClient
   .input(yup.object({ email: yup.string().email().required() }))
   .handler(async ({ parsedInput }) => parsedInput.email);
 
-// Tuple schemas - use `args` parameter  
+// Tuple schemas - use `args` parameter
 const zodTupleFn = safeFnClient
   .input([z.string(), z.number(), z.boolean()]) // name, age, active
   .handler(async ({ args }) => {
@@ -305,8 +305,8 @@ const yupTupleFn = safeFnClient
 // Custom validators (objects only)
 const customFn = safeFnClient
   .input((input: unknown) => {
-    if (typeof input !== 'object' || !input || !('message' in input)) {
-      throw new Error('Expected object with message property');
+    if (typeof input !== "object" || !input || !("message" in input)) {
+      throw new Error("Expected object with message property");
     }
     return input as { message: string };
   })
@@ -320,21 +320,20 @@ const outputValidatedFn = safeFnClient
   .output(z.object({ result: z.number(), doubled: z.boolean() }))
   .handler(async ({ parsedInput }) => {
     const doubled = parsedInput.value * 2;
-    return { 
-      result: doubled, 
-      doubled: doubled > parsedInput.value 
+    return {
+      result: doubled,
+      doubled: doubled > parsedInput.value,
     };
   });
 
 // Usage examples
-const greeting = await zodObjectFn({ name: 'Alice', age: 30 });
-const email = await yupObjectFn({ email: 'user@example.com' });
-const person = await zodTupleFn('Bob', 25, true);
-const product = await yupTupleFn('Widget', 19.99);
-const message = await customFn({ message: 'hello world' });
+const greeting = await zodObjectFn({ name: "Alice", age: 30 });
+const email = await yupObjectFn({ email: "user@example.com" });
+const person = await zodTupleFn("Bob", 25, true);
+const product = await yupTupleFn("Widget", 19.99);
+const message = await customFn({ message: "hello world" });
 const calculation = await outputValidatedFn({ value: 21 });
 ```
-
 
 ## API Reference
 
@@ -342,7 +341,7 @@ const calculation = await outputValidatedFn({ value: 21 });
 
 ```typescript
 const safeFnClient = createSafeFnClient({
-  defaultContext: { requestId: 'default' },
+  defaultContext: { requestId: "default" },
   onError: (error, context) => console.error(error),
 });
 ```
@@ -374,24 +373,25 @@ SafeFn provides comprehensive support for multiple validation libraries with aut
 
 ### Supported Validation Libraries
 
-| Library | Status | Notes |
-|---------|--------|-------|
-| **Zod v3** | ✅ Full Support | Most popular TypeScript validation library |
-| **Zod v4** | ✅ Full Support | Latest Zod with improved performance |
-| **Yup** | ✅ Full Support | Popular form validation library |
-| **Valibot** | ✅ Full Support | Modern, fast, and lightweight |
-| **ArkType** | ✅ Full Support | TypeScript-first with excellent inference |
-| **Effect Schema** | ✅ Full Support | Part of the Effect ecosystem |
-| **Superstruct** | ✅ Full Support | Structural validation library |
-| **Scale Codec** | ✅ Full Support | Codec-based validation |
-| **Runtypes** | ✅ Full Support | Runtime type checking |
-| **Custom Function** | ✅ Partial Support | Objects only, no tuple support |
+| Library             | Status             | Notes                                      |
+| ------------------- | ------------------ | ------------------------------------------ |
+| **Zod v3**          | ✅ Full Support    | Most popular TypeScript validation library |
+| **Zod v4**          | ✅ Full Support    | Latest Zod with improved performance       |
+| **Yup**             | ✅ Full Support    | Popular form validation library            |
+| **Valibot**         | ✅ Full Support    | Modern, fast, and lightweight              |
+| **ArkType**         | ✅ Full Support    | TypeScript-first with excellent inference  |
+| **Effect Schema**   | ✅ Full Support    | Part of the Effect ecosystem               |
+| **Superstruct**     | ✅ Full Support    | Structural validation library              |
+| **Scale Codec**     | ✅ Full Support    | Codec-based validation                     |
+| **Runtypes**        | ✅ Full Support    | Runtime type checking                      |
+| **Custom Function** | ✅ Partial Support | Objects only, no tuple support             |
 
 ### Library-Specific Examples
 
 #### Zod (v3 & v4)
+
 ```typescript
-import { z } from 'zod'; // or 'zod/v3', 'zod/v4'
+import { z } from "zod"; // or 'zod/v3', 'zod/v4'
 
 const userFn = safeFnClient
   .input(z.object({ name: z.string(), email: z.string().email() }))
@@ -403,8 +403,9 @@ const tupleFn = safeFnClient
 ```
 
 #### Yup
+
 ```typescript
-import * as yup from 'yup';
+import * as yup from "yup";
 
 const userFn = safeFnClient
   .input(yup.object({ name: yup.string().required(), age: yup.number().required() }))
@@ -416,8 +417,9 @@ const tupleFn = safeFnClient
 ```
 
 #### Valibot
+
 ```typescript
-import * as v from 'valibot';
+import * as v from "valibot";
 
 const userFn = safeFnClient
   .input(v.object({ name: v.string(), email: v.pipe(v.string(), v.email()) }))
@@ -429,74 +431,74 @@ const tupleFn = safeFnClient
 ```
 
 #### ArkType
+
 ```typescript
-import { type } from 'arktype';
+import { type } from "arktype";
 
 const userFn = safeFnClient
-  .input(type({ name: 'string', email: 'string.email' }))
+  .input(type({ name: "string", email: "string.email" }))
   .handler(async ({ parsedInput }) => parsedInput);
 
 const tupleFn = safeFnClient
-  .input([type('string'), type('number>0')])
+  .input([type("string"), type("number>0")])
   .handler(async ({ args }) => args);
 ```
 
 #### Effect Schema
+
 ```typescript
-import { Schema } from 'effect';
+import { Schema } from "effect";
 
 const userFn = safeFnClient
-  .input(Schema.standardSchemaV1(Schema.Struct({
-    name: Schema.String,
-    age: Schema.Number
-  })))
+  .input(
+    Schema.standardSchemaV1(
+      Schema.Struct({
+        name: Schema.String,
+        age: Schema.Number,
+      }),
+    ),
+  )
   .handler(async ({ parsedInput }) => parsedInput);
 
 const tupleFn = safeFnClient
-  .input([
-    Schema.standardSchemaV1(Schema.String),
-    Schema.standardSchemaV1(Schema.Number)
-  ])
+  .input([Schema.standardSchemaV1(Schema.String), Schema.standardSchemaV1(Schema.Number)])
   .handler(async ({ args }) => args);
 ```
 
 #### Superstruct
+
 ```typescript
-import * as st from 'superstruct';
+import * as st from "superstruct";
 
 const userFn = safeFnClient
   .input(st.object({ name: st.string(), age: st.number() }))
   .handler(async ({ parsedInput }) => parsedInput);
 
-const tupleFn = safeFnClient
-  .input([st.string(), st.number()])
-  .handler(async ({ args }) => args);
+const tupleFn = safeFnClient.input([st.string(), st.number()]).handler(async ({ args }) => args);
 ```
 
 #### Scale Codec
+
 ```typescript
-import * as $ from 'scale-codec';
+import * as $ from "scale-codec";
 
 const userFn = safeFnClient
-  .input($.object($.field('name', $.str), $.field('age', $.i32)))
+  .input($.object($.field("name", $.str), $.field("age", $.i32)))
   .handler(async ({ parsedInput }) => parsedInput);
 
-const tupleFn = safeFnClient
-  .input([$.str, $.i32])
-  .handler(async ({ args }) => args);
+const tupleFn = safeFnClient.input([$.str, $.i32]).handler(async ({ args }) => args);
 ```
 
 #### Runtypes
+
 ```typescript
-import * as T from 'runtypes';
+import * as T from "runtypes";
 
 const userFn = safeFnClient
   .input(T.Object({ name: T.String, age: T.Number }))
   .handler(async ({ parsedInput }) => parsedInput);
 
-const tupleFn = safeFnClient
-  .input([T.String, T.Number])
-  .handler(async ({ args }) => args);
+const tupleFn = safeFnClient.input([T.String, T.Number]).handler(async ({ args }) => args);
 ```
 
 ### Tuple Detection Strategy
@@ -515,11 +517,9 @@ Every supported validation library can use tuple syntax by passing an array of s
 
 ```typescript
 // All of these use the `args` parameter:
-[z.string(), z.number()]                    // Zod
-[yup.string().required(), yup.number()]     // Yup
-[v.string(), v.number()]                    // Valibot
-[type('string'), type('number')]            // ArkType
-[st.string(), st.number()]                  // Superstruct
+[z.string(), z.number()][(yup.string().required(), yup.number())][(v.string(), v.number())][ // Zod // Yup // Valibot
+  (type("string"), type("number"))
+][(st.string(), st.number())]; // ArkType // Superstruct
 // ... and so on for all libraries
 ```
 
@@ -542,7 +542,7 @@ const objectFn = safeFnClient
 // Custom validator - always uses parsedInput ✅
 const customFn = safeFnClient
   .input((input: unknown) => {
-    if (!Array.isArray(input)) throw new Error('Expected array');
+    if (!Array.isArray(input)) throw new Error("Expected array");
     return input as string[];
   })
   .handler(async ({ parsedInput }) => {

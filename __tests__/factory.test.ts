@@ -1,57 +1,57 @@
-import { describe, it, expect, vi } from 'vitest';
-import { z } from 'zod/v4';
-import { createSafeFnClient } from '@/factory';
+import { describe, it, expect, vi } from "vitest";
+import { z } from "zod/v4";
+import { createSafeFnClient } from "@/factory";
 
 // ========================================================================
 // FACTORY CONFIGURATION TESTS
 // ========================================================================
 
-describe('Factory Configuration', () => {
+describe("Factory Configuration", () => {
   // ========================================================================
   // DEFAULT CONTEXT TESTS
   // ========================================================================
 
-  describe('defaultContext', () => {
-    it('should use provided defaultContext in handlers', async () => {
+  describe("defaultContext", () => {
+    it("should use provided defaultContext in handlers", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { userId: 'test-user', role: 'admin' }
+        defaultContext: { userId: "test-user", role: "admin" },
       });
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
       const result = await fn({}, {});
 
-      expect(result).toEqual({ userId: 'test-user', role: 'admin' });
+      expect(result).toEqual({ userId: "test-user", role: "admin" });
     });
 
-    it('should merge runtime context with defaultContext', async () => {
+    it("should merge runtime context with defaultContext", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { userId: 'default', role: 'user' }
+        defaultContext: { userId: "default", role: "user" },
       });
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
-      const result = await fn({}, { requestId: 'req-123' } as any);
+      const result = await fn({}, { requestId: "req-123" } as any);
 
-      expect(result).toEqual({ userId: 'default', role: 'user', requestId: 'req-123' });
+      expect(result).toEqual({ userId: "default", role: "user", requestId: "req-123" });
     });
 
-    it('should allow runtime context to override defaultContext', async () => {
+    it("should allow runtime context to override defaultContext", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { userId: 'default', role: 'user' }
+        defaultContext: { userId: "default", role: "user" },
       });
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
-      const result = await fn({}, { userId: 'override' } as any);
+      const result = await fn({}, { userId: "override" } as any);
 
-      expect(result).toEqual({ userId: 'override', role: 'user' });
+      expect(result).toEqual({ userId: "override", role: "user" });
     });
 
-    it('should work without defaultContext', async () => {
+    it("should work without defaultContext", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
-      const result = await fn({}, { custom: 'data' } as any);
+      const result = await fn({}, { custom: "data" } as any);
 
-      expect(result).toEqual({ custom: 'data' });
+      expect(result).toEqual({ custom: "data" });
     });
   });
 
@@ -59,29 +59,25 @@ describe('Factory Configuration', () => {
   // METADATA SCHEMA TESTS
   // ========================================================================
 
-  describe('metadataSchema', () => {
-    it('should validate metadata with provided schema', async () => {
+  describe("metadataSchema", () => {
+    it("should validate metadata with provided schema", async () => {
       const safeFnClient = createSafeFnClient({
-        metadataSchema: z.object({ op: z.string(), version: z.number() })
+        metadataSchema: z.object({ op: z.string(), version: z.number() }),
       });
 
-      const fn = safeFnClient
-        .metadata({ op: 'test', version: 1 })
-        .handler(async () => 'success');
+      const fn = safeFnClient.metadata({ op: "test", version: 1 }).handler(async () => "success");
 
       const result = await fn({}, {});
-      expect(result).toBe('success');
+      expect(result).toBe("success");
     });
 
-    it('should work without metadata schema', async () => {
+    it("should work without metadata schema", async () => {
       const safeFnClient = createSafeFnClient();
 
-      const fn = safeFnClient
-        .metadata({ anything: 'goes' })
-        .handler(async () => 'success');
+      const fn = safeFnClient.metadata({ anything: "goes" }).handler(async () => "success");
 
       const result = await fn({}, {});
-      expect(result).toBe('success');
+      expect(result).toBe("success");
     });
   });
 
@@ -89,40 +85,40 @@ describe('Factory Configuration', () => {
   // ERROR HANDLER TESTS
   // ========================================================================
 
-  describe('onError', () => {
-    it('should call onError when handler throws', async () => {
+  describe("onError", () => {
+    it("should call onError when handler throws", async () => {
       const errorHandler = vi.fn();
       const safeFnClient = createSafeFnClient({
-        defaultContext: { userId: 'test' },
-        onError: errorHandler
+        defaultContext: { userId: "test" },
+        onError: errorHandler,
       });
 
       const fn = safeFnClient.handler(async () => {
-        throw new Error('test error');
+        throw new Error("test error");
       });
 
-      await expect(fn({}, {})).rejects.toThrow('test error');
+      await expect(fn({}, {})).rejects.toThrow("test error");
       expect(errorHandler).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'test error' }),
-        expect.objectContaining({ userId: 'test' })
+        expect.objectContaining({ message: "test error" }),
+        expect.objectContaining({ userId: "test" }),
       );
     });
 
-    it('should call onError with merged context', async () => {
+    it("should call onError with merged context", async () => {
       const errorHandler = vi.fn();
       const safeFnClient = createSafeFnClient({
-        defaultContext: { userId: 'default' },
-        onError: errorHandler
+        defaultContext: { userId: "default" },
+        onError: errorHandler,
       });
 
       const fn = safeFnClient.handler(async () => {
-        throw new Error('test error');
+        throw new Error("test error");
       });
 
-      await expect(fn({}, { requestId: 'req-123' } as any)).rejects.toThrow();
+      await expect(fn({}, { requestId: "req-123" } as any)).rejects.toThrow();
       expect(errorHandler).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ userId: 'default', requestId: 'req-123' })
+        expect.objectContaining({ userId: "default", requestId: "req-123" }),
       );
     });
   });
@@ -131,8 +127,8 @@ describe('Factory Configuration', () => {
   // OPTIONAL CONFIG TESTS
   // ========================================================================
 
-  describe('optional configuration', () => {
-    it('should work with no configuration', async () => {
+  describe("optional configuration", () => {
+    it("should work with no configuration", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
@@ -141,13 +137,13 @@ describe('Factory Configuration', () => {
       expect(result).toEqual({});
     });
 
-    it('should work with empty configuration', async () => {
+    it("should work with empty configuration", async () => {
       const safeFnClient = createSafeFnClient({});
 
-      const fn = safeFnClient.handler(async () => 'empty config');
+      const fn = safeFnClient.handler(async () => "empty config");
       const result = await fn({}, {});
 
-      expect(result).toBe('empty config');
+      expect(result).toBe("empty config");
     });
   });
 });
@@ -156,27 +152,27 @@ describe('Factory Configuration', () => {
 // INTEGRATION TESTS
 // ========================================================================
 
-describe('Factory Integration', () => {
-  describe('input and output validation', () => {
-    it('should work with input validation', async () => {
+describe("Factory Integration", () => {
+  describe("input and output validation", () => {
+    it("should work with input validation", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { service: 'test' }
+        defaultContext: { service: "test" },
       });
 
       const fn = safeFnClient
         .input(z.object({ name: z.string() }))
-        .handler(async ({ parsedInput, ctx }) => ({ 
+        .handler(async ({ parsedInput, ctx }) => ({
           greeting: `Hello ${parsedInput.name}`,
-          service: ctx.service 
+          service: ctx.service,
         }));
 
-      const result = await fn({ name: 'World' }, {});
-      expect(result).toEqual({ greeting: 'Hello World', service: 'test' });
+      const result = await fn({ name: "World" }, {});
+      expect(result).toEqual({ greeting: "Hello World", service: "test" });
     });
 
-    it('should work with output validation', async () => {
+    it("should work with output validation", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { env: 'test' }
+        defaultContext: { env: "test" },
       });
 
       const fn = safeFnClient
@@ -184,19 +180,19 @@ describe('Factory Integration', () => {
         .handler(async ({ ctx }) => ({ result: `Environment: ${ctx.env}` }));
 
       const result = await fn({}, {});
-      expect(result).toEqual({ result: 'Environment: test' });
+      expect(result).toEqual({ result: "Environment: test" });
     });
 
-    it('should work with both input and output validation', async () => {
+    it("should work with both input and output validation", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { multiplier: 2 }
+        defaultContext: { multiplier: 2 },
       });
 
       const fn = safeFnClient
         .input(z.object({ value: z.number() }))
         .output(z.object({ doubled: z.number() }))
-        .handler(async ({ parsedInput, ctx }) => ({ 
-          doubled: parsedInput.value * ctx.multiplier 
+        .handler(async ({ parsedInput, ctx }) => ({
+          doubled: parsedInput.value * ctx.multiplier,
         }));
 
       const result = await fn({ value: 5 }, {});
@@ -204,10 +200,10 @@ describe('Factory Integration', () => {
     });
   });
 
-  describe('middleware support', () => {
-    it('should support basic middleware', async () => {
+  describe("middleware support", () => {
+    it("should support basic middleware", async () => {
       const safeFnClient = createSafeFnClient({
-        defaultContext: { userId: 'default-user' }
+        defaultContext: { userId: "default-user" },
       });
 
       const fn = safeFnClient
@@ -217,20 +213,18 @@ describe('Factory Integration', () => {
         .handler(async ({ ctx }) => `Hello from ${ctx.userId}`);
 
       const result = await fn({}, {});
-      expect(result).toBe('Hello from default-user');
+      expect(result).toBe("Hello from default-user");
     });
 
-    it('should support metadata configuration', async () => {
+    it("should support metadata configuration", async () => {
       const safeFnClient = createSafeFnClient({
-        metadataSchema: z.object({ operation: z.string() })
+        metadataSchema: z.object({ operation: z.string() }),
       });
 
-      const fn = safeFnClient
-        .metadata({ operation: 'test-op' })
-        .handler(async () => 'completed');
+      const fn = safeFnClient.metadata({ operation: "test-op" }).handler(async () => "completed");
 
       const result = await fn({}, {});
-      expect(result).toBe('completed');
+      expect(result).toBe("completed");
     });
   });
 });

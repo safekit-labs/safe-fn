@@ -9,10 +9,10 @@ export type {
   SchemaValidator,
   SafeFnBuilder,
   SafeFn,
-} from '@/types';
+} from "@/types";
 
 // Builder factory
-export { createSafeFnClient } from '@/factory';
+export { createSafeFnClient } from "@/factory";
 
 // Direct SafeFn creation
-export { createSafeFn } from '@/safe-fn';
+export { createSafeFn } from "@/safe-fn";

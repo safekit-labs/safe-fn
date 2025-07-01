@@ -1,21 +1,35 @@
 {
   "name": "@safekit/safe-fn",
   "version": "0.3.0-alpha.1",
-  "description": "[EXPERIMENTAL] A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.",
-  "private": false,
-  "type": "module",
-  "license": "MIT",
-  "homepage": "https://github.com/safekit-labs/safe-fn",
+  "author": "safekit",
   "repository": {
     "type": "git",
     "url": "https://github.com/safekit-labs/safe-fn.git"
   },
-  "bugs": {
-    "url": "https://github.com/safekit-labs/safe-fn/issues"
-  },
-  "types": "./dist/src/index.d.ts",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",
+  "devDependencies": {
+    "@effect/schema": "^0.75.5",
+    "@types/node": "^24.0.4",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "arktype": "^2.1.20",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "prettier": "^3.6.2",
+    "runtypes": "^7.0.4",
+    "scale-codec": "^0.13.0",
+    "superstruct": "^2.0.2",
+    "tsc-alias": "^1.8.16",
+    "typescript": "^5.8.3",
+    "typia": "^9.3.1",
+    "valibot": "^1.1.0",
+    "vite": "^7.0.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4",
+    "yup": "^1.6.1",
+    "zod": "^3.25.68-beta.0"
+  },
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
@@ -23,26 +37,17 @@
       "require": "./dist/src/index.js"
     }
   },
+  "bugs": {
+    "url": "https://github.com/safekit-labs/safe-fn/issues"
+  },
+  "description": "[EXPERIMENTAL] A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.",
   "files": [
     "dist",
     "README.md",
     "LICENSE",
     "package.json"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "scripts": {
-    "build:tsc": "tsc -p tsconfig.build.json",
-    "build:resolve": "tsc-alias -p tsconfig.build.json",
-    "build": "bun run clean && bun run build:tsc && bun run build:resolve",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
-    "clean": "rm -rf dist",
-    "lint": "eslint src/**/*.ts",
-    "format": "prettier --write src/**/*.ts",
-    "test": "vitest"
-  },
+  "homepage": "https://github.com/safekit-labs/safe-fn",
   "keywords": [
     "typescript",
     "functions",
@@ -58,29 +63,22 @@
     "experimental",
     "alpha"
   ],
-  "author": "safekit",
-  "dependencies": {
-    "@standard-schema/spec": "^1.0.0"
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
   },
-  "devDependencies": {
-    "@effect/schema": "^0.75.5",
-    "@types/node": "^24.0.4",
-    "@typescript-eslint/eslint-plugin": "^8.35.0",
-    "@typescript-eslint/parser": "^8.35.0",
-    "arktype": "^2.1.20",
-    "eslint": "^9.29.0",
-    "eslint-config-prettier": "^10.1.5",
-    "runtypes": "^7.0.4",
-    "scale-codec": "^0.13.0",
-    "superstruct": "^2.0.2",
-    "tsc-alias": "^1.8.16",
-    "typescript": "^5.8.3",
-    "typia": "^9.3.1",
-    "valibot": "^1.1.0",
-    "vite": "^7.0.0",
-    "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4",
-    "yup": "^1.6.1",
-    "zod": "^3.25.68-beta.0"
-  }
+  "scripts": {
+    "build:tsc": "tsc -p tsconfig.build.json",
+    "build:resolve": "tsc-alias -p tsconfig.build.json",
+    "build": "bun run clean && bun run build:tsc && bun run build:resolve",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,html}\"",
+    "test": "vitest"
+  },
+  "type": "module",
+  "types": "./dist/src/index.d.ts"
 }

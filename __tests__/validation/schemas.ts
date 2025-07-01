@@ -1,12 +1,12 @@
-import { z as zod3 } from 'zod/v3';
-import { z as zod4 } from 'zod/v4';
-import * as yup from 'yup';
-import * as st from 'superstruct';
-import * as v from 'valibot';
-import * as arktype from 'arktype';
-import { Schema } from 'effect';
-import * as $ from 'scale-codec';
-import * as T from 'runtypes';
+import { z as zod3 } from "zod/v3";
+import { z as zod4 } from "zod/v4";
+import * as yup from "yup";
+import * as st from "superstruct";
+import * as v from "valibot";
+import * as arktype from "arktype";
+import { Schema } from "effect";
+import * as $ from "scale-codec";
+import * as T from "runtypes";
 
 /**
  * Test schema definitions for different validation libraries
@@ -31,7 +31,6 @@ export interface TestSchemas {
     authSchema: any;
   };
 }
-
 
 // Zod v3 schemas
 export const zod3Schemas: TestSchemas = {
@@ -136,20 +135,20 @@ export const valibotSchemas: TestSchemas = {
 // ArkType schemas
 export const arktypeSchemas: TestSchemas = {
   objectSchemas: {
-    userSchema: arktype.type({ name: 'string', age: 'number' }),
-    emailSchema: arktype.type({ email: 'string.email' }),
+    userSchema: arktype.type({ name: "string", age: "number" }),
+    emailSchema: arktype.type({ email: "string.email" }),
   },
   argumentSchemas: {
-    stringNumberArray: [arktype.type('string'), arktype.type('number')],
+    stringNumberArray: [arktype.type("string"), arktype.type("number")],
     emptyArray: [],
-    stringMinArray: [arktype.type('string>0')],
+    stringMinArray: [arktype.type("string>0")],
   },
   outputSchemas: {
-    numberTransform: arktype.type({ result: 'number' }),
+    numberTransform: arktype.type({ result: "number" }),
   },
   metadataSchemas: {
-    operationSchema: arktype.type({ op: 'string' }),
-    authSchema: arktype.type({ op: 'string', auth: 'boolean' }),
+    operationSchema: arktype.type({ op: "string" }),
+    authSchema: arktype.type({ op: "string", auth: "boolean" }),
   },
 };
 
@@ -160,7 +159,10 @@ export const effectSchemas: TestSchemas = {
     emailSchema: Schema.standardSchemaV1(Schema.Struct({ email: Schema.String })), // Effect has email validation but it's more complex
   },
   argumentSchemas: {
-    stringNumberArray: [Schema.standardSchemaV1(Schema.String), Schema.standardSchemaV1(Schema.Number)],
+    stringNumberArray: [
+      Schema.standardSchemaV1(Schema.String),
+      Schema.standardSchemaV1(Schema.Number),
+    ],
     emptyArray: [],
     stringMinArray: [Schema.standardSchemaV1(Schema.String)], // Effect's minLength is more complex
   },
@@ -176,8 +178,8 @@ export const effectSchemas: TestSchemas = {
 // Scale Codec schemas
 export const scaleSchemas: TestSchemas = {
   objectSchemas: {
-    userSchema: $.object($.field('name', $.str), $.field('age', $.i32)),
-    emailSchema: $.object($.field('email', $.str)), // scale-codec doesn't have email validation
+    userSchema: $.object($.field("name", $.str), $.field("age", $.i32)),
+    emailSchema: $.object($.field("email", $.str)), // scale-codec doesn't have email validation
   },
   argumentSchemas: {
     stringNumberArray: [$.str, $.i32],
@@ -185,11 +187,11 @@ export const scaleSchemas: TestSchemas = {
     stringMinArray: [$.str], // scale-codec doesn't have string length validation
   },
   outputSchemas: {
-    numberTransform: $.object($.field('result', $.i32)),
+    numberTransform: $.object($.field("result", $.i32)),
   },
   metadataSchemas: {
-    operationSchema: $.object($.field('op', $.str)),
-    authSchema: $.object($.field('op', $.str), $.field('auth', $.bool)),
+    operationSchema: $.object($.field("op", $.str)),
+    authSchema: $.object($.field("op", $.str), $.field("auth", $.bool)),
   },
 };
 
@@ -215,13 +217,13 @@ export const runtypesSchemas: TestSchemas = {
 
 // Test data for validation scenarios
 export const testData = {
-  validUser: { name: 'John', age: 25 },
-  validEmail: { email: 'test@example.com' },
-  invalidEmail: { email: 'invalid' },
-  validStringNumber: ['Alice', 28] as const,
+  validUser: { name: "John", age: 25 },
+  validEmail: { email: "test@example.com" },
+  invalidEmail: { email: "invalid" },
+  validStringNumber: ["Alice", 28] as const,
   validNumberTransform: { value: 5 },
   expectedNumberResult: { result: 10 },
-  validMetadata: { op: 'test' },
-  validAuthMetadata: { op: 'test', auth: true },
-  emptyString: '',
+  validMetadata: { op: "test" },
+  validAuthMetadata: { op: "test", auth: true },
+  emptyString: "",
 };

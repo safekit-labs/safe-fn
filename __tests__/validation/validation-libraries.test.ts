@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { createSafeFnClient } from '@/factory';
+import { describe, it, expect } from "vitest";
+import { createSafeFnClient } from "@/factory";
 import {
   zod3Schemas,
   zod4Schemas,
@@ -10,30 +10,30 @@ import {
   effectSchemas,
   scaleSchemas,
   runtypesSchemas,
-  testData
-} from './schemas';
+  testData,
+} from "./schemas";
 
 // Test configuration for each validation library
 // Working libraries with full support
 const workingLibraries = [
-  { name: 'Zod v3', schemas: zod3Schemas },
-  { name: 'Zod v4', schemas: zod4Schemas },
-  { name: 'Yup', schemas: yupSchemas },
-  { name: 'Valibot', schemas: valibotSchemas },
-  { name: 'ArkType', schemas: arktypeSchemas },
-  { name: 'Effect', schemas: effectSchemas },
+  { name: "Zod v3", schemas: zod3Schemas },
+  { name: "Zod v4", schemas: zod4Schemas },
+  { name: "Yup", schemas: yupSchemas },
+  { name: "Valibot", schemas: valibotSchemas },
+  { name: "ArkType", schemas: arktypeSchemas },
+  { name: "Effect", schemas: effectSchemas },
 ];
 
 // Libraries that need conditional tests (no email validation)
 const conditionalLibraries = [
-  { name: 'Superstruct', schemas: superstructSchemas },
-  { name: 'Scale', schemas: scaleSchemas },
-  { name: 'Runtypes', schemas: runtypesSchemas },
+  { name: "Superstruct", schemas: superstructSchemas },
+  { name: "Scale", schemas: scaleSchemas },
+  { name: "Runtypes", schemas: runtypesSchemas },
 ];
 
 const libraries = [...workingLibraries, ...conditionalLibraries];
 
-describe.each(libraries)('$name Validator Support', ({ name, schemas }) => {
+describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
   describe(`${name} Object Schemas`, () => {
     it(`${name} should work with object schemas`, async () => {
       const safeFnClient = createSafeFnClient();
@@ -52,7 +52,7 @@ describe.each(libraries)('$name Validator Support', ({ name, schemas }) => {
         .handler(async (input: any) => input.parsedInput);
 
       // Skip email validation test for libraries that don't support it
-      if (['Superstruct', 'Scale', 'Runtypes', 'Effect'].includes(name)) {
+      if (["Superstruct", "Scale", "Runtypes", "Effect"].includes(name)) {
         // These libraries don't have email validation, so test passes with invalid email
         const result = await fn(testData.invalidEmail, {});
         expect(result).toEqual(testData.invalidEmail);
@@ -90,7 +90,7 @@ describe.each(libraries)('$name Validator Support', ({ name, schemas }) => {
         .handler(async ({ args }) => args);
 
       // Skip min length validation test for libraries that don't support it
-      if (['Scale', 'Runtypes', 'Effect'].includes(name)) {
+      if (["Scale", "Runtypes", "Effect"].includes(name)) {
         // These libraries don't have min length validation, so test passes with empty string
         const result = await fn(testData.emptyString);
         expect(result).toEqual([testData.emptyString]);
@@ -116,7 +116,7 @@ describe.each(libraries)('$name Validator Support', ({ name, schemas }) => {
   describe(`${name} Metadata Validation`, () => {
     it(`${name} should validate metadata`, async () => {
       const safeFnClient = createSafeFnClient({
-        metadataSchema: schemas.metadataSchemas.operationSchema
+        metadataSchema: schemas.metadataSchemas.operationSchema,
       });
 
       const fn = safeFnClient
@@ -125,12 +125,12 @@ describe.each(libraries)('$name Validator Support', ({ name, schemas }) => {
         .handler(async (input: any) => input.parsedInput.name);
 
       const result = await fn(testData.validUser, {});
-      expect(result).toBe('John');
+      expect(result).toBe("John");
     });
 
     it(`${name} should validate required metadata fields`, async () => {
       const safeFnClient = createSafeFnClient({
-        metadataSchema: schemas.metadataSchemas.authSchema
+        metadataSchema: schemas.metadataSchemas.authSchema,
       });
 
       const fn = safeFnClient
@@ -139,7 +139,7 @@ describe.each(libraries)('$name Validator Support', ({ name, schemas }) => {
         .handler(async (input: any) => input.parsedInput.name);
 
       const result = await fn(testData.validUser, {});
-      expect(result).toBe('John');
+      expect(result).toBe("John");
     });
   });
 });

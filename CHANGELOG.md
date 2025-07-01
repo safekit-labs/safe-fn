@@ -5,9 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0-alpha.1] - 2025-07-01
+
+- Removed `@standard-schema/spec` dependency
+- Factory pattern to initialize a safeFnClient
+
 ## [0.2.0-alpha.1] - 2025-06-29
 
 ### Added
+
 - **Tuple Arguments Support**: Multiple argument patterns using `z.tuple([...])` for service-layer functions
 - **Universal API**: Support for both single object (`fn(input, context)`) and tuple (`fn(...args)`) patterns
 - **Context Binding**: New `.context()` method for explicit context binding in tuple functions
@@ -19,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Compatibility Matrix**: Clear documentation of validator support levels
 
 ### Changed
+
 - **Version**: Reset to `0.2.0-alpha.1` to signal experimental status
 - **Package**: Added experimental warnings and alpha keywords
 - **Function Signatures**: Tuple functions return `(...args) => Promise<Output>`
@@ -28,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Schema Detection**: Enhanced Joi/Yup detection logic using method signature patterns
 
 ### Documentation
+
 - **README**: Added comprehensive examples for 0, 1, 2+ argument patterns
 - **README**: Added validator compatibility matrix and graceful degradation explanation
 - **DESIGN.md**: Added API design rationale and trade-off analysis
@@ -35,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tests**: Added comprehensive validator-specific test suites (Zod, Yup, Joi)
 
 ### Technical
+
 - **Architecture**: Simplified handler logic with clean tuple/object pattern separation
 - **Detection**: Uses `~standard.meta().type === 'array'` instead of runtime probing
 - **Context**: Clear hierarchy: default → client → builder → runtime
@@ -47,11 +56,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.1] - 2025-06-27
 
 ### Fixed
+
 - Updated ESLint config to v9 format and disabled noImplicitAny
 - Updated TypeScript config without strict mode
 - Fixed package dependencies
 
-### Documentation  
+### Documentation
+
 - Updated README title
 - Added proper @types/node dependency
 
@@ -60,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-12-26
 
 ### Added
+
 - Type-safe function builder with full TypeScript support
 - Client-only architecture with `createSafeFnClient`
 - Chainable interceptor system with `.use()` support
@@ -69,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation and examples
 
 ### Features
+
 - **Client**: Build reusable clients with shared interceptors and configuration
 - **Interceptors**: Chain middleware for logging, authentication, etc.
 - **Validation**: Built-in support for any Standard Schema validator
@@ -78,12 +91,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - GitHub Actions CI/CD workflows
 - @types/node dependency
 
 ### Changed
+
 - Vitest config to TypeScript (.mjs → .ts)
 
 ### Planned
+
 - Performance optimizations for large interceptor chains
 - Enhanced error handling and debugging tools
