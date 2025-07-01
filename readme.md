@@ -1,7 +1,7 @@
 # @safekit/safe-fn
 
 ⚠️ **EXPERIMENTAL ALPHA VERSION** ⚠️
-This package is in active development and **not ready for production use**. Expect breaking changes between versions. Use at your own risk.
+This package is in active development and **not ready for production use**. Expect breaking changes between versions.
 
 A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.
 
@@ -206,7 +206,7 @@ type Middleware<TContext> = (params: {
 
 For detailed examples of all supported validation libraries, see [examples/validation-libraries.ts](./examples/validation-libraries.ts).
 
-## What’s *Not* Included in `safe-fn`
+## What’s _Not_ Included in `safe-fn`
 
 To keep things simple and flexible, `safe-fn` leaves out a few features by design:
 
