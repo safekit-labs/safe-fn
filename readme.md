@@ -57,13 +57,13 @@ bun add @safekit/safe-fn
 
 ## Quick Start
 
-Here's a complete example showing SafeFn in action with client setup, middleware, and various function patterns:
+Here's a complete example showing `safe-fn` in action with client setup, middleware, and various function patterns:
 
 ```typescript
 import { z } from "zod";
 import { createSafeFnClient } from "@safekit/safe-fn";
 
-// 1. Create a SafeFn client with configuration
+// 1. Create a `safe-fn` client with configuration
 const safeFnClient = createSafeFnClient({
   defaultContext: {
     userId: undefined as string | undefined,
@@ -153,7 +153,7 @@ async function examples() {
 
 ## Client Configuration
 
-SafeFn clients are created with `createSafeFnClient()` and support three main configuration options:
+`safe-fn` clients are created with `createSafeFnClient()` and support three main configuration options:
 
 ```typescript
 import { z } from "zod";
@@ -265,7 +265,7 @@ const admin = await adminFunction(
 
 ## Validation
 
-SafeFn supports 10 popular validation libraries, giving you flexibility to use your preferred validation approach. All libraries support both object schemas and tuple schemas (multiple arguments):
+`safe-fn` supports multiple popular validation libraries, giving you flexibility to use your preferred validation approach. All libraries support both object schemas and tuple schemas (multiple arguments):
 
 ```typescript
 import { z } from "zod";
@@ -369,7 +369,7 @@ type Middleware<TContext> = (params: {
 
 ## Schema Support
 
-SafeFn provides comprehensive support for multiple validation libraries with automatic type inference. All libraries support both object and tuple schemas, with full TypeScript integration.
+`safe-fn` provides comprehensive support for multiple validation libraries with automatic type inference. All libraries support both object and tuple schemas, with full TypeScript integration.
 
 ### Supported Validation Libraries
 
@@ -503,7 +503,7 @@ const tupleFn = safeFnClient.input([T.String, T.Number]).handler(async ({ args }
 
 ### Tuple Detection Strategy
 
-SafeFn uses smart detection to determine when to provide the `args` parameter (for tuple functions) vs the `parsedInput` parameter (for object functions).
+`safe-fn` uses smart detection to determine when to provide the `args` parameter (for tuple functions) vs the `parsedInput` parameter (for object functions).
 
 **Tuple Detection Rules:**
 
@@ -550,16 +550,16 @@ const customFn = safeFnClient
   });
 ```
 
-## What SafeFn Will NOT Have
+## What `safe-fn` Will NOT Have
 
-SafeFn is intentionally designed as a lightweight wrapper around functions. The following features are explicitly **not included** to maintain simplicity:
+`safe-fn` is intentionally designed as a lightweight wrapper around functions. The following features are explicitly **not included** to maintain simplicity:
 
-- **Custom Error Classes**: Errors from your functions pass through unchanged - SafeFn doesn't wrap or transform them
-- **Response Serialization**: SafeFn returns your function's output directly
+- **Custom Error Classes**: Errors from your functions pass through unchanged - `safe-fn` doesn't wrap or transform them
+- **Response Serialization**: `safe-fn` returns your function's output directly
 - **Request/Response Objects**: Works with plain data - HTTP concerns are handled by your web framework
 - **Built-in Logging**: Add logging through middleware using your preferred logging library
 
-**Philosophy**: SafeFn enhances your functions with type safety and middleware, but doesn't replace your existing tools and patterns.
+**Philosophy**: `safe-fn` enhances your functions with type safety and middleware, but doesn't replace your existing tools and patterns.
 
 ## Inspiration
 
