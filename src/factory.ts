@@ -36,7 +36,7 @@ export function createSafeFnClient<TContext extends Context>(config: {
   onError?: (error: Error, context: TContext) => void | Promise<void>;
 }): SafeFn<TContext, unknown, unknown, Metadata>;
 
-export function createSafeFnClient(): SafeFn<Context, unknown, unknown, Metadata>;
+export function createSafeFnClient(): SafeFn<{}, unknown, unknown, Metadata>;
 
 /**
  * Creates a SafeFn client with default context and metadata schema
@@ -52,15 +52,17 @@ export function createSafeFnClient(): SafeFn<Context, unknown, unknown, Metadata
 export function createSafeFnClient(
   config?: SafeFnClientConfig<any, any>,
 ): SafeFn<any, unknown, unknown, any> {
-  const safeFn = createSafeFn();
+  // When no config is provided, start with empty context like next-safe-action
+  const safeFn = config?.defaultContext ? createSafeFn<any>() : createSafeFn<{}>();
 
   // Configure the SafeFn client with provided settings
   const metadataParser = config?.metadataSchema ? createParseFn(config.metadataSchema) : undefined;
 
-  // Store the client configuration for use in the SafeFn client
-  (safeFn as any)._defaultContext = config?.defaultContext;
+  // Store the client configuration for use in the SafeFn client  
+  (safeFn as any)._defaultContext = config?.defaultContext || {};
   (safeFn as any)._metadataParser = metadataParser;
   (safeFn as any)._clientErrorHandler = config?.onError;
+  (safeFn as any)._clientMiddlewares = [];
 
   return safeFn;
 }

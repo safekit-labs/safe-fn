@@ -58,7 +58,11 @@ const appMetaSchema = z.object({
 });
 
 // Context is inferred from defaultContext - no need for generics!
-export const fullConfigClient = createSafeFnClient({
+export const fullConfigClient = createSafeFnClient<{
+  userId: string | undefined;
+  requestId: string;
+  permissions: string[];
+}, typeof appMetaSchema>({
   defaultContext: {
     userId: undefined as string | undefined,
     requestId: "default",
@@ -76,8 +80,8 @@ export const fullConfigClient = createSafeFnClient({
 export const exampleFunction = clientWithMetadata
   .input(z.object({ data: z.string() }))
   .metadata({ operation: "process-data", requiresAuth: true })
-  .handler(async ({ parsedInput, ctx }) => {
-    return { processed: parsedInput.data, userId: ctx.userId };
+  .handler(async ({ input, ctx }) => {
+    return { processed: input.data, userId: ctx.userId };
   });
 
 // ------------------ 7. MULTIPLE CLIENTS FOR DIFFERENT PURPOSES ------------------
@@ -93,17 +97,24 @@ export const publicApiClient = createSafeFnClient({
   },
 });
 
+// Admin metadata schema
+const adminMetaSchema = z.object({
+  operation: z.string(),
+  requiresAdmin: z.boolean().optional(),
+});
+
 // Client for admin functions
-export const adminClient = createSafeFnClient({
+export const adminClient = createSafeFnClient<{
+  userId: string | undefined;
+  role: "admin";
+  permissions: readonly ["read", "write", "delete"];
+}, typeof adminMetaSchema>({
   defaultContext: {
     userId: undefined as string | undefined,
     role: "admin" as const,
     permissions: ["read", "write", "delete"] as const,
   },
-  metadataSchema: z.object({
-    operation: z.string(),
-    requiresAdmin: z.boolean().optional(),
-  }),
+  metadataSchema: adminMetaSchema,
   onError: (error, context) => {
     console.error(`Admin operation failed for user ${context.userId}:`, error.message);
   },
@@ -112,16 +123,16 @@ export const adminClient = createSafeFnClient({
 // Example usage with different clients
 export const publicFunction = publicApiClient
   .input(z.object({ query: z.string() }))
-  .handler(async ({ parsedInput, ctx }) => {
-    return { results: `Search: ${parsedInput.query}`, isPublic: ctx.isPublic };
+  .handler(async ({ input, ctx }) => {
+    return { results: `Search: ${input.query}`, isPublic: ctx.isPublic };
   });
 
 export const adminFunction = adminClient
   .input(z.object({ action: z.string() }))
   .metadata({ operation: "admin-action", requiresAdmin: true })
-  .handler(async ({ parsedInput, ctx }) => {
+  .handler(async ({ input, ctx }) => {
     return {
-      action: parsedInput.action,
+      action: input.action,
       executedBy: ctx.userId,
       role: ctx.role,
     };

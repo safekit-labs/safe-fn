@@ -13,26 +13,26 @@ const safeFnClient = createSafeFnClient({
 // 1. Single Object Pattern
 export const getUser = safeFnClient
   .input(z.object({ id: z.string() }))
-  .handler(async ({ parsedInput }) => {
-    return { id: parsedInput.id, name: "John" };
+  .handler(async ({ input }) => {
+    return { id: input.id, name: "John" };
   });
 
 // 2. Multiple Arguments Pattern
 export const addUser = safeFnClient
-  .input([z.string(), z.number()]) // name, age
+  .args(z.string(), z.number()) // name, age
   .handler(async ({ args }) => {
     const [name, age] = args;
     return { id: "123", name, age };
   });
 
 // 3. Zero Arguments Pattern
-export const healthCheck = safeFnClient.input([]).handler(async () => ({ status: "ok" }));
+export const healthCheck = safeFnClient.args().handler(async () => ({ status: "ok" }));
 
 // 4. Without Schema Validation
 type Input = { a: number; b: number };
 
-export const add = safeFnClient.handler<Input, number>(async ({ parsedInput }) => {
-  return parsedInput.a + parsedInput.b;
+export const add = safeFnClient.handler<Input, number>(async ({ input }) => {
+  return input.a + input.b;
 });
 
 // Usage examples

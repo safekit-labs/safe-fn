@@ -5,11 +5,13 @@
 import type {
   SafeFnHandler,
   Context,
-  Middleware,
+  MiddlewareFn,
   Metadata,
   SafeFn,
   SchemaValidator,
   SafeFnSignature,
+  InputSchemaArray,
+  Prettify,
 } from "@/types";
 
 import { executeMiddlewareChain } from "@/middleware";
@@ -47,10 +49,10 @@ interface ArrayInputHandlerOptions<
   args: any[];
   defaultContext: TContext;
   metadata: TMetadata;
-  clientMiddlewares: Middleware<any, any, any, TMetadata>[];
+  clientMiddlewares: MiddlewareFn<TMetadata, any, any>[];
   inputValidator: ParseFn<any> | undefined;
   outputValidator: ParseFn<any> | undefined;
-  functionMiddlewares: Middleware<TContext, any, any, TMetadata>[];
+  functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[];
   handler: SafeFnHandler<any, THandlerOutput, TContext>;
   errorHandlerFn: (error: Error, context: TContext) => void;
 }
@@ -68,10 +70,10 @@ interface ObjectInputHandlerOptions<
   context: Partial<TContext>;
   defaultContext: TContext;
   metadata: TMetadata;
-  clientMiddlewares: Middleware<any, any, any, TMetadata>[];
+  clientMiddlewares: MiddlewareFn<TMetadata, any, any>[];
   inputValidator: ParseFn<any> | undefined;
   outputValidator: ParseFn<any> | undefined;
-  functionMiddlewares: Middleware<TContext, any, any, TMetadata>[];
+  functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[];
   handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>;
   errorHandlerFn: (error: Error, context: TContext) => void;
 }
@@ -171,7 +173,7 @@ async function executeObjectInputHandler<
       context: fullContext,
       metadata,
       handler: async (finalInput: unknown, finalContext: TContext) => {
-        return handler({ ctx: finalContext, parsedInput: finalInput } as any);
+        return handler({ ctx: finalContext, input: finalInput } as any);
       },
     });
 
@@ -194,21 +196,21 @@ async function executeObjectInputHandler<
  * Creates a safe function
  */
 export function createSafeFn<
-  TContext extends Context = Context,
+  TContext extends Context = {},
   TMetadata extends Metadata = Metadata,
->(): SafeFn<TContext, unknown, unknown, TMetadata> {
+>(): SafeFn<TContext, unknown, unknown, TMetadata, 'none'> {
   let currentMetadata: TMetadata | undefined;
   let inputValidator: ParseFn<any> | undefined;
   let outputValidator: ParseFn<any> | undefined;
-  let functionMiddlewares: Middleware<TContext, any, any, TMetadata>[] = [];
+  let functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[] = [];
   let errorHandler: ((error: Error, context: TContext) => void) | undefined;
   let metadataValidator: ParseFn<TMetadata> | undefined;
   let isArrayInput = false;
 
-  const safeFn: SafeFn<TContext, unknown, unknown, TMetadata> = {
+  const safeFn: SafeFn<TContext, unknown, unknown, TMetadata, 'none'> = {
     metadata<TNewMetadata extends Metadata>(
       metadata: TNewMetadata,
-    ): SafeFn<TContext, unknown, unknown, TNewMetadata> {
+    ): SafeFn<TContext, unknown, unknown, TNewMetadata, 'none'> {
       const newSafeFn = createSafeFn<TContext, TNewMetadata>();
 
       // Copy over current state
@@ -230,22 +232,23 @@ export function createSafeFn<
       return newSafeFn;
     },
 
-    use<TNewContext extends TContext>(
-      middleware: Middleware<TContext, TNewContext, any, TMetadata>,
-    ): SafeFn<TNewContext, unknown, unknown, TMetadata> {
-      const newSafeFn = createSafeFn<TNewContext, TMetadata>();
+    use<TNextCtx extends Context>(
+      middleware: MiddlewareFn<TMetadata, TContext, TContext & TNextCtx>,
+    ): SafeFn<Prettify<TContext & TNextCtx>, unknown, unknown, TMetadata, 'none'> {
+      const newSafeFn = createSafeFn<Prettify<TContext & TNextCtx>, TMetadata>();
 
       // Copy over current state
       (newSafeFn as any)._currentMetadata = currentMetadata;
       (newSafeFn as any)._inputValidator = inputValidator;
       (newSafeFn as any)._outputValidator = outputValidator;
-      (newSafeFn as any)._functionMiddlewares = [...functionMiddlewares, middleware];
+      (newSafeFn as any)._functionMiddlewares = functionMiddlewares;
       (newSafeFn as any)._errorHandler = errorHandler;
       (newSafeFn as any)._metadataValidator = metadataValidator;
       (newSafeFn as any)._isArrayInput = isArrayInput;
 
-      // Copy client configuration if present
-      (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
+      // Copy client configuration if present and add new middleware to client middlewares
+      const existingClientMiddlewares = (safeFn as any)._clientMiddlewares || [];
+      (newSafeFn as any)._clientMiddlewares = [...existingClientMiddlewares, middleware];
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
       (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
       (newSafeFn as any)._metadataParser = (safeFn as any)._metadataParser;
@@ -254,47 +257,58 @@ export function createSafeFn<
     },
 
     input<TNewInput>(
-      schema: SchemaValidator<TNewInput> | SchemaValidator<any>[],
-    ): SafeFn<TContext, TNewInput, unknown, TMetadata> {
-      if (Array.isArray(schema)) {
-        isArrayInput = true;
-        // For array of schemas, create a validator that handles each argument
+      schema?: SchemaValidator<TNewInput>,
+    ) {
+      isArrayInput = false;
+
+      // If schema is provided, set up validation
+      if (schema !== undefined) {
+        inputValidator = createParseFn(schema);
+      } else {
+        // Schema-less variant - no validation, type-only
+        inputValidator = undefined;
+      }
+
+      return safeFn as any; // Type assertion needed for the new input type
+    },
+
+    args<TArgs extends readonly any[]>(
+      ...schemas: InputSchemaArray<TArgs>
+    ) {
+      isArrayInput = true;
+
+      // If schemas are provided, set up validation
+      if (schemas.length > 0) {
+        // Create validator for multiple arguments
         inputValidator = async (input: unknown) => {
           if (!Array.isArray(input)) {
             throw new Error("Expected array input for multiple argument validation");
           }
 
-          // Handle empty schema array (zero arguments)
-          if (schema.length === 0) {
-            if (input.length > 0) {
-              throw new Error(`No arguments expected, but got ${input.length}`);
-            }
-            return [];
-          }
-
           // Handle mismatched argument count
-          if (input.length !== schema.length) {
-            throw new Error(`Expected ${schema.length} arguments, but got ${input.length}`);
+          if (input.length !== schemas.length) {
+            throw new Error(`Expected ${schemas.length} arguments, but got ${input.length}`);
           }
 
           // Parse each argument and await all results
           const parsePromises = input.map((arg, index) => {
-            const parseFn = createParseFn(schema[index]);
+            const parseFn = createParseFn(schemas[index]);
             return Promise.resolve(parseFn(arg));
           });
 
           return Promise.all(parsePromises);
         };
       } else {
-        isArrayInput = false;
-        inputValidator = createParseFn(schema);
+        // Schema-less variant - no validation, type-only
+        inputValidator = undefined;
       }
+
       return safeFn as any; // Type assertion needed for the new input type
     },
 
     output<TNewOutput>(
       schema: SchemaValidator<TNewOutput>,
-    ): SafeFn<TContext, unknown, TNewOutput, TMetadata> {
+    ): SafeFn<TContext, unknown, TNewOutput, TMetadata, 'none'> {
       outputValidator = createParseFn(schema);
       return safeFn as any; // Type assertion needed for the new output type
     },
@@ -347,6 +361,7 @@ export function createSafeFn<
             });
           };
 
+      // Use the correct type based on whether we have array input
       return finalFn as SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
     },
   };

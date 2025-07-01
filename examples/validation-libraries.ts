@@ -15,10 +15,10 @@ const safeFnClient = createSafeFnClient();
 
 export const zodUserFn = safeFnClient
   .input(z.object({ name: z.string(), email: z.string().email() }))
-  .handler(async ({ parsedInput }) => parsedInput);
+  .handler(async ({ input }) => input);
 
 export const zodTupleFn = safeFnClient
-  .input([z.string(), z.number().positive()])
+  .args(z.string(), z.number().positive())
   .handler(async ({ args }) => args);
 
 // ========================================================================
@@ -27,10 +27,10 @@ export const zodTupleFn = safeFnClient
 
 export const yupUserFn = safeFnClient
   .input(yup.object({ name: yup.string().required(), age: yup.number().required() }))
-  .handler(async ({ parsedInput }) => parsedInput);
+  .handler(async ({ input }) => input);
 
 export const yupTupleFn = safeFnClient
-  .input([yup.string().required(), yup.number().positive().required()])
+  .args(yup.string().required(), yup.number().positive().required())
   .handler(async ({ args }) => args);
 
 // ========================================================================
@@ -41,10 +41,10 @@ import * as v from "valibot";
 
 export const valibotUserFn = safeFnClient
   .input(v.object({ name: v.string(), email: v.pipe(v.string(), v.email()) }))
-  .handler(async ({ parsedInput }) => parsedInput);
+  .handler(async ({ input }) => input);
 
 export const valibotTupleFn = safeFnClient
-  .input([v.string(), v.pipe(v.number(), v.minValue(0))])
+  .args(v.string(), v.pipe(v.number(), v.minValue(0)))
   .handler(async ({ args }) => args);
 
 // ========================================================================
@@ -53,10 +53,10 @@ export const valibotTupleFn = safeFnClient
 
 export const arkTypeUserFn = safeFnClient
   .input(type({ name: "string", email: "string.email" }))
-  .handler(async ({ parsedInput }) => parsedInput);
+  .handler(async ({ input }) => input);
 
 export const arkTypeTupleFn = safeFnClient
-  .input([type("string"), type("number>0")])
+  .args(type("string"), type("number>0"))
   .handler(async ({ args }) => args);
 
 // ========================================================================
@@ -72,10 +72,10 @@ export const effectUserFn = safeFnClient
       }),
     ),
   )
-  .handler(async ({ parsedInput }) => parsedInput);
+  .handler(async ({ input }) => input);
 
 export const effectTupleFn = safeFnClient
-  .input([Schema.standardSchemaV1(Schema.String), Schema.standardSchemaV1(Schema.Number)])
+  .args(Schema.standardSchemaV1(Schema.String), Schema.standardSchemaV1(Schema.Number))
   .handler(async ({ args }) => args);
 
 // ========================================================================
@@ -84,10 +84,10 @@ export const effectTupleFn = safeFnClient
 
 export const superstructUserFn = safeFnClient
   .input(st.object({ name: st.string(), age: st.number() }))
-  .handler(async ({ parsedInput }) => parsedInput);
+  .handler(async ({ input }) => input);
 
 export const superstructTupleFn = safeFnClient
-  .input([st.string(), st.number()])
+  .args(st.string(), st.number())
   .handler(async ({ args }) => args);
 
 // ========================================================================
@@ -96,8 +96,8 @@ export const superstructTupleFn = safeFnClient
 
 export const runtypesUserFn = safeFnClient
   .input(T.Object({ name: T.String, age: T.Number }))
-  .handler(async ({ parsedInput }) => parsedInput);
+  .handler(async ({ input }) => input);
 
 export const runtypesTupleFn = safeFnClient
-  .input([T.String, T.Number])
+  .args(T.String, T.Number)
   .handler(async ({ args }) => args);

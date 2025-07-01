@@ -98,6 +98,11 @@ export type ParseFn<TType> = (value: unknown) => Promise<TType> | TType;
  * and lets underlying schema errors flow through naturally
  */
 export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
+  // Handle null marker - skip validation and return input as-is
+  if (schema === null) {
+    return (value: unknown) => value as T;
+  }
+
   const parser = schema as any;
   const isStandardSchema = "~standard" in parser;
 

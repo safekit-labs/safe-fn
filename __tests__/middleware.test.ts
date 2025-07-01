@@ -46,7 +46,7 @@ describe("Middleware Support", () => {
       const fn = safeFnClient
         .use(async ({ next }) => next())
         .input(z.object({ name: z.string() }))
-        .handler(async ({ parsedInput, ctx }) => `${ctx.prefix} ${parsedInput.name}`);
+        .handler(async ({ input, ctx }) => `${ctx.prefix} ${input.name}`);
 
       const result = await fn({ name: "Smith" }, {});
       expect(result).toBe("Mr. Smith");
@@ -139,7 +139,7 @@ describe("Middleware Support", () => {
       const fn = safeFnClient
         .use(async ({ next }) => next())
         .input(z.object({ message: z.string() }))
-        .handler(async ({ parsedInput }) => `Received: ${parsedInput.message}`);
+        .handler(async ({ input }) => `Received: ${input.message}`);
 
       const result = await fn({ message: "hello" }, {});
       expect(result).toBe("Received: hello");
@@ -150,7 +150,7 @@ describe("Middleware Support", () => {
 
       const fn = safeFnClient
         .use(async ({ next }) => next())
-        .input([z.string(), z.number()])
+        .args(z.string(), z.number())
         .handler(async ({ args }) => `${args[0]}: ${args[1]}`);
 
       const result = await fn("count", 42);
@@ -162,7 +162,7 @@ describe("Middleware Support", () => {
 
       const fn = safeFnClient
         .use(async ({ next }) => next())
-        .input([])
+        .args()
         .handler(async ({ args }) => `Args length: ${args.length}`);
 
       const result = await fn();
@@ -177,7 +177,7 @@ describe("Middleware Support", () => {
       const fn = safeFnClient
         .use(async ({ next }) => next())
         .input(z.object({ age: z.number() }))
-        .handler(async ({ parsedInput }) => `Age: ${parsedInput.age}`);
+        .handler(async ({ input }) => `Age: ${input.age}`);
 
       await expect(fn({ age: "not-a-number" as any }, {})).rejects.toThrow();
     });
@@ -226,9 +226,9 @@ describe("Middleware Integration", () => {
         .metadata({ operation: "create-user", userId: "admin" })
         .input(z.object({ name: z.string(), email: z.string() }))
         .output(z.object({ id: z.string(), name: z.string(), created: z.boolean() }))
-        .handler(async ({ parsedInput, ctx }) => ({
+        .handler(async ({ input, ctx }) => ({
           id: `${ctx.service}-${Date.now()}`,
-          name: parsedInput.name,
+          name: input.name,
           created: true,
         }));
 
@@ -279,18 +279,18 @@ describe("Middleware Integration", () => {
       const fn1 = safeFnClient
         .input(z.string())
         .use(async ({ next }) => next())
-        .handler(async ({ parsedInput }) => `Order 1: ${parsedInput}`);
+        .handler(async ({ input }) => `Order 1: ${input}`);
 
       const fn2 = safeFnClient
         .use(async ({ next }) => next())
         .input(z.string())
-        .handler(async ({ parsedInput }) => `Order 2: ${parsedInput}`);
+        .handler(async ({ input }) => `Order 2: ${input}`);
 
       const fn3 = safeFnClient
         .metadata({ test: true })
         .use(async ({ next }) => next())
         .input(z.string())
-        .handler(async ({ parsedInput }) => `Order 3: ${parsedInput}`);
+        .handler(async ({ input }) => `Order 3: ${input}`);
 
       const result1 = await fn1("test1", {});
       const result2 = await fn2("test2", {});
@@ -313,8 +313,8 @@ describe("Middleware Integration", () => {
         .input(z.object({ data: z.string() }))
         .use(async ({ next }) => next())
         .output(z.object({ processed: z.string() }))
-        .handler(async ({ parsedInput, ctx }) => ({
-          processed: `${ctx.base}-${parsedInput.data}`,
+        .handler(async ({ input, ctx }) => ({
+          processed: `${ctx.base}-${input.data}`,
         }));
 
       const result = await fn({ data: "input" }, {});

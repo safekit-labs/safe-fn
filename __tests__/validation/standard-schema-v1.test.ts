@@ -62,7 +62,7 @@ describe("Standard Schema Support", () => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient
         .input(stringSchema)
-        .handler(async ({ parsedInput }) => `Hello, ${parsedInput}!`);
+        .handler(async ({ input }) => `Hello, ${input}!`);
 
       const result = await fn("World", {});
       expect(result).toBe("Hello, World!");
@@ -72,7 +72,7 @@ describe("Standard Schema Support", () => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient
         .input(numberSchema)
-        .handler(async ({ parsedInput }) => parsedInput * 2);
+        .handler(async ({ input }) => input * 2);
 
       await expect(fn("not-a-number" as any, {})).rejects.toThrow("Expected number");
     });
@@ -81,7 +81,7 @@ describe("Standard Schema Support", () => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient
         .input(objectSchema)
-        .handler(async ({ parsedInput }) => `${parsedInput.name} is ${parsedInput.age} years old`);
+        .handler(async ({ input }) => `${input.name} is ${input.age} years old`);
 
       const result = await fn({ name: "Alice", age: 30 }, {});
       expect(result).toBe("Alice is 30 years old");
@@ -113,7 +113,7 @@ describe("Standard Schema Support", () => {
       const fn = safeFnClient
         .input(objectSchema)
         .output(stringSchema)
-        .handler(async ({ parsedInput }) => `${parsedInput.name} is ${parsedInput.age} years old`);
+        .handler(async ({ input }) => `${input.name} is ${input.age} years old`);
 
       const result = await fn({ name: "Alice", age: 30 }, {});
       expect(result).toBe("Alice is 30 years old");
@@ -133,11 +133,11 @@ describe("Standard Schema Support", () => {
           if (typeof input !== "string") throw new Error("Expected string");
           return input;
         })
-        .handler(async ({ parsedInput }) => parsedInput.toUpperCase());
+        .handler(async ({ input }) => input.toUpperCase());
 
       const standardFn = safeFnClient
         .input(stringSchema)
-        .handler(async ({ parsedInput }) => parsedInput.toLowerCase());
+        .handler(async ({ input }) => input.toLowerCase());
 
       const legacyResult = await legacyFn("hello", {});
       const standardResult = await standardFn("WORLD", {});

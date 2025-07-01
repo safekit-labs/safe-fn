@@ -161,8 +161,8 @@ describe("Factory Integration", () => {
 
       const fn = safeFnClient
         .input(z.object({ name: z.string() }))
-        .handler(async ({ parsedInput, ctx }) => ({
-          greeting: `Hello ${parsedInput.name}`,
+        .handler(async ({ input, ctx }) => ({
+          greeting: `Hello ${input.name}`,
           service: ctx.service,
         }));
 
@@ -191,8 +191,8 @@ describe("Factory Integration", () => {
       const fn = safeFnClient
         .input(z.object({ value: z.number() }))
         .output(z.object({ doubled: z.number() }))
-        .handler(async ({ parsedInput, ctx }) => ({
-          doubled: parsedInput.value * ctx.multiplier,
+        .handler(async ({ input, ctx }) => ({
+          doubled: input.value * ctx.multiplier,
         }));
 
       const result = await fn({ value: 5 }, {});

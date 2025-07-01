@@ -1,7 +1,7 @@
 /**
  * Unified middleware execution system
  */
-import type { Middleware, MiddlewareOutput, Context, Metadata } from "@/types";
+import type { MiddlewareFn, MiddlewareResult, Context, Metadata } from "@/types";
 
 /**
  * Parameters for executeMiddlewareChain
@@ -11,7 +11,7 @@ export interface ExecuteMiddlewareChainParams<
   TContext extends Context,
   TMetadata extends Metadata,
 > {
-  middlewares: Middleware<any, any, any, TMetadata>[];
+  middlewares: MiddlewareFn<TMetadata, any, any>[];
   rawInput: unknown;
   parsedInput: unknown | undefined;
   context: TContext;
@@ -36,27 +36,41 @@ export async function executeMiddlewareChain<
   }
 
   let index = -1;
+  let currentContext: Context = context;
+  const middlewareResult: MiddlewareResult<any, Context> = {
+    output: undefined,
+    context: currentContext,
+    success: false
+  };
 
-  const executeNext = async (currentContext: Context): Promise<MiddlewareOutput<any, Context>> => {
-    index++;
+  const executeMiddlewareStack = async (idx = 0): Promise<void> => {
+    index = idx;
 
     // Base case: all middlewares executed, call the handler
     if (index === middlewares.length) {
       const output = await handler(parsedInput ?? rawInput, currentContext as TContext);
-      return { output, context: currentContext };
+      middlewareResult.output = output;
+      middlewareResult.context = currentContext;
+      middlewareResult.success = true;
+      return;
     }
 
     const middleware = middlewares[index];
 
     // Define the `next` function for the current middleware.
-    // When it's called, it will execute the *next* middleware in the chain.
-    const next = async (params?: { ctx: Context }) => {
-      // Use provided context or current context
-      const contextToUse = params?.ctx || currentContext;
-      return await executeNext(contextToUse);
+    // Overloaded to handle both next() and next({ ctx: ... }) calls
+    const next: {
+      (): Promise<MiddlewareResult<unknown, any>>;
+      <NC extends Context>(opts: { ctx: NC }): Promise<MiddlewareResult<unknown, any>>;
+    } = async (params?: { ctx?: any }): Promise<MiddlewareResult<unknown, any>> => {
+      // Merge provided context with current context (similar to next-safe-action's deepmerge)
+      currentContext = params?.ctx ? { ...currentContext, ...params.ctx } : currentContext;
+      await executeMiddlewareStack(idx + 1);
+      return middlewareResult; // Always return the same middlewareResult object
     };
 
-    return await middleware({
+    // Execute the middleware
+    await middleware({
       rawInput,
       parsedInput,
       ctx: currentContext,
@@ -66,18 +80,25 @@ export async function executeMiddlewareChain<
   };
 
   // Start the chain
-  const result = await executeNext(context);
-  return result.output;
+  await executeMiddlewareStack(0);
+  return middlewareResult.output;
 }
 
 /**
- * Creates a middleware function with proper typing for better DX
+ * Creates a standalone middleware function. It accepts a generic object with optional `ctx` and `metadata`
+ * properties, if you need one or all of them to be typed. The type for each property that is passed as generic is the
+ * **minimum** shape required to define the middleware function, but it can also be larger than that.
+ *
+ * Similar to next-safe-action's createMiddleware but adapted for safe-fn
  */
-export const createMiddleware = <
-  TCurrentContext extends Context = Context,
-  TNewContext extends Context = Context,
-  TInput = unknown,
-  TMetadata extends Metadata = Metadata,
->(
-  middleware: Middleware<TCurrentContext, TNewContext, TInput, TMetadata>,
-): Middleware<TCurrentContext, TNewContext, TInput, TMetadata> => middleware;
+export const createMiddleware = <BaseData extends { ctx?: Context; metadata?: any }>() => {
+  return {
+    define: <TNextCtx extends Context>(
+      middlewareFn: MiddlewareFn<
+        BaseData extends { metadata: infer MD } ? MD : any,
+        BaseData extends { ctx: infer Ctx extends Context } ? Ctx : {},
+        TNextCtx
+      >
+    ) => middlewareFn,
+  };
+};

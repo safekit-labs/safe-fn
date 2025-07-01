@@ -29,12 +29,12 @@ class SafeFnBuilderImpl<TContext extends Context, TMetadata extends Metadata>
   // Use readonly public properties instead of private to allow exports
   readonly defaultContext?: TContext;
   readonly metadataParser?: ParseFn<TMetadata>;
-  readonly middlewares: Middleware<any, any, unknown, TMetadata>[];
+  readonly middlewares: Middleware<any, any, TMetadata>[];
 
   constructor(options?: {
     defaultContext?: TContext;
     metadataParser?: ParseFn<TMetadata>;
-    middlewares?: Middleware<any, any, unknown, TMetadata>[];
+    middlewares?: Middleware<any, any, TMetadata>[];
   }) {
     this.defaultContext = options?.defaultContext;
     this.metadataParser = options?.metadataParser;
@@ -42,7 +42,7 @@ class SafeFnBuilderImpl<TContext extends Context, TMetadata extends Metadata>
   }
 
   use<TNewContext extends TContext>(
-    middleware: Middleware<TContext, TNewContext, unknown, TMetadata>,
+    middleware: Middleware<TContext, TNewContext, TMetadata>,
   ): SafeFnBuilder<TNewContext, TMetadata> {
     // We create a NEW Builder whose generic is the NEW context type.
     // This is how the type information is preserved and chained.
@@ -70,7 +70,7 @@ class SafeFnBuilderImpl<TContext extends Context, TMetadata extends Metadata>
     return new SafeFnBuilderImpl<TContext, TNewMetadata>({
       defaultContext: this.defaultContext,
       metadataParser: newMetadataParser,
-      middlewares: this.middlewares as unknown as Middleware<any, any, unknown, TNewMetadata>[],
+      middlewares: this.middlewares as unknown as Middleware<any, any, TNewMetadata>[],
     });
   }
 

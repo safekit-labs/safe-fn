@@ -37,7 +37,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient
         .input(schemas.objectSchemas.userSchema)
-        .handler(async (input: any) => input.parsedInput);
+        .handler(async ({input}) => input);
 
       const result = await fn(testData.validUser, {});
       expect(result).toEqual(testData.validUser);
@@ -47,7 +47,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient
         .input(schemas.objectSchemas.emailSchema)
-        .handler(async (input: any) => input.parsedInput);
+        .handler(async ({input}) => input);
 
       // Skip email validation test for libraries that don't support it
       if (["Superstruct", "Scale", "Runtypes", "Effect"].includes(name)) {
@@ -64,7 +64,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
     it(`${name} should support multiple arguments`, async () => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient
-        .input(schemas.argumentSchemas.stringNumberArray)
+        .args(...schemas.argumentSchemas.stringNumberArray)
         .handler(async ({ args }) => args);
 
       const result = await fn(...testData.validStringNumber);
@@ -74,7 +74,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
     it(`${name} should support zero arguments`, async () => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient
-        .input(schemas.argumentSchemas.emptyArray)
+        .args()
         .handler(async ({ args }) => args);
 
       const result = await fn();
@@ -84,7 +84,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
     it(`${name} should validate arguments`, async () => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient
-        .input(schemas.argumentSchemas.stringMinArray)
+        .args(...schemas.argumentSchemas.stringMinArray)
         .handler(async ({ args }) => args);
 
       // Skip min length validation test for libraries that don't support it
@@ -104,7 +104,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
       const fn = safeFnClient
         .input(schemas.objectSchemas.userSchema)
         .output(schemas.outputSchemas.numberTransform)
-        .handler(async (input: any) => ({ result: input.parsedInput.age * 2 }));
+        .handler(async ({input}: any) => ({ result: input.age * 2 }));
 
       const result = await fn(testData.validUser, {});
       expect(result).toEqual({ result: 50 });
@@ -120,7 +120,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
       const fn = safeFnClient
         .input(schemas.objectSchemas.userSchema)
         .metadata(testData.validMetadata)
-        .handler(async (input: any) => input.parsedInput.name);
+        .handler(async ({input}: any) => input.name);
 
       const result = await fn(testData.validUser, {});
       expect(result).toBe("John");
@@ -134,7 +134,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
       const fn = safeFnClient
         .input(schemas.objectSchemas.userSchema)
         .metadata(testData.validAuthMetadata)
-        .handler(async (input: any) => input.parsedInput.name);
+        .handler(async ({input}: any) => input.name);
 
       const result = await fn(testData.validUser, {});
       expect(result).toBe("John");

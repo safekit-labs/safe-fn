@@ -29,3 +29,7 @@ thumbs.db
 # AI
 .claude/
 .cursor/
+
+
+# References
+references/

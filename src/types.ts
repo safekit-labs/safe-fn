@@ -5,13 +5,24 @@
 import type { StandardSchemaV1 } from "@/libs/standard-schema-v1/spec";
 
 // ========================================================================
+// UTILITY TYPES
+// ========================================================================
+
+/**
+ * Takes an object type and makes it more readable, converting intersections to proper object types
+ */
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {};
+
+// ========================================================================
 // CORE CONTEXT & METADATA TYPES
 // ========================================================================
 
 /**
  * Base context type - any object
  */
-export type Context = Record<string, unknown>;
+export type Context = {};
 
 /**
  * Utility type to infer context from defaultContext
@@ -21,9 +32,7 @@ export type Context = Record<string, unknown>;
 /**
  * Metadata information that can be attached to procedures
  */
-export interface Metadata {
-  [key: string]: unknown;
-}
+export interface Metadata {}
 
 // ========================================================================
 // CLIENT CONFIGURATION
@@ -48,24 +57,25 @@ export interface ClientConfig<
 /**
  * Output from middleware execution
  */
-export interface MiddlewareOutput<TOutput, TContext extends Context> {
+export interface MiddlewareResult<TOutput, TNextCtx extends Context> {
   output: TOutput;
-  context: TContext;
+  context: TNextCtx;
+  success: boolean;
 }
 
 /**
  * Next function for the unified middleware system
+ * Generic over the context type that will be passed to the next middleware
  */
-export type MiddlewareNext<TContext extends Context> = (params?: {
-  ctx: TContext;
-}) => Promise<MiddlewareOutput<unknown, TContext>>;
+export type MiddlewareNext = {
+  <TNextCtx extends Context = {}>(params?: { ctx?: TNextCtx }): Promise<MiddlewareResult<unknown, TNextCtx>>;
+};
 
 /**
  * Unified Middleware Props - contains all necessary information for middleware execution
  */
 export interface MiddlewareProps<
   TCurrentContext extends Context = Context,
-  TNewContext extends Context = Context,
   TInput = unknown,
   TMetadata extends Metadata = Metadata,
 > {
@@ -73,37 +83,58 @@ export interface MiddlewareProps<
   rawInput: unknown;
   /** Parsed input after validation - only available post-validation */
   parsedInput?: TInput;
-  /** Current context */
+  /** Current context - properly typed based on previous middleware */
   ctx: TCurrentContext;
   /** Metadata information */
   metadata: TMetadata;
   /** Next function in the middleware chain */
-  next: MiddlewareNext<TNewContext>;
+  next: MiddlewareNext;
 }
 
 /**
- * Unified Middleware Type
- * Replaces both Interceptor and Middleware - works pre and post validation
- * - Before validation: only rawInput is available, parsedInput is undefined
- * - After validation: both rawInput and parsedInput are available
+ * Unified Middleware Function Type
+ * Similar to next-safe-action's MiddlewareFn but adapted for safe-fn
+ * - Takes current context type as input
+ * - Returns new context type through MiddlewareResult
+ * - The return type's context becomes the input for the next middleware
+ */
+export type MiddlewareFn<
+  TMetadata extends Metadata,
+  TCurrentCtx extends Context,
+  TNextCtx extends Context,
+> = (props: {
+  rawInput: unknown;
+  parsedInput?: unknown;
+  ctx: Prettify<TCurrentCtx>;
+  metadata: TMetadata;
+  next: {
+    (): Promise<MiddlewareResult<unknown, TCurrentCtx>>;
+    <NC extends Context>(opts: { ctx: NC }): Promise<MiddlewareResult<unknown, Prettify<TCurrentCtx & NC>>>;
+  };
+}) => Promise<MiddlewareResult<unknown, TNextCtx>>;
+
+/**
+ * @deprecated Use MiddlewareFn instead - keeping for backward compatibility
  */
 export type Middleware<
   TCurrentContext extends Context = Context,
   TNewContext extends Context = Context,
-  TInput = unknown,
   TMetadata extends Metadata = Metadata,
-> = (
-  props: MiddlewareProps<TCurrentContext, TNewContext, TInput, TMetadata>,
-) => Promise<MiddlewareOutput<unknown, TNewContext>>;
+> = MiddlewareFn<TMetadata, TCurrentContext, TNewContext>;
 
 /**
- * Infer the context type that a middleware function will produce
+ * Infer the next context type that a middleware function will produce
  * This extracts the context type from the return type of a middleware function
  */
-export type InferMiddlewareContext<T> = T extends (
-  props: any,
-) => Promise<MiddlewareOutput<any, infer C>>
-  ? C
+export type InferMiddlewareNextCtx<T> = T extends MiddlewareFn<any, any, infer NextCtx>
+  ? NextCtx
+  : never;
+
+/**
+ * Infer the current context type that a middleware function expects
+ */
+export type InferMiddlewareCurrentCtx<T> = T extends MiddlewareFn<any, infer CurrentCtx, any>
+  ? CurrentCtx
   : never;
 
 // ========================================================================
@@ -117,12 +148,20 @@ export type Interceptor<
   TCurrentContext extends Context = Context,
   TNewContext extends Context = Context,
   TMetadata extends Metadata = Metadata,
-> = Middleware<TCurrentContext, TNewContext, unknown, TMetadata>;
+> = Middleware<TCurrentContext, TNewContext, TMetadata>;
 
 /**
- * @deprecated Use MiddlewareOutput instead
+ * @deprecated Use MiddlewareResult instead
  */
-export type InterceptorOutput<TOutput, TContext extends Context> = MiddlewareOutput<
+export type InterceptorOutput<TOutput, TContext extends Context> = MiddlewareResult<
+  TOutput,
+  TContext
+>;
+
+/**
+ * @deprecated Use MiddlewareResult instead
+ */
+export type MiddlewareOutput<TOutput, TContext extends Context> = MiddlewareResult<
   TOutput,
   TContext
 >;
@@ -130,7 +169,7 @@ export type InterceptorOutput<TOutput, TContext extends Context> = MiddlewareOut
 /**
  * @deprecated Use MiddlewareNext instead
  */
-export type InterceptorNext<TNewContext extends Context> = MiddlewareNext<TNewContext>;
+export type InterceptorNext = MiddlewareNext;
 
 // ========================================================================
 // HANDLER INPUT TYPES
@@ -140,12 +179,20 @@ export type InterceptorNext<TNewContext extends Context> = MiddlewareNext<TNewCo
  * Handler input object for single input procedures
  */
 export interface HandlerInput<TInput, TContext extends Context> {
-  ctx: TContext;
-  parsedInput: TInput;
+  ctx: Prettify<TContext>;
+  input: TInput;
 }
 
 /**
- * Handler input object for tuple procedures
+ * Handler input object for multiple argument procedures
+ */
+export interface ArgsHandlerInput<TArgs extends readonly any[], TContext extends Context> {
+  ctx: Prettify<TContext>;
+  args: TArgs;
+}
+
+/**
+ * @deprecated Use ArgsHandlerInput instead
  */
 export interface TupleHandlerInput<TArgs extends readonly any[], TContext extends Context> {
   ctx: TContext;
@@ -165,15 +212,17 @@ export type SafeFnSignature<
   TInput,
   TOutput,
   TContext extends Context,
-> = TInput extends readonly any[]
+> = TInput extends InferTupleFromSchemas<readonly SchemaValidator<any>[]>
   ? (...args: TInput) => Promise<TOutput>
+  : TInput extends readonly []
+  ? () => Promise<TOutput>
   : (input: TInput, context?: Partial<TContext>) => Promise<TOutput>;
 
 /**
- * Safe function handler type - conditionally uses args or parsedInput based on input type
+ * Safe function handler type - conditionally uses args or input based on input type
  */
 export type SafeFnHandler<TInput, TOutput, TContext extends Context> = TInput extends readonly any[]
-  ? (input: TupleHandlerInput<TInput, TContext>) => Promise<TOutput>
+  ? (input: ArgsHandlerInput<TInput, TContext>) => Promise<TOutput>
   : (input: HandlerInput<TInput, TContext>) => Promise<TOutput>;
 
 // ========================================================================
@@ -183,8 +232,8 @@ export type SafeFnHandler<TInput, TOutput, TContext extends Context> = TInput ex
 /**
  * Schema validation function type - supports multiple validation libraries
  *
- * Supports Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Scale Codec, 
- * Runtypes, custom functions, and Standard Schema spec.
+ * Supports Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Scale Codec,
+ * Runtypes, custom functions, Standard Schema spec, and null for unvalidated arguments.
  */
 export type SchemaValidator<T> =
   | { parse: (input: unknown) => T } // Zod schemas
@@ -193,16 +242,26 @@ export type SchemaValidator<T> =
   | { create: (input: unknown) => T } // Superstruct schemas
   | { assert: (value: unknown) => asserts value is T } // Scale Codec schemas
   | ((input: unknown) => T) // Plain validation functions & ArkType
-  | StandardSchemaV1<T>; // Standard Schema spec
+  | StandardSchemaV1<T> // Standard Schema spec
+  | null; // Skip validation marker
 
 // ========================================================================
 // TUPLE INFERENCE UTILITIES
 // ========================================================================
 
 /**
+ * Helper type for mixed validation schema arrays with explicit type parameters
+ */
+export type InputSchemaArray<TArgs extends readonly any[]> = {
+  [K in keyof TArgs]: SchemaValidator<TArgs[K]> | null;
+};
+
+/**
  * Utility type to infer the output type of a schema validator
  */
-export type InferSchemaOutput<T> = T extends StandardSchemaV1<any, infer Output>
+export type InferSchemaOutput<T> = T extends null
+  ? unknown // null markers produce unknown type
+  : T extends StandardSchemaV1<any, infer Output>
   ? Output
   : T extends { parse: (input: unknown) => infer U }
   ? U
@@ -223,9 +282,17 @@ export type InferSchemaOutput<T> = T extends StandardSchemaV1<any, infer Output>
 /**
  * Utility type to convert array of schema validators to tuple of their output types
  */
-export type InferTupleFromSchemas<T extends readonly SchemaValidator<any>[]> = {
-  readonly [K in keyof T]: InferSchemaOutput<T[K]>;
-};
+export type InferTupleFromSchemas<T extends readonly SchemaValidator<any>[]> = T extends readonly []
+  ? readonly []
+  : T extends readonly [infer First, ...infer Rest]
+  ? First extends SchemaValidator<any>
+    ? Rest extends readonly SchemaValidator<any>[]
+      ? readonly [InferSchemaOutput<First>, ...InferTupleFromSchemas<Rest>]
+      : never
+    : never
+  : {
+      readonly [K in keyof T]: InferSchemaOutput<T[K]>;
+    };
 
 // ========================================================================
 // SAFEFN CLIENT TYPES
@@ -245,20 +312,25 @@ export interface SafeFnClientConfig<TContext extends Context, TMetadata extends 
 // ========================================================================
 
 /**
- * Safe function builder
+ * Safe function builder with proper context type chaining
  */
 export interface SafeFnBuilder<TContext extends Context, TMetadata extends Metadata> {
-  use<TNewContext extends TContext>(
-    middleware: Middleware<TContext, TNewContext, unknown, TMetadata>,
-  ): SafeFnBuilder<TNewContext, TMetadata>;
+  use<TNextCtx extends Context>(
+    middleware: MiddlewareFn<TMetadata, TContext, TContext & TNextCtx>,
+  ): SafeFnBuilder<Prettify<TContext & TNextCtx>, TMetadata>;
   context<TNewContext extends Context = TContext>(
     defaultContext?: TNewContext,
   ): SafeFnBuilder<TNewContext, TMetadata>;
   metadataSchema<TNewMetadata extends Metadata = TMetadata>(
     schema?: SchemaValidator<TNewMetadata>,
   ): SafeFnBuilder<TContext, TNewMetadata>;
-  create(): SafeFn<TContext, unknown, unknown, TMetadata>;
+  create(): SafeFn<TContext, unknown, unknown, TMetadata, 'none'>;
 }
+
+/**
+ * Input type tracking for SafeFn
+ */
+export type InputType = 'none' | 'single' | 'args';
 
 /**
  * Safe function procedure
@@ -268,25 +340,49 @@ export interface SafeFn<
   TInput = unknown,
   TOutput = unknown,
   TMetadata extends Metadata = Metadata,
+  TInputType extends InputType = 'none',
 > {
   metadata<TNewMetadata extends Metadata>(
     metadata: TNewMetadata,
-  ): SafeFn<TContext, TInput, TOutput, TNewMetadata>;
-  use<TNewContext extends TContext>(
-    middleware: Middleware<TContext, TNewContext, TInput, TMetadata>,
-  ): SafeFn<TNewContext, TInput, TOutput, TMetadata>;
-  // Overload for array of schemas (tuple inference)
-  input<T extends readonly SchemaValidator<any>[]>(
-    schema: T,
-  ): SafeFn<TContext, InferTupleFromSchemas<T>, TOutput, TMetadata>;
-  // Overload for single schema
+  ): SafeFn<TContext, TInput, TOutput, TNewMetadata, TInputType>;
+  use<TNextCtx extends Context>(
+    middleware: MiddlewareFn<TMetadata, TContext, TContext & TNextCtx>,
+  ): SafeFn<Prettify<TContext & TNextCtx>, TInput, TOutput, TMetadata, TInputType>;
+  // Single input method - only available when no input is set
   input<TNewInput>(
     schema: SchemaValidator<TNewInput>,
-  ): SafeFn<TContext, TNewInput, TOutput, TMetadata>;
+  ): TInputType extends 'none'
+    ? SafeFn<TContext, TNewInput, TOutput, TMetadata, 'single'>
+    : never;
+
+  // Schema-less single input method - type-only, no validation
+  input<TNewInput>(): TInputType extends 'none'
+    ? SafeFn<TContext, TNewInput, TOutput, TMetadata, 'single'>
+    : never;
+
+  // Multiple arguments method - only available when no input is set
+  args<TArgs extends readonly any[]>(
+    ...schemas: InputSchemaArray<TArgs>
+  ): TInputType extends 'none'
+    ? SafeFn<TContext, TArgs, TOutput, TMetadata, 'args'>
+    : never;
+
+  // Schema-less multiple arguments method - type-only, no validation
+  args<TArgs extends readonly any[]>(): TInputType extends 'none'
+    ? SafeFn<TContext, TArgs, TOutput, TMetadata, 'args'>
+    : never;
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,
-  ): SafeFn<TContext, TInput, TNewOutput, TMetadata>;
+  ): SafeFn<TContext, TInput, TNewOutput, TMetadata, TInputType>;
+
+  // Handler method with different signatures based on input type
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
-    handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>,
+    handler: TInputType extends 'args'
+      ? THandlerInput extends readonly any[]
+        ? (input: ArgsHandlerInput<THandlerInput, TContext>) => Promise<THandlerOutput>
+        : never
+      : TInputType extends 'single'
+      ? (input: HandlerInput<THandlerInput, TContext>) => Promise<THandlerOutput>
+      : SafeFnHandler<THandlerInput, THandlerOutput, TContext>
   ): SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
 }

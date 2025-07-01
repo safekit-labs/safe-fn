@@ -29,16 +29,16 @@ const advancedClient = createSafeFnClient({
 export const createUser = safeFnClient
   .metadata({ operation: "create-user", requiresAuth: true })
   .input(z.object({ name: z.string(), email: z.string().email() }))
-  .handler(async ({ parsedInput }) => {
-    return { id: "user_123", name: parsedInput.name, email: parsedInput.email };
+  .handler(async ({ input }) => {
+    return { id: "user_123", name: input.name, email: input.email };
   });
 
 // 2. With Output Schema
 export const validateResponse = safeFnClient
   .input(z.object({ value: z.number() }))
   .output(z.object({ result: z.number(), isValid: z.boolean() }))
-  .handler(async ({ parsedInput }) => {
-    return { result: parsedInput.value * 2, isValid: true };
+  .handler(async ({ input }) => {
+    return { result: input.value * 2, isValid: true };
   });
 
 // 3. With Function-Level Middleware
@@ -48,8 +48,8 @@ export const protectedAction = safeFnClient
     if (!ctx.userId) throw new Error("Unauthorized");
     return next({ ctx });
   })
-  .handler(async ({ parsedInput }) => {
-    return { message: `Executed: ${parsedInput.action}` };
+  .handler(async ({ input }) => {
+    return { message: `Executed: ${input.action}` };
   });
 
 // 4. Context Chaining - Multiple .use() with Context Type Evolution
@@ -70,10 +70,10 @@ export const contextChainExample = advancedClient
     console.log(`User ${ctx.userId} with permissions: ${permissions.join(", ")}`);
     return next({ ctx: { ...ctx, timestamp: new Date().toISOString() } });
   })
-  .handler(async ({ parsedInput, ctx }) => {
+  .handler(async ({ input, ctx }) => {
     // ctx should have all properties: userId, role, permissions, timestamp
     return {
-      data: parsedInput.data,
+      data: input.data,
       processedBy: ctx.userId,
       role: ctx.role,
       permissions: ctx.permissions,
@@ -90,13 +90,13 @@ const emptyContextClient = createSafeFnClient({
 
 export const contextBuildingExample = emptyContextClient
   .input(z.object({ username: z.string() }))
-  .use(async ({ ctx, parsedInput, next }) => {
+  .use(async ({ ctx, rawInput, next }) => {
     // First middleware - add authentication info
     console.log("Step 1: Adding authentication");
     return next({
       ctx: {
         ...ctx,
-        userId: `user-${parsedInput?.username}`,
+        userId: `user-${(rawInput as any)?.username}`,
         isAuthenticated: true,
       },
     });
@@ -137,10 +137,10 @@ export const contextBuildingExample = emptyContextClient
       },
     });
   })
-  .handler(async ({ parsedInput, ctx }) => {
+  .handler(async ({ input, ctx }) => {
     // Handler receives fully built context with all properties from middleware chain
     return {
-      message: `Welcome ${parsedInput.username}!`,
+      message: `Welcome ${input.username}!`,
       // Context should have all these properties typed correctly:
       userId: ctx.userId,
       role: ctx.role,
