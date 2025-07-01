@@ -1,7 +1,46 @@
 /**
  * Unified middleware execution system
  */
-import type { MiddlewareFn, MiddlewareResult, Context, Metadata } from "@/types";
+import type { MiddlewareFn, MiddlewareResult, Context, Metadata, ValidateFunction } from "@/types";
+import type { ParseFn } from "@/libs/parser";
+
+/**
+ * Creates a validation helper function for middleware
+ */
+function createValidationHelper(
+  rawInput: unknown,
+  rawArgs: unknown,
+  inputValidator?: ParseFn<any>,
+  argsValidator?: ParseFn<any>
+): ValidateFunction {
+  let validatedInput: any;
+  let validatedArgs: any;
+  let inputValidated = false;
+  let argsValidated = false;
+
+  return function valid(type: "input" | "args"): any {
+    if (type === "input") {
+      if (!inputValidator) {
+        throw new Error("No input schema defined. Use rawInput to access unvalidated data.");
+      }
+      if (!inputValidated) {
+        validatedInput = inputValidator(rawInput);
+        inputValidated = true;
+      }
+      return validatedInput;
+    } else if (type === "args") {
+      if (!argsValidator) {
+        throw new Error("No args schema defined. Use rawArgs to access unvalidated data.");
+      }
+      if (!argsValidated) {
+        validatedArgs = argsValidator(rawArgs);
+        argsValidated = true;
+      }
+      return validatedArgs;
+    }
+    throw new Error(`Invalid validation type: ${type}. Use "input" or "args".`);
+  };
+}
 
 /**
  * Parameters for executeMiddlewareChain
@@ -13,26 +52,30 @@ export interface ExecuteMiddlewareChainParams<
 > {
   middlewares: MiddlewareFn<TMetadata, any, any>[];
   rawInput: unknown;
-  parsedInput: unknown | undefined;
+  rawArgs: unknown;
   context: TContext;
   metadata: TMetadata;
+  inputValidator?: ParseFn<any>;
+  argsValidator?: ParseFn<any>;
   handler: (input: unknown, context: TContext) => Promise<TOutput>;
 }
 
 /**
  * Executes a chain of middleware in sequence with proper error handling and type safety
- * Supports both pre-validation (rawInput only) and post-validation (rawInput + parsedInput) middleware
+ * Provides validation helper function to middleware for accessing validated data
  */
 export async function executeMiddlewareChain<
   TOutput,
   TContext extends Context,
   TMetadata extends Metadata,
 >(params: ExecuteMiddlewareChainParams<TOutput, TContext, TMetadata>): Promise<TOutput> {
-  const { middlewares, rawInput, parsedInput, context, metadata, handler } = params;
+  const { middlewares, rawInput, rawArgs, context, metadata, inputValidator, argsValidator, handler } = params;
 
   // Fast path for no middlewares
   if (middlewares.length === 0) {
-    return handler(parsedInput ?? rawInput, context);
+    // If no middlewares, use validated input if available, otherwise raw
+    const finalInput = inputValidator ? await inputValidator(rawInput) : rawInput;
+    return handler(finalInput, context);
   }
 
   let index = -1;
@@ -48,7 +91,9 @@ export async function executeMiddlewareChain<
 
     // Base case: all middlewares executed, call the handler
     if (index === middlewares.length) {
-      const output = await handler(parsedInput ?? rawInput, currentContext as TContext);
+      // Use validated input if available, otherwise raw
+      const finalInput = inputValidator ? await inputValidator(rawInput) : rawInput;
+      const output = await handler(finalInput, currentContext as TContext);
       middlewareResult.output = output;
       middlewareResult.context = currentContext;
       middlewareResult.success = true;
@@ -69,13 +114,17 @@ export async function executeMiddlewareChain<
       return middlewareResult; // Always return the same middlewareResult object
     };
 
+    // Create validation helper for this middleware
+    const valid = createValidationHelper(rawInput, rawArgs, inputValidator, argsValidator);
+
     // Execute the middleware
     await middleware({
       rawInput,
-      parsedInput,
+      rawArgs,
       ctx: currentContext,
       metadata,
       next,
+      valid,
     });
   };
 

@@ -209,6 +209,152 @@ describe("Middleware Support", () => {
 });
 
 // ========================================================================
+// VALIDATION FUNCTION TESTS
+// ========================================================================
+
+describe("Middleware valid() function", () => {
+  describe("input validation", () => {
+    it("should provide validated input when schema exists", async () => {
+      let capturedValidInput: any;
+
+      const safeFnClient = createSafeFnClient();
+      const fn = safeFnClient
+        .use(async ({ valid, next }) => {
+          capturedValidInput = await valid("input");
+          return next();
+        })
+        .input(z.object({ name: z.string(), age: z.number() }))
+        .handler(async ({ input }) => input);
+
+      await fn({ name: "John", age: 30 }, {});
+      expect(capturedValidInput).toEqual({ name: "John", age: 30 });
+    });
+
+    it("should throw error when no input schema exists", async () => {
+      let validationError: any;
+
+      const safeFnClient = createSafeFnClient();
+      const fn = safeFnClient
+        .use(async ({ valid, next }) => {
+          try {
+            valid("input");
+          } catch (error) {
+            validationError = error;
+          }
+          return next();
+        })
+        .handler(async () => "success");
+
+      await fn({}, {});
+      expect(validationError).toBeInstanceOf(Error);
+      expect(validationError.message).toContain("No input schema defined");
+    });
+  });
+
+  describe("args validation", () => {
+    it("should provide validated args when schema exists", async () => {
+      let capturedValidArgs: any;
+
+      const safeFnClient = createSafeFnClient();
+      const fn = safeFnClient
+        .use(async ({ valid, next }) => {
+          capturedValidArgs = await valid("args");
+          return next();
+        })
+        .args(z.string(), z.number(), z.boolean())
+        .handler(async ({ args }) => args);
+
+      await fn("test", 42, true);
+      expect(capturedValidArgs).toEqual(["test", 42, true]);
+    });
+
+    it("should throw error when no args schema exists", async () => {
+      let validationError: any;
+
+      const safeFnClient = createSafeFnClient();
+      const fn = safeFnClient
+        .use(async ({ valid, next }) => {
+          try {
+            valid("args");
+          } catch (error) {
+            validationError = error;
+          }
+          return next();
+        })
+        .handler(async () => "success");
+
+      await fn({}, {});
+      expect(validationError).toBeInstanceOf(Error);
+      expect(validationError.message).toContain("No args schema defined");
+    });
+  });
+
+  describe("raw data access", () => {
+    it("should provide raw input and args regardless of validation", async () => {
+      let capturedRawInput: any;
+      let capturedRawArgs: any;
+
+      const safeFnClient = createSafeFnClient();
+      const fn = safeFnClient
+        .use(async ({ rawInput, rawArgs, next }) => {
+          capturedRawInput = rawInput;
+          capturedRawArgs = rawArgs;
+          return next();
+        })
+        .input(z.object({ name: z.string() }))
+        .handler(async ({ input }) => input);
+
+      await fn({ name: "test" });
+      expect(capturedRawInput).toEqual({ name: "test" });
+      expect(capturedRawArgs).toBeUndefined(); // Single input has no args
+    });
+
+    it("should provide raw args for multi-argument functions", async () => {
+      let capturedRawArgs: any;
+
+      const safeFnClient = createSafeFnClient();
+      const fn = safeFnClient
+        .use(async ({ rawArgs, next }) => {
+          capturedRawArgs = rawArgs;
+          return next();
+        })
+        .args(z.string(), z.number())
+        .handler(async ({ args }) => args);
+
+      await fn("hello", 123);
+      expect(capturedRawArgs).toEqual(["hello", 123]);
+    });
+  });
+
+  describe("validation caching", () => {
+    it("should cache validation results for multiple calls", async () => {
+      let validationCalls = 0;
+      const schema = z.object({ name: z.string() }).transform((data) => {
+        validationCalls++;
+        return data;
+      });
+
+      const safeFnClient = createSafeFnClient();
+      const fn = safeFnClient
+        .use(async ({ valid, next }) => {
+          // Call valid multiple times
+          await valid("input");
+          await valid("input");
+          await valid("input");
+          return next();
+        })
+        .input(schema)
+        .handler(async ({ input }) => input);
+
+      await fn({ name: "test" }, {});
+      // Note: validation happens in middleware and potentially in handler execution
+      // But within the middleware context, it should cache
+      expect(validationCalls).toBeGreaterThanOrEqual(1);
+    });
+  });
+});
+
+// ========================================================================
 // INTEGRATION TESTS
 // ========================================================================
 

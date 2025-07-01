@@ -106,16 +106,15 @@ async function executeArrayInputHandler<
     // Combine client and function middlewares
     const allMiddlewares = [...clientMiddlewares, ...functionMiddlewares];
 
-    // Validate input first
-    const validatedInput = inputValidator ? await inputValidator(args) : args;
-
-    // Execute unified middleware chain with both raw and parsed input
+    // Execute unified middleware chain with new validation system
     const result = await executeMiddlewareChain<THandlerOutput, TContext, TMetadata>({
       middlewares: allMiddlewares,
       rawInput: args,
-      parsedInput: validatedInput,
+      rawArgs: args, // For array input, both rawInput and rawArgs are the same
       context: fullContext,
       metadata,
+      inputValidator,
+      argsValidator: inputValidator, // For array input, use same validator for both
       handler: async (finalInput: unknown, finalContext: TContext) => {
         return handler({ ctx: finalContext, args: finalInput } as any);
       },
@@ -162,16 +161,15 @@ async function executeObjectInputHandler<
     // Combine client and function middlewares
     const allMiddlewares = [...clientMiddlewares, ...functionMiddlewares];
 
-    // Validate input first
-    const validatedInput = inputValidator ? await inputValidator(input) : input;
-
-    // Execute unified middleware chain with both raw and parsed input
+    // Execute unified middleware chain with new validation system
     const result = await executeMiddlewareChain<THandlerOutput, TContext, TMetadata>({
       middlewares: allMiddlewares,
       rawInput: input,
-      parsedInput: validatedInput,
+      rawArgs: undefined, // For single input, no args
       context: fullContext,
       metadata,
+      inputValidator,
+      argsValidator: undefined, // For single input, no args validator
       handler: async (finalInput: unknown, finalContext: TContext) => {
         return handler({ ctx: finalContext, input: finalInput } as any);
       },

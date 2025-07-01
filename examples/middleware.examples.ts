@@ -292,12 +292,12 @@ export const sideEffectMiddlewareExample = createSafeFnClient({
 const loggingMiddleware = createMiddleware(async ({ next, rawInput }) => {
   console.log("🚀 Request started with input:", rawInput);
   const startTime = Date.now();
-  
+
   const result = await next();
-  
+
   const duration = Date.now() - startTime;
   console.log(`✅ Request completed in ${duration}ms`);
-  
+
   return result;
 });
 
@@ -309,6 +309,30 @@ const timingMiddleware = createMiddleware(async ({ next }) => {
 // Simple middleware that adds environment info
 const envMiddleware = createMiddleware(async ({ next }) => {
   return next({ ctx: { environment: "development" } });
+});
+
+// Example middleware that uses validation
+export const validationMiddleware = createMiddleware(async ({ rawInput, rawArgs, valid, next }) => {
+  console.log("Raw input:", rawInput);
+  console.log("Raw args:", rawArgs);
+
+  try {
+    // Try to get validated input if schema exists
+    const validInput = valid("input");
+    console.log("✅ Validated input:", validInput);
+  } catch (error: any) {
+    console.log("ℹ️ No input schema, using raw data", error);
+  }
+
+  try {
+    // Try to get validated args if schema exists
+    const validArgs = valid("args");
+    console.log("✅ Validated args:", validArgs);
+  } catch (error: any) {
+    console.log("ℹ️ No args schema, using raw data", error);
+  }
+
+  return next();
 });
 
 // Example clients that use standalone middleware

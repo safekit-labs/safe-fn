@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed middleware types inferring properly based on previous `.use()` calls
 - Middleware now stacks and is stateful. No need to spread previous middleware into the next one.
 - Cleaner types for middleware `ctx` and `next` properties
+- Added `valid()` to middleware to access validated input and args. Otherwise use `rawInput` and `rawArgs`
 
 ## [0.3.0-alpha.2] - 2025-07-01
 

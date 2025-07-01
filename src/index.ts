@@ -11,6 +11,7 @@ export type {
   SafeFn,
   Prettify,
   NextFunction,
+  ValidateFunction,
 } from "@/types";
 
 // Builder factory

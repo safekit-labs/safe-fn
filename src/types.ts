@@ -81,24 +81,13 @@ export interface NextFunction<TCurrentCtx extends Context = {}> {
 }
 
 /**
- * Unified Middleware Props - contains all necessary information for middleware execution
+ * Validation helper function for middleware
+ * Provides access to validated input or args data
  */
-export interface MiddlewareProps<
-  TCurrentContext extends Context = Context,
-  TInput = unknown,
-  TMetadata extends Metadata = Metadata,
-> {
-  /** Raw input before validation - always available */
-  rawInput: unknown;
-  /** Parsed input after validation - only available post-validation */
-  parsedInput?: TInput;
-  /** Current context - properly typed based on previous middleware */
-  ctx: TCurrentContext;
-  /** Metadata information */
-  metadata: TMetadata;
-  /** Next function in the middleware chain */
-  next: MiddlewareNext;
-}
+export type ValidateFunction = {
+  (type: "input"): any;
+  (type: "args"): any;
+};
 
 /**
  * Unified Middleware Function Type
@@ -113,10 +102,11 @@ export type MiddlewareFn<
   TNextCtx extends Context,
 > = (props: {
   rawInput: unknown;
-  parsedInput?: unknown;
+  rawArgs: unknown;
   ctx: Prettify<TCurrentCtx>;
   metadata: TMetadata;
   next: NextFunction<TCurrentCtx>;
+  valid: ValidateFunction;
 }) => Promise<MiddlewareResult<unknown, TNextCtx>>;
 
 /**

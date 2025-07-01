@@ -181,13 +181,71 @@ const safeFnClient = createSafeFnClient({
 
 ```typescript
 type Middleware<TContext> = (params: {
-  next: (params?: { ctx?: TContext }) => Promise<MiddlewareOutput>;
+  next: NextFunction<TContext>;
   rawInput: unknown;
-  parsedInput?: any;
-  args?: any;
+  rawArgs: unknown;
   ctx: TContext;
   metadata: Metadata;
+  valid(type: "input"): any;   // Get validated input data
+  valid(type: "args"): any;    // Get validated args data
 }) => Promise<MiddlewareOutput>;
+```
+
+### Accessing Validated Data in Middleware
+
+Middleware can access both raw and validated data:
+
+```typescript
+const middleware = createMiddleware(async ({ rawInput, rawArgs, valid, next }) => {
+  // Raw data is always available
+  console.log("Raw input:", rawInput);
+  console.log("Raw args:", rawArgs);
+  
+  try {
+    // Get validated data if schema exists
+    const validInput = valid("input");
+    console.log("✅ Validated input:", validInput);
+  } catch (error) {
+    // No input schema defined, use rawInput
+    console.log("ℹ️ Using raw input data");
+  }
+  
+  try {
+    // Get validated args if schema exists  
+    const validArgs = valid("args");
+    console.log("✅ Validated args:", validArgs);
+  } catch (error) {
+    // No args schema defined, use rawArgs
+    console.log("ℹ️ Using raw args data");
+  }
+  
+  return next();
+});
+```
+
+### Creating Standalone Middleware
+
+You can create reusable middleware functions with `createMiddleware`:
+
+```typescript
+import { createMiddleware } from "@safekit/safe-fn";
+
+// Reusable middleware functions
+const timingMiddleware = createMiddleware(async ({ next }) => {
+  return next({ ctx: { requestTime: Date.now() } });
+});
+
+const loggingMiddleware = createMiddleware(async ({ rawInput, next }) => {
+  console.log("🚀 Request started with:", rawInput);
+  const result = await next();
+  console.log("✅ Request completed");
+  return result;
+});
+
+// Use with any client
+const clientWithMiddleware = createSafeFnClient()
+  .use(timingMiddleware)
+  .use(loggingMiddleware);
 ```
 
 ## Schema Support
