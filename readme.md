@@ -32,7 +32,32 @@ bun add @safekit/safe-fn
 
 ## Quick Start
 
-Here's a complete example showing `safe-fn` in action with client setup, middleware, and various function patterns:
+Here's a simple example showing how to create a client and define a function:
+
+```typescript
+import { z } from "zod";
+
+import { createSafeFnClient } from "@safekit/safe-fn";
+
+// 1. Create client
+const safeFnClient = createSafeFnClient();
+
+// 2. Define function
+export const createUser = safeFnClient
+  .input(z.object({ username: z.string() }))
+  .output(z.object({ id: z.string() }))
+  .handler(async ({ ctx, parsedInput }) => {
+    // ...
+  });
+```
+
+## Client Configuration
+
+Clients are created with `createSafeFnClient()` and support three main configuration options:
+
+- `defaultContext` - default context for all functions
+- `metadataSchema` - schema for metadata
+- `onError` - error handler
 
 ```typescript
 import { z } from "zod";
@@ -44,30 +69,8 @@ const safeFnClient = createSafeFnClient({
   defaultContext: { logger: console },
   metadataSchema: z.object({ traceId: z.string() }),
   onError: (error, ctx) => ctx.logger.error(`Error:`, error.message),
-}).use(async ({ ctx, metadata, next }) => {
-  // Logger middleware
-  ctx.logger.info(metadata, `Attempting to ${metadata.operation}`);
-  return next();
 });
-
-// 2. Define function
-export const createUser = safeFnClient
-  .metadata({ operation: "create_user" })
-  .input(z.object({ username: z.string() }))
-  .output(z.object({ id: z.string() }))
-  .handler(async ({ ctx, parsedInput }) => {
-    // Create user logic here
-    return { id: "123" };
-  });
 ```
-
-## Client Configuration
-
-Clients are created with `createSafeFnClient()` and support three main configuration options:
-
-- `defaultContext` - default context for all functions
-- `metadataSchema` - schema for metadata
-- `onError` - error handler
 
 ## Middleware
 
