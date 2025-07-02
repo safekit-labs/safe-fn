@@ -168,6 +168,22 @@ export interface TupleHandlerInput<TArgs extends readonly any[], TContext extend
 // ========================================================================
 
 /**
+ * Clean function signature type that avoids args_0, args_1 parameter names
+ */
+type CleanTupleSignature<TTuple extends readonly any[], TOutput> = 
+  TTuple extends readonly [infer T1]  
+    ? (arg1: T1) => Promise<TOutput>
+  : TTuple extends readonly [infer T1, infer T2]
+    ? (arg1: T1, arg2: T2) => Promise<TOutput>
+  : TTuple extends readonly [infer T1, infer T2, infer T3]
+    ? (arg1: T1, arg2: T2, arg3: T3) => Promise<TOutput>
+  : TTuple extends readonly [infer T1, infer T2, infer T3, infer T4]
+    ? (arg1: T1, arg2: T2, arg3: T3, arg4: T4) => Promise<TOutput>
+  : TTuple extends readonly [infer T1, infer T2, infer T3, infer T4, infer T5]
+    ? (arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5) => Promise<TOutput>
+  : (...args: TTuple) => Promise<TOutput>; // fallback for longer tuples
+
+/**
  * Conditional type for function signature based on input type
  * If input is a tuple, spread it as arguments (context comes from builder chain only)
  * If input is an object, use single input + context pattern
@@ -177,7 +193,7 @@ export type SafeFnSignature<
   TOutput,
   TContext extends Context,
 > = TInput extends InferTupleFromSchemas<readonly SchemaValidator<any>[]>
-  ? (...args: TInput) => Promise<TOutput>
+  ? CleanTupleSignature<TInput, TOutput>
   : TInput extends readonly []
   ? () => Promise<TOutput>
   : (input: TInput, context?: Partial<TContext>) => Promise<TOutput>;
