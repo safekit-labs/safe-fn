@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0-alpha.6] - 2025-07-02
+
+- onError is called when handler throws
+- onError can recover by returning success object
+- onError can transform errors
+- Middleware can catch and rethrow errors (and onError receives the rethrown error)
+- Validation errors are not wrapped (original Zod error structure preserved)
+
+  The error handling system is working correctly:
+  - Errors bubble up through middleware without wrapping
+  - onError handlers are properly called
+  - Error handlers can recover, transform, or pass through errors
+  - Middleware can intercept and modify errors
+  - Original error structures are preserved
+
 ## [0.3.0-alpha.5] - 2025-07-02
 
 - Updated import paths in index.ts to use relative paths instead of @/

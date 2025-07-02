@@ -12,6 +12,8 @@ import type {
   SafeFnSignature,
   InputSchemaArray,
   Prettify,
+  ErrorHandlerResult,
+  MiddlewareResult,
 } from "@/types";
 
 import { executeMiddlewareChain } from "@/middleware";
@@ -27,9 +29,43 @@ import { createParseFn, type ParseFn } from "@/libs/parser";
  * Creates a default error handler if none is provided
  */
 function createDefaultErrorHandler<TContext extends Context>() {
-  return (error: Error, context: TContext) => {
+  return (error: Error, context: TContext): ErrorHandlerResult => {
     console.error("SafeFn Error:", error.message, { context });
+    // Return void - just log the error
   };
+}
+
+/**
+ * Processes error handler result and returns final result
+ */
+async function processErrorHandlerResult<TOutput, TContext extends Context>(
+  errorHandlerResult: ErrorHandlerResult | Promise<ErrorHandlerResult>,
+  originalError: Error,
+  context: TContext
+): Promise<MiddlewareResult<TOutput, TContext>> {
+  const result = await errorHandlerResult;
+  
+  if (result === undefined) {
+    // Handler returned void - return original error
+    return { output: undefined as any, context, success: false, error: originalError };
+  }
+  
+  if (result instanceof Error) {
+    // Handler returned a new error
+    return { output: undefined as any, context, success: false, error: result };
+  }
+  
+  if (typeof result === 'object' && 'success' in result) {
+    // Handler returned a result object
+    if (result.success) {
+      return { output: result.data, context, success: true };
+    } else {
+      return { output: undefined as any, context, success: false, error: result.error };
+    }
+  }
+  
+  // Fallback - return original error
+  return { output: undefined as any, context, success: false, error: originalError };
 }
 
 // ========================================================================
@@ -54,7 +90,7 @@ interface ArrayInputHandlerOptions<
   outputValidator: ParseFn<any> | undefined;
   functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[];
   handler: SafeFnHandler<any, THandlerOutput, TContext, TMetadata>;
-  errorHandlerFn: (error: Error, context: TContext) => void;
+  errorHandlerFn: (error: Error, context: TContext) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
 }
 
 /**
@@ -75,7 +111,7 @@ interface ObjectInputHandlerOptions<
   outputValidator: ParseFn<any> | undefined;
   functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[];
   handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext, TMetadata>;
-  errorHandlerFn: (error: Error, context: TContext) => void;
+  errorHandlerFn: (error: Error, context: TContext) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
 }
 
 // ------------------ ARRAY INPUT HANDLER ------------------
@@ -123,9 +159,19 @@ async function executeArrayInputHandler<
     const validatedOutput = outputValidator ? await outputValidator(result) : result;
     return validatedOutput as THandlerOutput;
   } catch (error) {
-    const safeFnError = error instanceof Error ? error : new Error(String(error));
-    errorHandlerFn(safeFnError, fullContext);
-    throw safeFnError;
+    const originalError = error instanceof Error ? error : new Error(String(error));
+    const errorResult = await processErrorHandlerResult<THandlerOutput, TContext>(
+      errorHandlerFn(originalError, fullContext),
+      originalError,
+      fullContext
+    );
+    
+    if (errorResult.success) {
+      const validatedOutput = outputValidator ? await outputValidator(errorResult.output) : errorResult.output;
+      return validatedOutput as THandlerOutput;
+    } else {
+      throw errorResult.error;
+    }
   }
 }
 
@@ -178,9 +224,19 @@ async function executeObjectInputHandler<
     const validatedOutput = outputValidator ? await outputValidator(result) : result;
     return validatedOutput as THandlerOutput;
   } catch (error) {
-    const safeFnError = error instanceof Error ? error : new Error(String(error));
-    errorHandlerFn(safeFnError, fullContext);
-    throw safeFnError;
+    const originalError = error instanceof Error ? error : new Error(String(error));
+    const errorResult = await processErrorHandlerResult<THandlerOutput, TContext>(
+      errorHandlerFn(originalError, fullContext),
+      originalError,
+      fullContext
+    );
+    
+    if (errorResult.success) {
+      const validatedOutput = outputValidator ? await outputValidator(errorResult.output) : errorResult.output;
+      return validatedOutput as THandlerOutput;
+    } else {
+      throw errorResult.error;
+    }
   }
 }
 

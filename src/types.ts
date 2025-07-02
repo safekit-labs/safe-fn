@@ -40,6 +40,15 @@ export interface Metadata {}
 // ========================================================================
 
 /**
+ * Result type for error handlers - allows recovery or transformation
+ */
+export type ErrorHandlerResult<TOutput = any> = 
+  | void 
+  | Error 
+  | { success: true; data: TOutput } 
+  | { success: false; error: Error };
+
+/**
  * Configuration for the SafeFn client
  */
 export interface ClientConfig<
@@ -47,7 +56,7 @@ export interface ClientConfig<
   TMetadata extends Metadata = Metadata,
 > {
   defaultContext?: TContext;
-  errorHandler?: (error: Error, context: TContext) => void | Promise<void>;
+  errorHandler?: (error: Error, context: TContext) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
   metadataSchema?: SchemaValidator<TMetadata>;
 }
 
@@ -62,6 +71,7 @@ export interface MiddlewareResult<TOutput, TNextCtx extends Context> {
   output: TOutput;
   context: TNextCtx;
   success: boolean;
+  error?: Error;
 }
 
 /**
@@ -286,7 +296,7 @@ export type InferTupleFromSchemas<T extends readonly SchemaValidator<any>[]> = T
 export interface SafeFnClientConfig<TContext extends Context, TMetadata extends Metadata> {
   defaultContext?: TContext;
   metadataSchema?: SchemaValidator<TMetadata>;
-  onError?: (error: Error, context: TContext) => void | Promise<void>;
+  onError?: (error: Error, context: TContext) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
 }
 
 // ========================================================================
