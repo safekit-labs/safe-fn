@@ -96,7 +96,7 @@ const getUser = queryClient
   .output(z.object({ name: z.string() }))
   .handler(async ({ args }) => {
     const input = args[1];
-    console.log({ input });
+    console.log({ input }, "Executing handler");
     return { name: "John" };
   });
 
