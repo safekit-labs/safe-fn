@@ -25,11 +25,6 @@ export type Prettify<T> = {
 export type Context = {};
 
 /**
- * Utility type to infer context from defaultContext
- */
-// export type InferContext<T> = T extends Context ? T : Context;
-
-/**
  * Metadata information that can be attached to procedures
  */
 export interface Metadata {}
@@ -133,39 +128,6 @@ export type InferMiddlewareCurrentCtx<T> = T extends MiddlewareFn<any, infer Cur
   ? CurrentCtx
   : never;
 
-// ========================================================================
-// LEGACY TYPE ALIASES (for backward compatibility)
-// ========================================================================
-
-/**
- * @deprecated Use Middleware instead
- */
-export type Interceptor<
-  TCurrentContext extends Context = Context,
-  TNewContext extends Context = Context,
-  TMetadata extends Metadata = Metadata,
-> = Middleware<TCurrentContext, TNewContext, TMetadata>;
-
-/**
- * @deprecated Use MiddlewareResult instead
- */
-export type InterceptorOutput<TOutput, TContext extends Context> = MiddlewareResult<
-  TOutput,
-  TContext
->;
-
-/**
- * @deprecated Use MiddlewareResult instead
- */
-export type MiddlewareOutput<TOutput, TContext extends Context> = MiddlewareResult<
-  TOutput,
-  TContext
->;
-
-/**
- * @deprecated Use MiddlewareNext instead
- */
-export type InterceptorNext = MiddlewareNext;
 
 // ========================================================================
 // HANDLER INPUT TYPES
