@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0-alpha.5] - 2025-07-02
+
+- Updated import paths in index.ts to use relative paths instead of @/
+- Updated tsc-alias to build files with .js extension
+
 ## [0.3.0-alpha.4] - 2025-07-02
 
 - Successfully added metadata access to handlers - Handlers now receive metadata alongside ctx, input/args
