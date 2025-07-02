@@ -15,6 +15,12 @@ export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
 
+/**
+ * Unwraps complex types to show their actual structure in IDE tooltips
+ * Expands generic types to their concrete form for better developer experience
+ */
+export type Unwrap<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
+
 // ========================================================================
 // CORE CONTEXT & METADATA TYPES
 // ========================================================================
@@ -71,8 +77,8 @@ export type MiddlewareNext = {
  * Provides a much more readable type display in IDEs
  */
 export interface NextFunction<TCurrentCtx extends Context = {}> {
-  (): Promise<MiddlewareResult<unknown, TCurrentCtx>>;
-  <TNextCtx extends Context>(opts: { ctx: TNextCtx }): Promise<MiddlewareResult<unknown, Prettify<TCurrentCtx & TNextCtx>>>;
+  (): Promise<Unwrap<MiddlewareResult<unknown, TCurrentCtx>>>;
+  <TNextCtx extends Context>(opts: { ctx: TNextCtx }): Promise<Unwrap<MiddlewareResult<unknown, Prettify<TCurrentCtx & TNextCtx>>>>;
 }
 
 /**
