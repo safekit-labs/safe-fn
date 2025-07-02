@@ -10,8 +10,8 @@ import { createSafeFnClient, createMiddleware } from "@safekit/safe-fn";
 
 const loggingMetadataSchema = z.object({
   operationName: z.string(),
-  transformInput: z.function().optional(),
-  transformOutput: z.function().optional(),
+  filterInputForLog: z.function().optional(),
+  filterOutputForLog: z.function().optional(),
 });
 
 // ========================================================================
@@ -36,7 +36,7 @@ const client = createSafeFnClient({
   .use(
     createMiddleware(async ({ ctx, metadata, rawArgs, next }) => {
       // Destructure metadata
-      const { operationName, transformInput, transformOutput } = metadata;
+      const { operationName, filterInputForLog, filterOutputForLog } = metadata;
 
       // Define logger and input args
       const [, fnInput] = rawArgs as [FnContext, unknown];
@@ -46,7 +46,7 @@ const client = createSafeFnClient({
       }
 
       // Transform and sanitize input for logging
-      const loggedInput = transformInput ? transformInput(fnInput) : fnInput;
+      const loggedInput = filterInputForLog ? filterInputForLog(fnInput) : fnInput;
 
       // Start logging
       logger.info(
@@ -62,7 +62,7 @@ const client = createSafeFnClient({
       const output = result.output;
 
       // Transform and sanitize output for logging
-      const loggedOutput = transformOutput ? transformOutput(output) : output;
+      const loggedOutput = filterOutputForLog ? filterOutputForLog(output) : output;
 
       // Success logging
       logger.info(

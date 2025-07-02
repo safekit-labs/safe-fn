@@ -10,8 +10,8 @@ import { createSafeFnClient, createMiddleware } from "@safekit/safe-fn";
 
 const loggingMetadataSchema = z.object({
   operationName: z.string(),
-  transformInputLog: z.function().optional(),
-  transformOutputLog: z.function().optional(),
+  filterInputForLog: z.function().optional(),
+  filterOutputForLog: z.function().optional(),
 });
 
 type LoggingMetadata = z.infer<typeof loggingMetadataSchema>;
@@ -37,7 +37,7 @@ const extractLoggerMiddleware = createMiddleware<{}, LoggingMetadata, ClientCont
 const loggingMiddleware = createMiddleware<ClientContext, LoggingMetadata, ClientContext>(
   async ({ ctx, metadata, rawArgs, next }) => {
     // Destructure metadata
-    const { operationName, transformInputLog, transformOutputLog } = metadata;
+    const { operationName, filterInputForLog, filterOutputForLog } = metadata;
 
     // Define logger and input args
     const [, fnInput] = rawArgs as [FnContext, unknown];
@@ -47,7 +47,7 @@ const loggingMiddleware = createMiddleware<ClientContext, LoggingMetadata, Clien
     }
 
     // Transform and sanitize input for logging
-    const loggedInput = transformInputLog ? transformInputLog(fnInput) : fnInput;
+    const loggedInput = filterInputForLog ? filterInputForLog(fnInput) : fnInput;
 
     // Start logging
     logger.info(
@@ -63,7 +63,7 @@ const loggingMiddleware = createMiddleware<ClientContext, LoggingMetadata, Clien
     const output = result.output;
 
     // Transform and sanitize output for logging
-    const loggedOutput = transformOutputLog ? transformOutputLog(output) : output;
+    const loggedOutput = filterOutputForLog ? filterOutputForLog(output) : output;
 
     // Success logging
     logger.info(
@@ -100,7 +100,7 @@ export const serviceClient = baseClient.use(loggingMiddleware);
 const getUser = queryClient
   .metadata({
     operationName: "get_user",
-    transformOutputLog: (output: any) => ({ ...output, surname: "Doe" }),
+    filterOutputForLog: (output: any) => ({ ...output, surname: "Doe" }),
   })
   .args<[FnContext, { id: string }]>(null, z.object({ id: z.string() }))
   .output(z.object({ name: z.string() }))
