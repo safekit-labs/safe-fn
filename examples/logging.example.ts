@@ -100,7 +100,7 @@ export const serviceClient = baseClient.use(loggingMiddleware);
 const getUser = queryClient
   .metadata({
     operationName: "get_user",
-    transformOutput11111: (output: any) => ({ ...output, surname: "Doe" }),
+    transformOutputLog: (output: any) => ({ ...output, surname: "Doe" }),
   })
   .args<[FnContext, { id: string }]>(null, z.object({ id: z.string() }))
   .output(z.object({ name: z.string() }))

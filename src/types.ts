@@ -324,9 +324,9 @@ export interface SafeFn<
   TMetadata extends Metadata = Metadata,
   TInputType extends InputType = 'none',
 > {
-  metadata<TNewMetadata extends Metadata>(
-    metadata: TNewMetadata,
-  ): SafeFn<TContext, TInput, TOutput, TNewMetadata, TInputType>;
+  metadata(
+    metadata: TMetadata,
+  ): SafeFn<TContext, TInput, TOutput, TMetadata, TInputType>;
   use<TNextCtx extends Context>(
     middleware: MiddlewareFn<TMetadata, TContext, TContext & TNextCtx>,
   ): SafeFn<Prettify<TContext & TNextCtx>, TInput, TOutput, TMetadata, TInputType>;

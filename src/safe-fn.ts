@@ -206,10 +206,10 @@ export function createSafeFn<
   let isArrayInput = false;
 
   const safeFn: SafeFn<TContext, unknown, unknown, TMetadata, 'none'> = {
-    metadata<TNewMetadata extends Metadata>(
-      metadata: TNewMetadata,
-    ): SafeFn<TContext, unknown, unknown, TNewMetadata, 'none'> {
-      const newSafeFn = createSafeFn<TContext, TNewMetadata>();
+    metadata(
+      metadata: TMetadata,
+    ): SafeFn<TContext, unknown, unknown, TMetadata, 'none'> {
+      const newSafeFn = createSafeFn<TContext, TMetadata>();
 
       // Copy over current state
       (newSafeFn as any)._currentMetadata = metadataValidator

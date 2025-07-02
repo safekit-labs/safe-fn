@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated middleware execution to pass metadata through
   - Updated safe-fn handler calls to include metadata
 - Added `TContext` generic to `createSafeFnClient` to allow for context to be passed to the client
+- Fixed Metadata Validation - The `.metadata()` method now properly enforces the metadata schema type
 
 ## [0.3.0-alpha.3] - 2025-07-01
 
