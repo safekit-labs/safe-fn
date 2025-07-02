@@ -10,8 +10,8 @@ import { createSafeFnClient, createMiddleware } from "@safekit/safe-fn";
 
 const loggingMetadataSchema = z.object({
   operationName: z.string(),
-  filterInputForLog: z.function().optional(),
-  filterOutputForLog: z.function().optional(),
+  filterInputForLog: z.function().args(z.any()).returns(z.any()).optional(),
+  filterOutputForLog: z.function().args(z.any()).returns(z.any()).optional(),
 });
 
 // ========================================================================
@@ -95,3 +95,10 @@ const getUser = client
 
 const ctx = { logger: console };
 getUser(ctx, { id: "123" });
+
+// Type of getUser shows:
+// const getUser: (arg1: FnContext, arg2: {
+//     id: string;
+//   }) => Promise<{
+//       name: string;
+//   }>

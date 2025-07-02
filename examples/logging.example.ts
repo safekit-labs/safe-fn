@@ -10,8 +10,8 @@ import { createSafeFnClient, createMiddleware } from "@safekit/safe-fn";
 
 const loggingMetadataSchema = z.object({
   operationName: z.string(),
-  filterInputForLog: z.function().optional(),
-  filterOutputForLog: z.function().optional(),
+  filterInputForLog: z.function().args(z.any()).returns(z.any()).optional(),
+  filterOutputForLog: z.function().args(z.any()).returns(z.any()).optional(),
 });
 
 type LoggingMetadata = z.infer<typeof loggingMetadataSchema>;
