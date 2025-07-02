@@ -142,17 +142,19 @@ export type InferMiddlewareCurrentCtx<T> = T extends MiddlewareFn<any, infer Cur
 /**
  * Handler input object for single input procedures
  */
-export interface HandlerInput<TInput, TContext extends Context> {
+export interface HandlerInput<TInput, TContext extends Context, TMetadata extends Metadata = Metadata> {
   ctx: Prettify<TContext>;
   input: TInput;
+  metadata: TMetadata;
 }
 
 /**
  * Handler input object for multiple argument procedures
  */
-export interface ArgsHandlerInput<TArgs extends readonly any[], TContext extends Context> {
+export interface ArgsHandlerInput<TArgs extends readonly any[], TContext extends Context, TMetadata extends Metadata = Metadata> {
   ctx: Prettify<TContext>;
   args: TArgs;
+  metadata: TMetadata;
 }
 
 /**
@@ -201,9 +203,9 @@ export type SafeFnSignature<
 /**
  * Safe function handler type - conditionally uses args or input based on input type
  */
-export type SafeFnHandler<TInput, TOutput, TContext extends Context> = TInput extends readonly any[]
-  ? (input: ArgsHandlerInput<TInput, TContext>) => Promise<TOutput>
-  : (input: HandlerInput<TInput, TContext>) => Promise<TOutput>;
+export type SafeFnHandler<TInput, TOutput, TContext extends Context, TMetadata extends Metadata = Metadata> = TInput extends readonly any[]
+  ? (input: ArgsHandlerInput<TInput, TContext, TMetadata>) => Promise<TOutput>
+  : (input: HandlerInput<TInput, TContext, TMetadata>) => Promise<TOutput>;
 
 // ========================================================================
 // SCHEMA VALIDATION TYPES
@@ -359,10 +361,10 @@ export interface SafeFn<
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
     handler: TInputType extends 'args'
       ? THandlerInput extends readonly any[]
-        ? (input: ArgsHandlerInput<THandlerInput, TContext>) => Promise<THandlerOutput>
+        ? (input: ArgsHandlerInput<THandlerInput, TContext, TMetadata>) => Promise<THandlerOutput>
         : never
       : TInputType extends 'single'
-      ? (input: HandlerInput<THandlerInput, TContext>) => Promise<THandlerOutput>
-      : SafeFnHandler<THandlerInput, THandlerOutput, TContext>
+      ? (input: HandlerInput<THandlerInput, TContext, TMetadata>) => Promise<THandlerOutput>
+      : SafeFnHandler<THandlerInput, THandlerOutput, TContext, TMetadata>
   ): SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
 }

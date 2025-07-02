@@ -10,8 +10,8 @@ import { createSafeFnClient, createMiddleware } from "@safekit/safe-fn";
 
 const loggingMetadataSchema = z.object({
   operationName: z.string(),
-  transformInput: z.function().optional(),
-  transformOutput: z.function().optional(),
+  transformInputLog: z.function().optional(),
+  transformOutputLog: z.function().optional(),
 });
 
 type LoggingMetadata = z.infer<typeof loggingMetadataSchema>;
@@ -21,24 +21,33 @@ type LoggingMetadata = z.infer<typeof loggingMetadataSchema>;
 // ========================================================================
 
 type FnContext = { logger: typeof console };
+type ClientContext = { logger: typeof console };
+
+const extractLoggerMiddleware = createMiddleware<{}, LoggingMetadata, ClientContext>(
+  async ({ rawArgs, next }) => {
+    const [fnCtx] = rawArgs as [FnContext];
+    const logger = fnCtx.logger;
+    return next({ ctx: { logger } });
+  },
+);
 
 /**
  * Creates logging middleware that handles input/output logging with configurable levels
  */
-const loggingMiddleware = createMiddleware<{}, LoggingMetadata>(
-  async ({ metadata, rawArgs, next }) => {
+const loggingMiddleware = createMiddleware<ClientContext, LoggingMetadata, ClientContext>(
+  async ({ ctx, metadata, rawArgs, next }) => {
     // Destructure metadata
-    const { operationName, transformInput, transformOutput } = metadata;
+    const { operationName, transformInputLog, transformOutputLog } = metadata;
 
     // Define logger and input args
-    const [fnCtx, fnInput] = rawArgs as [FnContext, unknown];
-    const logger = fnCtx.logger;
+    const [, fnInput] = rawArgs as [FnContext, unknown];
+    const logger = ctx.logger; // Use logger from context
     if (!logger) {
       throw new Error("Logger not found in context in createLoggingMiddleware");
     }
 
     // Transform and sanitize input for logging
-    const loggedInput = transformInput ? transformInput(fnInput) : fnInput;
+    const loggedInput = transformInputLog ? transformInputLog(fnInput) : fnInput;
 
     // Start logging
     logger.info(
@@ -54,7 +63,7 @@ const loggingMiddleware = createMiddleware<{}, LoggingMetadata>(
     const output = result.output;
 
     // Transform and sanitize output for logging
-    const loggedOutput = transformOutput ? transformOutput(output) : output;
+    const loggedOutput = transformOutputLog ? transformOutputLog(output) : output;
 
     // Success logging
     logger.info(
@@ -78,7 +87,7 @@ const loggingMiddleware = createMiddleware<{}, LoggingMetadata>(
  */
 const baseClient = createSafeFnClient({
   metadataSchema: loggingMetadataSchema,
-});
+}).use(extractLoggerMiddleware);
 
 // ========================================================================
 // CLIENT FACTORIES
@@ -91,12 +100,13 @@ export const serviceClient = baseClient.use(loggingMiddleware);
 const getUser = queryClient
   .metadata({
     operationName: "get_user",
+    transformOutput11111: (output: any) => ({ ...output, surname: "Doe" }),
   })
   .args<[FnContext, { id: string }]>(null, z.object({ id: z.string() }))
   .output(z.object({ name: z.string() }))
-  .handler(async ({ args }) => {
+  .handler(async ({ args, metadata }) => {
     const input = args[1];
-    console.log({ input }, "Executing handler");
+    console.log({ input, operationName: metadata.operationName }, "Executing handler");
     return { name: "John" };
   });
 

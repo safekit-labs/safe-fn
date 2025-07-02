@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0-alpha.4] - 2025-07-02
+
+- Successfully added metadata access to handlers - Handlers now receive metadata alongside ctx, input/args
+- Improved type display - Added Unwrap utility type to show `{ output, context, success }` instead of `MiddlewareResult<unknown, {}>`
+- Clean parameter names - Replaced `args_0`, `args_1` with `arg1`, `arg2` for better readability
+- Consistent type parameter ordering - Used logical progression: `TInput`, `TContext`, `TMetadata`
+- Comprehensive implementation - Updated all relevant interfaces:
+  - `HandlerInput<TInput, TContext, TMetadata>`
+  - `ArgsHandlerInput<TArgs, TContext, TMetadata>`
+  - `SafeFnHandler<TInput, TOutput, TContext, TMetadata>`
+  - Updated middleware execution to pass metadata through
+  - Updated safe-fn handler calls to include metadata
+- Added `TContext` generic to `createSafeFnClient` to allow for context to be passed to the client
+
 ## [0.3.0-alpha.3] - 2025-07-01
 
 - Fixing metadata schema inference

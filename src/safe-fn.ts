@@ -53,7 +53,7 @@ interface ArrayInputHandlerOptions<
   inputValidator: ParseFn<any> | undefined;
   outputValidator: ParseFn<any> | undefined;
   functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[];
-  handler: SafeFnHandler<any, THandlerOutput, TContext>;
+  handler: SafeFnHandler<any, THandlerOutput, TContext, TMetadata>;
   errorHandlerFn: (error: Error, context: TContext) => void;
 }
 
@@ -74,7 +74,7 @@ interface ObjectInputHandlerOptions<
   inputValidator: ParseFn<any> | undefined;
   outputValidator: ParseFn<any> | undefined;
   functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[];
-  handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>;
+  handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext, TMetadata>;
   errorHandlerFn: (error: Error, context: TContext) => void;
 }
 
@@ -116,7 +116,7 @@ async function executeArrayInputHandler<
       inputValidator,
       argsValidator: inputValidator, // For array input, use same validator for both
       handler: async (finalInput: unknown, finalContext: TContext) => {
-        return handler({ ctx: finalContext, args: finalInput } as any);
+        return handler({ ctx: finalContext, args: finalInput, metadata } as any);
       },
     });
 
@@ -171,7 +171,7 @@ async function executeObjectInputHandler<
       inputValidator,
       argsValidator: undefined, // For single input, no args validator
       handler: async (finalInput: unknown, finalContext: TContext) => {
-        return handler({ ctx: finalContext, input: finalInput } as any);
+        return handler({ ctx: finalContext, input: finalInput, metadata } as any);
       },
     });
 
@@ -312,7 +312,7 @@ export function createSafeFn<
     },
 
     handler<THandlerInput = any, THandlerOutput = any>(
-      handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext>,
+      handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext, TMetadata>,
     ) {
       // Merge with default context and any provided context
       const defaultContext = (safeFn as any)._defaultContext || {};
