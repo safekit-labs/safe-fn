@@ -28,9 +28,9 @@ export const clientWithDefaults = createSafeFnClient({
 
 export const clientWithErrorHandler = createSafeFnClient({
   defaultContext: { requestId: "default" },
-  onError: (error, context) => {
+  onError: ({ error, ctx }) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Request ${context.requestId || "unknown"} failed:`, errorMessage);
+    console.error(`Request ${ctx.requestId || "unknown"} failed:`, errorMessage);
     // Send to monitoring service
   },
 });
@@ -69,8 +69,8 @@ export const fullConfigClient = createSafeFnClient<{
     permissions: [] as string[],
   },
   metadataSchema: appMetaSchema,
-  onError: (error, context) => {
-    console.error(`Request ${context.requestId} failed:`, error.message);
+  onError: ({ error, ctx }) => {
+    console.error(`Request ${ctx.requestId} failed:`, error.message);
   },
 });
 
@@ -92,7 +92,7 @@ export const publicApiClient = createSafeFnClient({
     isPublic: true,
     rateLimit: 1000,
   },
-  onError: (error) => {
+  onError: ({ error }) => {
     console.error("Public API error:", error.message);
   },
 });
@@ -115,8 +115,8 @@ export const adminClient = createSafeFnClient<{
     permissions: ["read", "write", "delete"] as const,
   },
   metadataSchema: adminMetaSchema,
-  onError: (error, context) => {
-    console.error(`Admin operation failed for user ${context.userId}:`, error.message);
+  onError: ({ error, ctx }) => {
+    console.error(`Admin operation failed for user ${ctx.userId}:`, error.message);
   },
 });
 

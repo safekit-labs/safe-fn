@@ -99,8 +99,13 @@ describe("Factory Configuration", () => {
 
       await expect(fn({}, {})).rejects.toThrow("test error");
       expect(errorHandler).toHaveBeenCalledWith(
-        expect.objectContaining({ message: "test error" }),
-        expect.objectContaining({ userId: "test" }),
+        expect.objectContaining({
+          error: expect.objectContaining({ message: "test error" }),
+          ctx: expect.objectContaining({ userId: "test" }),
+          metadata: expect.any(Object),
+          rawInput: {},
+          valid: expect.any(Function)
+        })
       );
     });
 
@@ -117,8 +122,13 @@ describe("Factory Configuration", () => {
 
       await expect(fn({}, { requestId: "req-123" } as any)).rejects.toThrow();
       expect(errorHandler).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ userId: "default", requestId: "req-123" }),
+        expect.objectContaining({
+          error: expect.any(Error),
+          ctx: expect.objectContaining({ userId: "default", requestId: "req-123" }),
+          metadata: expect.any(Object),
+          rawInput: {},
+          valid: expect.any(Function)
+        })
       );
     });
   });

@@ -68,7 +68,10 @@ import { createSafeFnClient } from "@safekit/safe-fn";
 const safeFnClient = createSafeFnClient({
   defaultContext: { logger: console },
   metadataSchema: z.object({ traceId: z.string() }),
-  onError: (error, ctx) => ctx.logger.error(`Error:`, error.message),
+  onError: ({ error, ctx }) => {
+    ctx.logger.error(`Error: ${error.message}`);
+    // Return void to let error pass through
+  },
 });
 ```
 
@@ -157,6 +160,109 @@ const greeting = await zodObjectFn({ name: "Alice", age: 30 });
 const person = await zodTupleFn("Bob", 25, true);
 ```
 
+## Error Handling
+
+Safe-fn provides flexible error handling through the `onError` handler configured on the client. The error handler receives the same parameters as middleware functions: `{ error, ctx, metadata, rawInput, rawArgs, valid }`.
+
+### Basic Error Handling
+
+```typescript
+const safeFnClient = createSafeFnClient({
+  defaultContext: { userId: "user123", service: "api" },
+  onError: ({ error, ctx, metadata, rawInput, valid }) => {
+    // Log error with full context
+    console.error(`[${ctx.service}] Error for user ${ctx.userId}:`, error.message);
+    console.log("Metadata:", metadata);
+    console.log("Raw input:", rawInput);
+    
+    // Access validated input if schema exists
+    try {
+      const validInput = valid("input");
+      console.log("Validated:", validInput);
+    } catch {
+      // No schema available
+    }
+    
+    // Return void to let error pass through (default behavior)
+  }
+});
+```
+
+### Error Recovery
+
+The `onError` handler can recover from errors by returning a success object:
+
+```typescript
+const safeFnClient = createSafeFnClient({
+  onError: ({ error, ctx, rawInput }) => {
+    if (error.message.includes("recoverable")) {
+      // Recover from the error
+      return { 
+        success: true, 
+        data: `Recovered: ${error.message} for input ${JSON.stringify(rawInput)}` 
+      };
+    }
+    // Let other errors pass through
+  }
+});
+```
+
+### Error Transformation
+
+Transform errors by returning a new Error object:
+
+```typescript
+const safeFnClient = createSafeFnClient({
+  defaultContext: { service: "payment" },
+  onError: ({ error, ctx, metadata }) => {
+    // Add service context to error
+    return new Error(`[${ctx.service}] ${error.message} (${metadata.operation || 'unknown'})`);
+  }
+});
+```
+
+### Context and Metadata Access
+
+The error handler receives the complete context including middleware modifications:
+
+```typescript
+const authMiddleware = async ({ next, ctx }) => {
+  return next({ ctx: { ...ctx, authTime: new Date().toISOString() } });
+};
+
+const safeFnClient = createSafeFnClient({
+  defaultContext: { userId: "user123" },
+  onError: ({ error, ctx, metadata, rawInput, valid }) => {
+    // ctx includes:
+    // - Default context: { userId: "user123" }
+    // - Additional context passed to function
+    // - Middleware context: { authTime: "..." }
+    console.log("Full context:", ctx);
+    console.log("Metadata:", metadata);
+    console.log("Raw input:", rawInput);
+    
+    // Access validation helpers
+    try {
+      const validInput = valid("input");
+      console.log("Validated input:", validInput);
+    } catch {
+      console.log("No validation schema");
+    }
+  }
+})
+.use(authMiddleware);
+```
+
+### Return Types
+
+The `onError` handler can return:
+- `void` - Error passes through unchanged (default)
+- `Error` - Replace with new error
+- `{ success: true, data: any }` - Recover with data
+- `{ success: false, error: Error }` - Replace with new error
+
+See [examples/error.examples.ts](./examples/error.examples.ts) for a complete working example.
+
 ## API Reference
 
 ### createSafeFnClient(config?)
@@ -164,7 +270,9 @@ const person = await zodTupleFn("Bob", 25, true);
 ```typescript
 const safeFnClient = createSafeFnClient({
   defaultContext: { requestId: "default" },
-  onError: (error, context) => console.error(error),
+  onError: ({ error, ctx }) => {
+    console.error(`[${ctx.requestId}] Error:`, error.message);
+  },
 });
 ```
 

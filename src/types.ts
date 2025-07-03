@@ -49,6 +49,21 @@ export type ErrorHandlerResult<TOutput = any> =
   | { success: false; error: Error };
 
 /**
+ * Error handler function type - similar to middleware signature
+ */
+export type ErrorHandlerFn<
+  TMetadata extends Metadata,
+  TContext extends Context,
+> = (props: {
+  error: Error;
+  ctx: TContext;
+  metadata: TMetadata;
+  rawInput: unknown;
+  rawArgs: unknown;
+  valid: ValidateFunction;
+}) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
+
+/**
  * Configuration for the SafeFn client
  */
 export interface ClientConfig<
@@ -56,7 +71,7 @@ export interface ClientConfig<
   TMetadata extends Metadata = Metadata,
 > {
   defaultContext?: TContext;
-  errorHandler?: (error: Error, context: TContext) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
+  errorHandler?: ErrorHandlerFn<TMetadata, TContext>;
   metadataSchema?: SchemaValidator<TMetadata>;
 }
 
@@ -296,7 +311,7 @@ export type InferTupleFromSchemas<T extends readonly SchemaValidator<any>[]> = T
 export interface SafeFnClientConfig<TContext extends Context, TMetadata extends Metadata> {
   defaultContext?: TContext;
   metadataSchema?: SchemaValidator<TMetadata>;
-  onError?: (error: Error, context: TContext) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
+  onError?: ErrorHandlerFn<TMetadata, TContext>;
 }
 
 // ========================================================================

@@ -13,8 +13,14 @@ describe("Error Handling", () => {
 
     await expect(safeFn({ name: "test" })).rejects.toThrow("Handler error");
     expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Handler error" }),
-      expect.any(Object)
+      expect.objectContaining({
+        error: expect.objectContaining({ message: "Handler error" }),
+        ctx: expect.any(Object),
+        metadata: expect.any(Object),
+        rawInput: { name: "test" },
+        rawArgs: undefined,
+        valid: expect.any(Function)
+      })
     );
   });
 
@@ -61,8 +67,13 @@ describe("Error Handling", () => {
 
     await expect(safeFn({ name: "test" })).rejects.toThrow("Middleware caught error");
     expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Middleware caught error" }),
-      expect.any(Object)
+      expect.objectContaining({
+        error: expect.objectContaining({ message: "Middleware caught error" }),
+        ctx: expect.any(Object),
+        metadata: expect.any(Object),
+        rawInput: { name: "test" },
+        valid: expect.any(Function)
+      })
     );
   });
 
@@ -74,12 +85,81 @@ describe("Error Handling", () => {
 
     await expect(safeFn({ age: "invalid" as any })).rejects.toThrow();
     expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ 
-        issues: expect.arrayContaining([
-          expect.objectContaining({ code: "invalid_type" })
-        ])
-      }),
-      expect.any(Object)
+      expect.objectContaining({
+        error: expect.objectContaining({
+          issues: expect.arrayContaining([
+            expect.objectContaining({ code: "invalid_type" })
+          ])
+        }),
+        ctx: expect.any(Object),
+        metadata: expect.any(Object),
+        rawInput: { age: "invalid" },
+        valid: expect.any(Function)
+      })
+    );
+  });
+
+  it("should pass correct context and metadata to onError", async () => {
+    const onError = vi.fn();
+    const defaultContext = { userId: "test-user", role: "admin" };
+    const metadata = { operation: "test", version: "1.0" };
+
+    const safeFn = createSafeFnClient({ 
+      onError,
+      defaultContext 
+    })
+      .metadata(metadata)
+      .input(z.object({ name: z.string() }))
+      .handler(async () => {
+        throw new Error("Handler error");
+      });
+
+    const additionalContext = { requestId: "req-123" } as any;
+    await expect(safeFn({ name: "test" }, additionalContext)).rejects.toThrow("Handler error");
+    
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: expect.objectContaining({ message: "Handler error" }),
+        ctx: expect.objectContaining({
+          userId: "test-user",
+          role: "admin", 
+          requestId: "req-123"
+        }),
+        metadata: expect.objectContaining({
+          operation: "test",
+          version: "1.0"
+        }),
+        rawInput: { name: "test" },
+        valid: expect.any(Function)
+      })
+    );
+  });
+
+  it("should pass metadata context from middleware to onError", async () => {
+    const onError = vi.fn();
+    const middleware = vi.fn(async ({ next }) => {
+      return next({ ctx: { middlewareData: "added-by-middleware" } });
+    });
+
+    const safeFn = createSafeFnClient({ onError })
+      .use(middleware)
+      .input(z.object({ name: z.string() }))
+      .handler(async () => {
+        throw new Error("Handler error");
+      });
+
+    await expect(safeFn({ name: "test" })).rejects.toThrow("Handler error");
+    
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: expect.objectContaining({ message: "Handler error" }),
+        ctx: expect.objectContaining({
+          middlewareData: "added-by-middleware"
+        }),
+        metadata: expect.any(Object),
+        rawInput: { name: "test" },
+        valid: expect.any(Function)
+      })
     );
   });
 });

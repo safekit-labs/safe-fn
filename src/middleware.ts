@@ -129,8 +129,14 @@ export async function executeMiddlewareChain<
   };
 
   // Start the chain
-  await executeMiddlewareStack(0);
-  return middlewareResult.output;
+  try {
+    await executeMiddlewareStack(0);
+    return middlewareResult.output;
+  } catch (error) {
+    // Attach the final context to the error so it can be used by error handlers
+    (error as any)._middlewareContext = currentContext;
+    throw error;
+  }
 }
 
 /**

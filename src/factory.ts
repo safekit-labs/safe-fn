@@ -11,7 +11,8 @@ import type {
   SafeFn,
   SafeFnClientConfig,
   SchemaValidator,
-  InferSchemaOutput
+  InferSchemaOutput,
+  ErrorHandlerFn
 } from "@/types";
 
 // ========================================================================
@@ -24,33 +25,33 @@ import type {
 export function createSafeFnClient<TContext extends Context, TMetadataSchema extends SchemaValidator<any>>(config: {
   metadataSchema: TMetadataSchema;
   defaultContext?: TContext;
-  onError?: (error: Error, context: TContext) => void | Promise<void>;
+  onError?: ErrorHandlerFn<any, TContext>;
 }): SafeFn<TContext, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
 // 2. Infer metadata and context from schema and defaultContext
 export function createSafeFnClient<TContext extends Context, TMetadataSchema extends SchemaValidator<any>>(config: {
   metadataSchema: TMetadataSchema;
   defaultContext: TContext;
-  onError?: (error: Error, context: TContext) => void | Promise<void>;
+  onError?: ErrorHandlerFn<any, TContext>;
 }): SafeFn<TContext, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
 // 3. Only metadataSchema provided - infer metadata, use default context
 export function createSafeFnClient<TMetadataSchema extends SchemaValidator<any>>(config: {
   metadataSchema: TMetadataSchema;
   defaultContext?: Context;
-  onError?: (error: Error, context: Context) => void | Promise<void>;
+  onError?: ErrorHandlerFn<any, Context>;
 }): SafeFn<Context, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
 // 4. Explicit context without metadataSchema
 export function createSafeFnClient<TContext extends Context>(config: {
   defaultContext?: TContext;
-  onError?: (error: Error, context: TContext) => void | Promise<void>;
+  onError?: ErrorHandlerFn<any, TContext>;
 }): SafeFn<TContext, unknown, unknown, Metadata>;
 
 // 5. Infer context from defaultContext without metadataSchema
 export function createSafeFnClient<TContext extends Context>(config: {
   defaultContext: TContext;
-  onError?: (error: Error, context: TContext) => void | Promise<void>;
+  onError?: ErrorHandlerFn<any, TContext>;
 }): SafeFn<TContext, unknown, unknown, Metadata>;
 
 // 6. No config provided

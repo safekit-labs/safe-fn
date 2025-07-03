@@ -13,11 +13,55 @@ import type {
   InputSchemaArray,
   Prettify,
   ErrorHandlerResult,
+  ErrorHandlerFn,
   MiddlewareResult,
+  ValidateFunction,
 } from "@/types";
 
 import { executeMiddlewareChain } from "@/middleware";
 import { createParseFn, type ParseFn } from "@/libs/parser";
+
+// ========================================================================
+// VALIDATION HELPER
+// ========================================================================
+
+/**
+ * Creates a validation helper function for error handlers
+ */
+function createValidationHelper(
+  rawInput: unknown,
+  rawArgs: unknown,
+  inputValidator?: ParseFn<any>,
+  argsValidator?: ParseFn<any>
+): ValidateFunction {
+  let validatedInput: any;
+  let validatedArgs: any;
+  let inputValidated = false;
+  let argsValidated = false;
+
+  return function valid(type: "input" | "args"): any {
+    if (type === "input") {
+      if (!inputValidator) {
+        throw new Error("No input schema defined. Use rawInput to access unvalidated data.");
+      }
+      if (!inputValidated) {
+        validatedInput = inputValidator(rawInput);
+        inputValidated = true;
+      }
+      return validatedInput;
+    } else if (type === "args") {
+      if (!argsValidator) {
+        throw new Error("No args schema defined. Use rawArgs to access unvalidated data.");
+      }
+      if (!argsValidated) {
+        validatedArgs = argsValidator(rawArgs);
+        argsValidated = true;
+      }
+      return validatedArgs;
+    }
+    throw new Error(`Invalid validation type: ${type}. Use "input" or "args".`);
+  };
+}
 
 // ========================================================================
 // ERROR HANDLING UTILITIES
@@ -28,9 +72,9 @@ import { createParseFn, type ParseFn } from "@/libs/parser";
 /**
  * Creates a default error handler if none is provided
  */
-function createDefaultErrorHandler<TContext extends Context>() {
-  return (error: Error, context: TContext): ErrorHandlerResult => {
-    console.error("SafeFn Error:", error.message, { context });
+function createDefaultErrorHandler<TMetadata extends Metadata, TContext extends Context>(): ErrorHandlerFn<TMetadata, TContext> {
+  return ({ error, ctx }): ErrorHandlerResult => {
+    console.error("SafeFn Error:", error.message, { context: ctx });
     // Return void - just log the error
   };
 }
@@ -90,7 +134,7 @@ interface ArrayInputHandlerOptions<
   outputValidator: ParseFn<any> | undefined;
   functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[];
   handler: SafeFnHandler<any, THandlerOutput, TContext, TMetadata>;
-  errorHandlerFn: (error: Error, context: TContext) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
+  errorHandlerFn: ErrorHandlerFn<TMetadata, TContext>;
 }
 
 /**
@@ -111,7 +155,7 @@ interface ObjectInputHandlerOptions<
   outputValidator: ParseFn<any> | undefined;
   functionMiddlewares: MiddlewareFn<TMetadata, TContext, any>[];
   handler: SafeFnHandler<THandlerInput, THandlerOutput, TContext, TMetadata>;
-  errorHandlerFn: (error: Error, context: TContext) => ErrorHandlerResult | Promise<ErrorHandlerResult>;
+  errorHandlerFn: ErrorHandlerFn<TMetadata, TContext>;
 }
 
 // ------------------ ARRAY INPUT HANDLER ------------------
@@ -160,10 +204,23 @@ async function executeArrayInputHandler<
     return validatedOutput as THandlerOutput;
   } catch (error) {
     const originalError = error instanceof Error ? error : new Error(String(error));
+    // Use the context from middleware execution if available, otherwise fall back to fullContext
+    const errorContext = (originalError as any)._middlewareContext || fullContext;
+    
+    // Create validation helper for error handler
+    const valid = createValidationHelper(args, args, inputValidator, inputValidator);
+    
     const errorResult = await processErrorHandlerResult<THandlerOutput, TContext>(
-      errorHandlerFn(originalError, fullContext),
+      errorHandlerFn({
+        error: originalError,
+        ctx: errorContext,
+        metadata,
+        rawInput: args,
+        rawArgs: args,
+        valid
+      }),
       originalError,
-      fullContext
+      errorContext
     );
     
     if (errorResult.success) {
@@ -225,10 +282,23 @@ async function executeObjectInputHandler<
     return validatedOutput as THandlerOutput;
   } catch (error) {
     const originalError = error instanceof Error ? error : new Error(String(error));
+    // Use the context from middleware execution if available, otherwise fall back to fullContext
+    const errorContext = (originalError as any)._middlewareContext || fullContext;
+    
+    // Create validation helper for error handler
+    const valid = createValidationHelper(input, undefined, inputValidator, undefined);
+    
     const errorResult = await processErrorHandlerResult<THandlerOutput, TContext>(
-      errorHandlerFn(originalError, fullContext),
+      errorHandlerFn({
+        error: originalError,
+        ctx: errorContext,
+        metadata,
+        rawInput: input,
+        rawArgs: undefined,
+        valid
+      }),
       originalError,
-      fullContext
+      errorContext
     );
     
     if (errorResult.success) {
@@ -380,7 +450,7 @@ export function createSafeFn<
       // Use client error handler if available, otherwise use default
       const clientErrorHandler = (safeFn as any)._clientErrorHandler;
       const errorHandlerFn =
-        errorHandler || clientErrorHandler || createDefaultErrorHandler<TContext>();
+        errorHandler || clientErrorHandler || createDefaultErrorHandler<TMetadata, TContext>();
 
       // Use client middlewares if available
       const clientMiddlewares = (safeFn as any)._clientMiddlewares || [];
