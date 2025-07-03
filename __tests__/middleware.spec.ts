@@ -130,6 +130,53 @@ describe("Middleware Support", () => {
       const result = await fn({}, {});
       expect(result).toBe("metadata accepted");
     });
+
+    it("should provide metadata to middleware", async () => {
+      let capturedMetadata: any;
+
+      const safeFnClient = createSafeFnClient({
+        metadataSchema: z.object({ operationName: z.string() }),
+      });
+
+      const fn = safeFnClient
+        .use(async ({ metadata, next }) => {
+          capturedMetadata = metadata;
+          return next();
+        })
+        .metadata({ operationName: "get-node-env" })
+        .handler(async () => "completed");
+
+      await fn({}, {});
+      expect(capturedMetadata).toEqual({ operationName: "get-node-env" });
+    });
+
+    it("should provide metadata to middleware when using .context()", async () => {
+      let capturedMetadata: any;
+
+      const safeFnClient = createSafeFnClient({
+        metadataSchema: z.object({ operationName: z.string() }),
+      });
+
+      const fn = safeFnClient
+        .use(async ({ metadata, next }) => {
+          capturedMetadata = metadata;
+          return next();
+        })
+        .metadata({ operationName: "get-node-env" })
+        .context<{ env: { NODE_ENV: string } }>()
+        .input(z.object({}))
+        .handler(async ({ ctx }) => ({
+          NODE_ENV: ctx.env.NODE_ENV,
+          timestamp: new Date().toISOString(),
+        }));
+
+      const ctx = {
+        env: { NODE_ENV: "development" },
+      };
+
+      await fn.withContext(ctx).execute({});
+      expect(capturedMetadata).toEqual({ operationName: "get-node-env" });
+    });
   });
 
   describe("middleware with different input types", () => {

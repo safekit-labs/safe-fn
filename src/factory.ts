@@ -94,11 +94,11 @@ export function createSafeFnClient(
   const safeFn = config?.defaultContext ? createSafeFn<any, {}>() : createSafeFn<{}, {}>();
 
   // Configure the SafeFn client with provided settings
-  const metadataParser = config?.metadataSchema ? createParseFn(config.metadataSchema) : undefined;
+  const metadataValidator = config?.metadataSchema ? createParseFn(config.metadataSchema) : undefined;
 
   // Store the client configuration for use in the SafeFn client  
   (safeFn as any)._defaultContext = config?.defaultContext || {};
-  (safeFn as any)._metadataParser = metadataParser;
+  (safeFn as any)._metadataValidator = metadataValidator;
   (safeFn as any)._clientErrorHandler = config?.onError;
   (safeFn as any)._clientMiddlewares = [];
 

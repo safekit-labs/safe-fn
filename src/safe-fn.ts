@@ -326,8 +326,8 @@ export function createSafeFn<
   TBaseContext extends Context = {},
   TInputContext extends Context = Context,
   TMetadata extends Metadata = Metadata,
->(): SafeFn<TBaseContext, TInputContext, unknown, unknown, TMetadata, 'none'> {
-  let currentMetadata: TMetadata | undefined;
+>(initialState?: { currentMetadata?: TMetadata }): SafeFn<TBaseContext, TInputContext, unknown, unknown, TMetadata, 'none'> {
+  let currentMetadata: TMetadata | undefined = initialState?.currentMetadata;
   let inputValidator: ParseFn<any> | undefined;
   let outputValidator: ParseFn<any> | undefined;
   let functionMiddlewares: MiddlewareFn<TMetadata, TBaseContext, any>[] = [];
@@ -341,12 +341,14 @@ export function createSafeFn<
     metadata(
       metadata: TMetadata,
     ): SafeFn<TBaseContext, TInputContext, unknown, unknown, TMetadata, 'none'> {
-      const newSafeFn = createSafeFn<TBaseContext, TInputContext, TMetadata>();
+      // For the constructor, we use the raw metadata since validation might be async
+      // Validation will happen at execution time
+      const newSafeFn = createSafeFn<TBaseContext, TInputContext, TMetadata>({ 
+        currentMetadata: metadata 
+      });
 
-      // Copy over current state
-      (newSafeFn as any)._currentMetadata = metadataValidator
-        ? metadataValidator(metadata)
-        : metadata;
+      // Store the raw metadata for validation at execution time
+      (newSafeFn as any)._currentMetadata = metadata;
       (newSafeFn as any)._inputValidator = inputValidator;
       (newSafeFn as any)._outputValidator = outputValidator;
       (newSafeFn as any)._functionMiddlewares = functionMiddlewares;
@@ -365,7 +367,9 @@ export function createSafeFn<
     use<TNextCtx extends Context>(
       middleware: MiddlewareFn<TMetadata, Prettify<TBaseContext & TInputContext>, Prettify<TBaseContext & TInputContext & TNextCtx>>,
     ): SafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, unknown, unknown, TMetadata, 'none'> {
-      const newSafeFn = createSafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, TMetadata>();
+      const newSafeFn = createSafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, TMetadata>({ 
+        currentMetadata 
+      });
 
       // Copy over current state
       (newSafeFn as any)._currentMetadata = currentMetadata;
@@ -385,7 +389,7 @@ export function createSafeFn<
       (newSafeFn as any)._clientMiddlewares = [...existingClientMiddlewares, middleware];
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
       (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
-      (newSafeFn as any)._metadataParser = (safeFn as any)._metadataParser;
+      (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
 
       return newSafeFn;
     },
@@ -393,7 +397,9 @@ export function createSafeFn<
     context<TNewInputContext extends Context>(
       schema?: SchemaValidator<TNewInputContext>
     ): SafeFn<TBaseContext, TNewInputContext, unknown, unknown, TMetadata, 'none', HasContext> {
-      const newSafeFn = createSafeFn<TBaseContext, TNewInputContext, TMetadata>();
+      const newSafeFn = createSafeFn<TBaseContext, TNewInputContext, TMetadata>({ 
+        currentMetadata 
+      });
 
       // Copy over current state
       (newSafeFn as any)._currentMetadata = currentMetadata;
@@ -414,7 +420,7 @@ export function createSafeFn<
       (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
       (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
-      (newSafeFn as any)._metadataParser = (safeFn as any)._metadataParser;
+      (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
 
       return newSafeFn as any;
     },
