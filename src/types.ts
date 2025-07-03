@@ -35,6 +35,27 @@ export type Context = {};
  */
 export interface Metadata {}
 
+/**
+ * Marker type to indicate if a SafeFn has context capabilities
+ */
+export type HasContext = { __hasContext: true };
+
+/**
+ * Context-bound function that supports both direct calls and .execute() method
+ */
+export interface ContextBoundFunction<TInput, TOutput> {
+  (input: TInput): Promise<TOutput>;
+  execute(input: TInput): Promise<TOutput>;
+}
+
+/**
+ * Context-bound function for args pattern
+ */
+export interface ContextBoundArgsFunction<TArgs extends readonly any[], TOutput> {
+  (...args: TArgs): Promise<TOutput>;
+  execute(...args: TArgs): Promise<TOutput>;
+}
+
 // ========================================================================
 // CLIENT CONFIGURATION
 // ========================================================================
@@ -308,10 +329,10 @@ export type InferTupleFromSchemas<T extends readonly SchemaValidator<any>[]> = T
 /**
  * Configuration for creating a SafeFn client
  */
-export interface SafeFnClientConfig<TContext extends Context, TMetadata extends Metadata> {
-  defaultContext?: TContext;
+export interface SafeFnClientConfig<TBaseContext extends Context, TMetadata extends Metadata> {
+  defaultContext?: TBaseContext;
   metadataSchema?: SchemaValidator<TMetadata>;
-  onError?: ErrorHandlerFn<TMetadata, TContext>;
+  onError?: ErrorHandlerFn<TMetadata, TBaseContext>;
 }
 
 // ========================================================================
@@ -321,17 +342,17 @@ export interface SafeFnClientConfig<TContext extends Context, TMetadata extends 
 /**
  * Safe function builder with proper context type chaining
  */
-export interface SafeFnBuilder<TContext extends Context, TMetadata extends Metadata> {
+export interface SafeFnBuilder<TBaseContext extends Context, TMetadata extends Metadata> {
   use<TNextCtx extends Context>(
-    middleware: MiddlewareFn<TMetadata, TContext, TContext & TNextCtx>,
-  ): SafeFnBuilder<Prettify<TContext & TNextCtx>, TMetadata>;
-  context<TNewContext extends Context = TContext>(
-    defaultContext?: TNewContext,
-  ): SafeFnBuilder<TNewContext, TMetadata>;
+    middleware: MiddlewareFn<TMetadata, TBaseContext, TBaseContext & TNextCtx>,
+  ): SafeFnBuilder<Prettify<TBaseContext & TNextCtx>, TMetadata>;
+  context<TNewBaseContext extends Context = TBaseContext>(
+    defaultContext?: TNewBaseContext,
+  ): SafeFnBuilder<TNewBaseContext, TMetadata>;
   metadataSchema<TNewMetadata extends Metadata = TMetadata>(
     schema?: SchemaValidator<TNewMetadata>,
-  ): SafeFnBuilder<TContext, TNewMetadata>;
-  create(): SafeFn<TContext, unknown, unknown, TMetadata, 'none'>;
+  ): SafeFnBuilder<TBaseContext, TNewMetadata>;
+  create(): SafeFn<TBaseContext, Context, unknown, unknown, TMetadata, 'none'>;
 }
 
 /**
@@ -340,34 +361,46 @@ export interface SafeFnBuilder<TContext extends Context, TMetadata extends Metad
 export type InputType = 'none' | 'single' | 'args';
 
 /**
- * Safe function procedure
- * @template TContext - Context object type
+ * Base SafeFn interface with common methods
+ * @template TBaseContext - Base context from factory (defaultContext)
+ * @template TInputContext - Input context defined via .context<T>() and passed to .withContext()
  * @template TInput - Input type (from .input() or .args())
  * @template TOutput - Output type (from .output())
  * @template TMetadata - Metadata object type
  * @template TInputType - Input method used ('none' | 'single' | 'args')
+ * @template TContextCapable - Whether this SafeFn has context capabilities
  */
-export interface SafeFn<
-  TContext extends Context = Context,
+interface SafeFnBase<
+  TBaseContext extends Context = Context,
+  TInputContext extends Context = Context,
   TInput = unknown,
   TOutput = unknown,
   TMetadata extends Metadata = Metadata,
   TInputType extends InputType = 'none',
+  TContextCapable = {}
 > {
   /**
    * Set metadata for this function
    */
   metadata(
     metadata: TMetadata,
-  ): SafeFn<TContext, TInput, TOutput, TMetadata, TInputType>;
+  ): SafeFn<TBaseContext, TInputContext, TInput, TOutput, TMetadata, TInputType, TContextCapable>;
   
   /**
    * Add middleware to the function chain
    * @template TNextCtx - Additional context type from middleware
    */
   use<TNextCtx extends Context>(
-    middleware: MiddlewareFn<TMetadata, TContext, TContext & TNextCtx>,
-  ): SafeFn<Prettify<TContext & TNextCtx>, TInput, TOutput, TMetadata, TInputType>;
+    middleware: MiddlewareFn<TMetadata, Prettify<TBaseContext & TInputContext>, Prettify<TBaseContext & TInputContext & TNextCtx>>,
+  ): SafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, TInput, TOutput, TMetadata, TInputType, TContextCapable>;
+  
+  /**
+   * Define input context type and enable context capabilities
+   * @template TNewInputContext - Input context type
+   */
+  context<TNewInputContext extends Context>(
+    schema?: SchemaValidator<TNewInputContext>
+  ): SafeFn<TBaseContext, TNewInputContext, TInput, TOutput, TMetadata, TInputType, HasContext>;
   
   /**
    * Define input schema for validation
@@ -376,7 +409,7 @@ export interface SafeFn<
   input<TNewInput>(
     schema: SchemaValidator<TNewInput>,
   ): TInputType extends 'none'
-    ? SafeFn<TContext, TNewInput, TOutput, TMetadata, 'single'>
+    ? SafeFn<TBaseContext, TInputContext, TNewInput, TOutput, TMetadata, 'single', TContextCapable>
     : never;
 
   /**
@@ -384,7 +417,7 @@ export interface SafeFn<
    * @template TNewInput - Input type (no runtime validation)
    */
   input<TNewInput>(): TInputType extends 'none'
-    ? SafeFn<TContext, TNewInput, TOutput, TMetadata, 'single'>
+    ? SafeFn<TBaseContext, TInputContext, TNewInput, TOutput, TMetadata, 'single', TContextCapable>
     : never;
 
   /**
@@ -394,7 +427,7 @@ export interface SafeFn<
   args<TArgs extends readonly any[]>(
     ...schemas: InputSchemaArray<TArgs>
   ): TInputType extends 'none'
-    ? SafeFn<TContext, TArgs, TOutput, TMetadata, 'args'>
+    ? SafeFn<TBaseContext, TInputContext, TArgs, TOutput, TMetadata, 'args', TContextCapable>
     : never;
 
   /**
@@ -402,7 +435,7 @@ export interface SafeFn<
    * @template TArgs - Tuple of argument types (no runtime validation)
    */
   args<TArgs extends readonly any[]>(): TInputType extends 'none'
-    ? SafeFn<TContext, TArgs, TOutput, TMetadata, 'args'>
+    ? SafeFn<TBaseContext, TInputContext, TArgs, TOutput, TMetadata, 'args', TContextCapable>
     : never;
     
   /**
@@ -411,20 +444,74 @@ export interface SafeFn<
    */
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,
-  ): SafeFn<TContext, TInput, TNewOutput, TMetadata, TInputType>;
+  ): SafeFn<TBaseContext, TInputContext, TInput, TNewOutput, TMetadata, TInputType, TContextCapable>;
+
 
   /**
    * Define the handler function
+   * Handler receives the combined working context (TBaseContext & TInputContext & middleware enhancements)
    * @template THandlerInput - Handler input type (defaults to TInput)
    * @template THandlerOutput - Handler output type (defaults to TOutput)
    */
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
     handler: TInputType extends 'args'
       ? THandlerInput extends readonly any[]
-        ? (input: ArgsHandlerInput<THandlerInput, TContext, TMetadata>) => Promise<THandlerOutput>
+        ? (input: ArgsHandlerInput<THandlerInput, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<THandlerOutput>
         : never
       : TInputType extends 'single'
-      ? (input: HandlerInput<THandlerInput, TContext, TMetadata>) => Promise<THandlerOutput>
-      : SafeFnHandler<THandlerInput, THandlerOutput, TContext, TMetadata>
-  ): SafeFnSignature<THandlerInput, THandlerOutput, TContext>;
+      ? (input: HandlerInput<THandlerInput, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<THandlerOutput>
+      : SafeFnHandler<THandlerInput, THandlerOutput, Prettify<TBaseContext & TInputContext>, TMetadata>
+  ): TContextCapable extends HasContext
+    ? SafeFn<TBaseContext, TInputContext, THandlerInput, THandlerOutput, TMetadata, TInputType, TContextCapable>
+    : SafeFnSignature<THandlerInput, THandlerOutput, Prettify<TBaseContext & TInputContext>>;
 }
+
+/**
+ * Context-enabled SafeFn with proper withContext typing
+ */
+export interface SafeFnWithContext<
+  TBaseContext extends Context = Context,
+  TInputContext extends Context = Context,
+  TInput = unknown,
+  TOutput = unknown,
+  TMetadata extends Metadata = Metadata,
+  TInputType extends InputType = 'none'
+> extends SafeFnBase<TBaseContext, TInputContext, TInput, TOutput, TMetadata, TInputType, HasContext> {
+  /**
+   * Bind context to create a context-aware function
+   */
+  withContext(context: TInputContext): TInputType extends 'args'
+    ? TInput extends readonly any[]
+      ? ContextBoundArgsFunction<TInput, TOutput>
+      : never
+    : ContextBoundFunction<TInput, TOutput>;
+}
+
+/**
+ * Non-context SafeFn without withContext capability
+ */
+export interface SafeFnWithoutContext<
+  TBaseContext extends Context = Context,
+  TInputContext extends Context = Context,
+  TInput = unknown,
+  TOutput = unknown,
+  TMetadata extends Metadata = Metadata,
+  TInputType extends InputType = 'none'
+> extends SafeFnBase<TBaseContext, TInputContext, TInput, TOutput, TMetadata, TInputType, {}> {
+  // No withContext method
+}
+
+/**
+ * Main SafeFn type - conditionally includes context capabilities
+ */
+export type SafeFn<
+  TBaseContext extends Context = Context,
+  TInputContext extends Context = Context,
+  TInput = unknown,
+  TOutput = unknown,
+  TMetadata extends Metadata = Metadata,
+  TInputType extends InputType = 'none',
+  TContextCapable = {}
+> = TContextCapable extends HasContext
+  ? SafeFnWithContext<TBaseContext, TInputContext, TInput, TOutput, TMetadata, TInputType>
+  : SafeFnWithoutContext<TBaseContext, TInputContext, TInput, TOutput, TMetadata, TInputType>;

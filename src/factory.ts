@@ -23,25 +23,25 @@ import type {
 
 /**
  * Create SafeFn client with metadata schema and context
- * @template TContext - Context object type
+ * @template TBaseContext - Base context object type
  * @template TMetadataSchema - Metadata schema validator type
  */
-export function createSafeFnClient<TContext extends Context, TMetadataSchema extends SchemaValidator<any>>(config: {
+export function createSafeFnClient<TBaseContext extends Context, TMetadataSchema extends SchemaValidator<any>>(config: {
   metadataSchema: TMetadataSchema;
-  defaultContext?: TContext;
-  onError?: ErrorHandlerFn<any, TContext>;
-}): SafeFn<TContext, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
+  defaultContext?: TBaseContext;
+  onError?: ErrorHandlerFn<any, TBaseContext>;
+}): SafeFn<TBaseContext, {}, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
 /**
  * Create SafeFn client with metadata schema and required context
- * @template TContext - Context object type
+ * @template TBaseContext - Base context object type
  * @template TMetadataSchema - Metadata schema validator type
  */
-export function createSafeFnClient<TContext extends Context, TMetadataSchema extends SchemaValidator<any>>(config: {
+export function createSafeFnClient<TBaseContext extends Context, TMetadataSchema extends SchemaValidator<any>>(config: {
   metadataSchema: TMetadataSchema;
-  defaultContext: TContext;
-  onError?: ErrorHandlerFn<any, TContext>;
-}): SafeFn<TContext, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
+  defaultContext: TBaseContext;
+  onError?: ErrorHandlerFn<any, TBaseContext>;
+}): SafeFn<TBaseContext, {}, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
 /**
  * Create SafeFn client with only metadata schema
@@ -51,30 +51,30 @@ export function createSafeFnClient<TMetadataSchema extends SchemaValidator<any>>
   metadataSchema: TMetadataSchema;
   defaultContext?: Context;
   onError?: ErrorHandlerFn<any, Context>;
-}): SafeFn<Context, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
+}): SafeFn<Context, {}, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
 /**
  * Create SafeFn client with context type
- * @template TContext - Context object type
+ * @template TBaseContext - Base context object type
  */
-export function createSafeFnClient<TContext extends Context>(config: {
-  defaultContext?: TContext;
-  onError?: ErrorHandlerFn<any, TContext>;
-}): SafeFn<TContext, unknown, unknown, Metadata>;
+export function createSafeFnClient<TBaseContext extends Context>(config: {
+  defaultContext?: TBaseContext;
+  onError?: ErrorHandlerFn<any, TBaseContext>;
+}): SafeFn<TBaseContext, {}, unknown, unknown, Metadata>;
 
 /**
  * Create SafeFn client with required context
- * @template TContext - Context object type (inferred from defaultContext)
+ * @template TBaseContext - Base context object type (inferred from defaultContext)
  */
-export function createSafeFnClient<TContext extends Context>(config: {
-  defaultContext: TContext;
-  onError?: ErrorHandlerFn<any, TContext>;
-}): SafeFn<TContext, unknown, unknown, Metadata>;
+export function createSafeFnClient<TBaseContext extends Context>(config: {
+  defaultContext: TBaseContext;
+  onError?: ErrorHandlerFn<any, TBaseContext>;
+}): SafeFn<TBaseContext, {}, unknown, unknown, Metadata>;
 
 /**
  * Create SafeFn client with no configuration
  */
-export function createSafeFnClient(): SafeFn<{}, unknown, unknown, Metadata>;
+export function createSafeFnClient(): SafeFn<{}, {}, unknown, unknown, Metadata>;
 
 /**
  * Creates a SafeFn client with default context and metadata schema
@@ -89,9 +89,9 @@ export function createSafeFnClient(): SafeFn<{}, unknown, unknown, Metadata>;
  */
 export function createSafeFnClient(
   config?: SafeFnClientConfig<any, any>,
-): SafeFn<any, unknown, unknown, any> {
+): SafeFn<any, {}, unknown, unknown, any> {
   // When no config is provided, start with empty context like next-safe-action
-  const safeFn = config?.defaultContext ? createSafeFn<any>() : createSafeFn<{}>();
+  const safeFn = config?.defaultContext ? createSafeFn<any, {}>() : createSafeFn<{}, {}>();
 
   // Configure the SafeFn client with provided settings
   const metadataParser = config?.metadataSchema ? createParseFn(config.metadataSchema) : undefined;

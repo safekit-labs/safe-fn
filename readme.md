@@ -12,9 +12,9 @@ A lightweight type-safe function builder with interceptors, schema validation, a
 ## Features
 
 - 🔒 **Type-Safe**: Full TypeScript support with automatic type inference and structural typing
-- 🔗 **Middleware**: Chainable middleware for cross-cutting concerns
+- 🔗 **Middleware**: Chainable middleware for cross-cutting concerns with proper context evolution
 - ✅ **Multi-Library Support**: Works with Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Runtypes, and custom validators
-- 🎨 **Context Management**: Type-safe context passing through procedure chains
+- 🎨 **Context Management**: Type-safe context passing and binding with `.context<T>()` and `.withContext()`
 - 🚀 **Lightweight**: Zero runtime dependencies
 
 ## Installation
@@ -127,6 +127,52 @@ const search = await publicFunction({ query: "hello" });
 
 const post = await protectedFunction({ postId: "123" });
 ```
+
+## Context API
+
+The context API enables type-safe context binding at call-time. Define context types with `.context<T>()` and bind values with `.withContext()`:
+
+```typescript
+import { z } from "zod";
+import { createSafeFnClient } from "@safekit/safe-fn";
+
+type AuthContext = {
+  userId: string;
+  role: "admin" | "user";
+};
+
+// Enable context capabilities
+const client = createSafeFnClient().context<AuthContext>();
+
+const deleteUser = client
+  .input(z.object({ userId: z.string() }))
+  .handler(async ({ input, ctx }) => {
+    // ctx is fully typed as AuthContext
+    if (ctx.role !== "admin") {
+      throw new Error("Insufficient permissions");
+    }
+    return { deleted: true, deletedBy: ctx.userId };
+  });
+
+// Bind context at call-time
+const result = await deleteUser
+  .withContext({ userId: "admin-123", role: "admin" })
+  .execute({ userId: "user-456" });
+```
+
+Context works with middleware - middleware receives the working context (base + input context):
+
+```typescript
+const client = createSafeFnClient()
+  .context<AuthContext>()
+  .use(async ({ ctx, next }) => {
+    // ctx is properly typed as AuthContext
+    console.log(`Request from ${ctx.role} ${ctx.userId}`);
+    return next();
+  });
+```
+
+See [examples/context.example.ts](./examples/context.example.ts) for complete examples.
 
 ## Validation
 

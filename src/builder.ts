@@ -12,6 +12,7 @@ import type {
   SafeFn,
   SchemaValidator,
   Metadata,
+  Prettify,
 } from "@/types";
 
 // ========================================================================
@@ -23,16 +24,16 @@ import type {
 /**
  * Chainable builder that supports .use() for interceptors and creates SafeFn clients
  */
-class SafeFnBuilderImpl<TContext extends Context, TMetadata extends Metadata>
-  implements SafeFnBuilder<TContext, TMetadata>
+class SafeFnBuilderImpl<TBaseContext extends Context, TMetadata extends Metadata>
+  implements SafeFnBuilder<TBaseContext, TMetadata>
 {
   // Use readonly public properties instead of private to allow exports
-  readonly defaultContext?: TContext;
+  readonly defaultContext?: TBaseContext;
   readonly metadataParser?: ParseFn<TMetadata>;
   readonly middlewares: Middleware<any, any, TMetadata>[];
 
   constructor(options?: {
-    defaultContext?: TContext;
+    defaultContext?: TBaseContext;
     metadataParser?: ParseFn<TMetadata>;
     middlewares?: Middleware<any, any, TMetadata>[];
   }) {
@@ -41,22 +42,22 @@ class SafeFnBuilderImpl<TContext extends Context, TMetadata extends Metadata>
     this.middlewares = options?.middlewares || [];
   }
 
-  use<TNewContext extends TContext>(
-    middleware: Middleware<TContext, TNewContext, TMetadata>,
-  ): SafeFnBuilder<TNewContext, TMetadata> {
+  use<TNextCtx extends Context>(
+    middleware: Middleware<TBaseContext, TBaseContext & TNextCtx, TMetadata>,
+  ): SafeFnBuilder<Prettify<TBaseContext & TNextCtx>, TMetadata> {
     // We create a NEW Builder whose generic is the NEW context type.
     // This is how the type information is preserved and chained.
-    return new SafeFnBuilderImpl<TNewContext, TMetadata>({
-      defaultContext: this.defaultContext as TNewContext,
+    return new SafeFnBuilderImpl<Prettify<TBaseContext & TNextCtx>, TMetadata>({
+      defaultContext: this.defaultContext as Prettify<TBaseContext & TNextCtx>,
       metadataParser: this.metadataParser,
       middlewares: [...this.middlewares, middleware],
     });
   }
 
-  context<TNewContext extends Context = TContext>(
-    defaultContext?: TNewContext,
-  ): SafeFnBuilder<TNewContext, TMetadata> {
-    return new SafeFnBuilderImpl<TNewContext, TMetadata>({
+  context<TNewBaseContext extends Context = TBaseContext>(
+    defaultContext?: TNewBaseContext,
+  ): SafeFnBuilder<TNewBaseContext, TMetadata> {
+    return new SafeFnBuilderImpl<TNewBaseContext, TMetadata>({
       defaultContext,
       metadataParser: this.metadataParser,
       middlewares: this.middlewares,
@@ -65,23 +66,23 @@ class SafeFnBuilderImpl<TContext extends Context, TMetadata extends Metadata>
 
   metadataSchema<TNewMetadata extends Metadata = TMetadata>(
     schema?: SchemaValidator<TNewMetadata>,
-  ): SafeFnBuilder<TContext, TNewMetadata> {
+  ): SafeFnBuilder<TBaseContext, TNewMetadata> {
     const newMetadataParser = schema ? createParseFn(schema) : undefined;
-    return new SafeFnBuilderImpl<TContext, TNewMetadata>({
+    return new SafeFnBuilderImpl<TBaseContext, TNewMetadata>({
       defaultContext: this.defaultContext,
       metadataParser: newMetadataParser,
       middlewares: this.middlewares as unknown as Middleware<any, any, TNewMetadata>[],
     });
   }
 
-  create(): SafeFn<TContext, unknown, unknown, TMetadata> {
+  create(): SafeFn<TBaseContext, Context, unknown, unknown, TMetadata> {
     return this.createConfiguredSafeFn();
   }
 
   // ------------------ PRIVATE METHODS ------------------
 
-  private createConfiguredSafeFn(): SafeFn<TContext, unknown, unknown, TMetadata> {
-    const safeFn = createSafeFn<TContext, TMetadata>();
+  private createConfiguredSafeFn(): SafeFn<TBaseContext, Context, unknown, unknown, TMetadata> {
+    const safeFn = createSafeFn<TBaseContext, Context, TMetadata>();
 
     // Store the builder configuration for use in the SafeFn client
     (safeFn as any)._clientMiddlewares = this.middlewares;
@@ -104,8 +105,8 @@ class SafeFnBuilderImpl<TContext extends Context, TMetadata extends Metadata>
  * @deprecated Use `createSafeFnClient` instead for a simpler API that directly returns a configured SafeFn client
  */
 export function createBuilder<
-  TContext extends Context = Context,
+  TBaseContext extends Context = Context,
   TMetadata extends Metadata = Metadata,
->(): SafeFnBuilder<TContext, TMetadata> {
-  return new SafeFnBuilderImpl<TContext, TMetadata>();
+>(): SafeFnBuilder<TBaseContext, TMetadata> {
+  return new SafeFnBuilderImpl<TBaseContext, TMetadata>();
 }

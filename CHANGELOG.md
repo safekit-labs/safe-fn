@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0-alpha.7] - 2025-07-03
+
+### Fixed
+- **Middleware Context Types**: Fixed middleware receiving working context (`TBaseContext & TInputContext`) instead of just `TBaseContext`
+- **withContext TypeScript Errors**: Resolved "possibly undefined" errors by refactoring SafeFn interface with better conditional types
+- **Type Inference**: Improved TypeScript inference for context-enabled SafeFn functions
+
+### Added
+- **Context API**: Full context support with type-safe `.context<T>()` method for defining input context types
+- **withContext Method**: Bind context at call-time with full type safety for both single input and args patterns
+
 ## [0.3.0-alpha.6] - 2025-07-02
 
 - onError is called when handler throws

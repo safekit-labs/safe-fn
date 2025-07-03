@@ -208,7 +208,7 @@ export const typeSafetyExample = createSafeFnClient()
   })
   .use(async ({ ctx, next }) => {
     // ctx is { step1: string } - TypeScript enforces this
-    const step1Value: string = ctx.step1; //  Type-safe access
+    const step1Value: string = ctx.step1; // Type-safe access
 
     return next({ ctx: { step2: step1Value.toUpperCase() } });
   })
