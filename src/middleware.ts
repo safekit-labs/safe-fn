@@ -142,6 +142,9 @@ export async function executeMiddlewareChain<
 /**
  * Creates a standalone middleware function with full type safety.
  * 
+ * @template TCurrentCtx - Current context type expected by middleware
+ * @template TMetadata - Metadata object type
+ * @template TNextCtx - Context type after middleware execution
  * @param middlewareFn - The middleware function implementation
  * @returns The same middleware function with proper typing
  * 

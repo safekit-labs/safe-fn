@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Middleware can intercept and modify errors
   - Original error structures are preserved
 
+- Added JS doc comments to major functions and types
+
 ## [0.3.0-alpha.5] - 2025-07-02
 
 - Updated import paths in index.ts to use relative paths instead of @/

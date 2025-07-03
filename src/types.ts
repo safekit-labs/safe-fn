@@ -341,6 +341,11 @@ export type InputType = 'none' | 'single' | 'args';
 
 /**
  * Safe function procedure
+ * @template TContext - Context object type
+ * @template TInput - Input type (from .input() or .args())
+ * @template TOutput - Output type (from .output())
+ * @template TMetadata - Metadata object type
+ * @template TInputType - Input method used ('none' | 'single' | 'args')
  */
 export interface SafeFn<
   TContext extends Context = Context,
@@ -349,40 +354,70 @@ export interface SafeFn<
   TMetadata extends Metadata = Metadata,
   TInputType extends InputType = 'none',
 > {
+  /**
+   * Set metadata for this function
+   */
   metadata(
     metadata: TMetadata,
   ): SafeFn<TContext, TInput, TOutput, TMetadata, TInputType>;
+  
+  /**
+   * Add middleware to the function chain
+   * @template TNextCtx - Additional context type from middleware
+   */
   use<TNextCtx extends Context>(
     middleware: MiddlewareFn<TMetadata, TContext, TContext & TNextCtx>,
   ): SafeFn<Prettify<TContext & TNextCtx>, TInput, TOutput, TMetadata, TInputType>;
-  // Single input method - only available when no input is set
+  
+  /**
+   * Define input schema for validation
+   * @template TNewInput - Input type inferred from schema
+   */
   input<TNewInput>(
     schema: SchemaValidator<TNewInput>,
   ): TInputType extends 'none'
     ? SafeFn<TContext, TNewInput, TOutput, TMetadata, 'single'>
     : never;
 
-  // Schema-less single input method - type-only, no validation
+  /**
+   * Define input type without validation (type-only)
+   * @template TNewInput - Input type (no runtime validation)
+   */
   input<TNewInput>(): TInputType extends 'none'
     ? SafeFn<TContext, TNewInput, TOutput, TMetadata, 'single'>
     : never;
 
-  // Multiple arguments method - only available when no input is set
+  /**
+   * Define multiple argument schemas for validation
+   * @template TArgs - Tuple of argument types inferred from schemas
+   */
   args<TArgs extends readonly any[]>(
     ...schemas: InputSchemaArray<TArgs>
   ): TInputType extends 'none'
     ? SafeFn<TContext, TArgs, TOutput, TMetadata, 'args'>
     : never;
 
-  // Schema-less multiple arguments method - type-only, no validation
+  /**
+   * Define multiple argument types without validation (type-only)
+   * @template TArgs - Tuple of argument types (no runtime validation)
+   */
   args<TArgs extends readonly any[]>(): TInputType extends 'none'
     ? SafeFn<TContext, TArgs, TOutput, TMetadata, 'args'>
     : never;
+    
+  /**
+   * Define output schema for validation
+   * @template TNewOutput - Output type inferred from schema
+   */
   output<TNewOutput>(
     schema: SchemaValidator<TNewOutput>,
   ): SafeFn<TContext, TInput, TNewOutput, TMetadata, TInputType>;
 
-  // Handler method with different signatures based on input type
+  /**
+   * Define the handler function
+   * @template THandlerInput - Handler input type (defaults to TInput)
+   * @template THandlerOutput - Handler output type (defaults to TOutput)
+   */
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
     handler: TInputType extends 'args'
       ? THandlerInput extends readonly any[]

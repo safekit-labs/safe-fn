@@ -21,40 +21,59 @@ import type {
 
 // Function overloads for proper type inference
 
-// 1. Infer metadata from schema with explicit context
+/**
+ * Create SafeFn client with metadata schema and context
+ * @template TContext - Context object type
+ * @template TMetadataSchema - Metadata schema validator type
+ */
 export function createSafeFnClient<TContext extends Context, TMetadataSchema extends SchemaValidator<any>>(config: {
   metadataSchema: TMetadataSchema;
   defaultContext?: TContext;
   onError?: ErrorHandlerFn<any, TContext>;
 }): SafeFn<TContext, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
-// 2. Infer metadata and context from schema and defaultContext
+/**
+ * Create SafeFn client with metadata schema and required context
+ * @template TContext - Context object type
+ * @template TMetadataSchema - Metadata schema validator type
+ */
 export function createSafeFnClient<TContext extends Context, TMetadataSchema extends SchemaValidator<any>>(config: {
   metadataSchema: TMetadataSchema;
   defaultContext: TContext;
   onError?: ErrorHandlerFn<any, TContext>;
 }): SafeFn<TContext, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
-// 3. Only metadataSchema provided - infer metadata, use default context
+/**
+ * Create SafeFn client with only metadata schema
+ * @template TMetadataSchema - Metadata schema validator type
+ */
 export function createSafeFnClient<TMetadataSchema extends SchemaValidator<any>>(config: {
   metadataSchema: TMetadataSchema;
   defaultContext?: Context;
   onError?: ErrorHandlerFn<any, Context>;
 }): SafeFn<Context, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
-// 4. Explicit context without metadataSchema
+/**
+ * Create SafeFn client with context type
+ * @template TContext - Context object type
+ */
 export function createSafeFnClient<TContext extends Context>(config: {
   defaultContext?: TContext;
   onError?: ErrorHandlerFn<any, TContext>;
 }): SafeFn<TContext, unknown, unknown, Metadata>;
 
-// 5. Infer context from defaultContext without metadataSchema
+/**
+ * Create SafeFn client with required context
+ * @template TContext - Context object type (inferred from defaultContext)
+ */
 export function createSafeFnClient<TContext extends Context>(config: {
   defaultContext: TContext;
   onError?: ErrorHandlerFn<any, TContext>;
 }): SafeFn<TContext, unknown, unknown, Metadata>;
 
-// 6. No config provided
+/**
+ * Create SafeFn client with no configuration
+ */
 export function createSafeFnClient(): SafeFn<{}, unknown, unknown, Metadata>;
 
 /**
