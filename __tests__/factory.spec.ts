@@ -159,6 +159,57 @@ describe("Factory Configuration", () => {
 });
 
 // ========================================================================
+// TYPE CHECKING TESTS
+// ========================================================================
+
+describe("Type Checking", () => {
+  describe("metadata type generics", () => {
+    it("should accept metadata type as generic parameter", async () => {
+      // Define metadata type and schema
+      const metadataSchema = z.object({
+        operationName: z.string(),
+        priority: z.number(),
+      });
+      type Metadata = z.infer<typeof metadataSchema>;
+
+      // This should work with the new overload
+      const safeFnClient = createSafeFnClient<{}, Metadata>({
+        metadataSchema,
+      });
+
+      const fn = safeFnClient
+        .metadata({ operationName: "test-op", priority: 1 })
+        .handler(async () => "success");
+
+      const result = await fn({}, {});
+      expect(result).toBe("success");
+    });
+
+    it("should work with both context and metadata types", async () => {
+      // Define types and schemas
+      type Context = { userId: string; role: string };
+      const metadataSchema = z.object({ action: z.string() });
+      type Metadata = z.infer<typeof metadataSchema>;
+
+      const safeFnClient = createSafeFnClient<Context, Metadata>({
+        defaultContext: { userId: "test", role: "admin" },
+        metadataSchema,
+      });
+
+      const fn = safeFnClient
+        .metadata({ action: "create" })
+        .handler(async ({ ctx }) => ({
+          user: ctx.userId,
+          role: ctx.role,
+        }));
+
+      const result = await fn({}, {});
+      expect(result).toEqual({ user: "test", role: "admin" });
+    });
+  });
+});
+
+// ========================================================================
 // INTEGRATION TESTS
 // ========================================================================
 

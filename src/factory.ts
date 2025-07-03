@@ -22,6 +22,17 @@ import type {
 // Function overloads for proper type inference
 
 /**
+ * Create SafeFn client with metadata type and context
+ * @template TBaseContext - Base context object type
+ * @template TMetadata - Metadata object type
+ */
+export function createSafeFnClient<TBaseContext extends Context, TMetadata extends Metadata>(config: {
+  metadataSchema: SchemaValidator<TMetadata>;
+  defaultContext?: TBaseContext;
+  onError?: ErrorHandlerFn<any, TBaseContext>;
+}): SafeFn<TBaseContext, {}, unknown, unknown, TMetadata>;
+
+/**
  * Create SafeFn client with metadata schema and context
  * @template TBaseContext - Base context object type
  * @template TMetadataSchema - Metadata schema validator type
@@ -33,6 +44,17 @@ export function createSafeFnClient<TBaseContext extends Context, TMetadataSchema
 }): SafeFn<TBaseContext, {}, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
 
 /**
+ * Create SafeFn client with metadata type and required context
+ * @template TBaseContext - Base context object type
+ * @template TMetadata - Metadata object type
+ */
+export function createSafeFnClient<TBaseContext extends Context, TMetadata extends Metadata>(config: {
+  metadataSchema: SchemaValidator<TMetadata>;
+  defaultContext: TBaseContext;
+  onError?: ErrorHandlerFn<any, TBaseContext>;
+}): SafeFn<TBaseContext, {}, unknown, unknown, TMetadata>;
+
+/**
  * Create SafeFn client with metadata schema and required context
  * @template TBaseContext - Base context object type
  * @template TMetadataSchema - Metadata schema validator type
@@ -42,6 +64,16 @@ export function createSafeFnClient<TBaseContext extends Context, TMetadataSchema
   defaultContext: TBaseContext;
   onError?: ErrorHandlerFn<any, TBaseContext>;
 }): SafeFn<TBaseContext, {}, unknown, unknown, InferSchemaOutput<TMetadataSchema>>;
+
+/**
+ * Create SafeFn client with only metadata type
+ * @template TMetadata - Metadata object type
+ */
+export function createSafeFnClient<TMetadata extends Metadata>(config: {
+  metadataSchema: SchemaValidator<TMetadata>;
+  defaultContext?: Context;
+  onError?: ErrorHandlerFn<any, Context>;
+}): SafeFn<Context, {}, unknown, unknown, TMetadata>;
 
 /**
  * Create SafeFn client with only metadata schema

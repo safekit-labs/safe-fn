@@ -17,8 +17,6 @@ import type {
   MiddlewareResult,
   ValidateFunction,
   HasContext,
-  ContextBoundFunction,
-  ContextBoundArgsFunction,
 } from "@/types";
 
 import { executeMiddlewareChain } from "@/middleware";
@@ -91,17 +89,17 @@ async function processErrorHandlerResult<TOutput, TWorkingContext extends Contex
   context: TWorkingContext
 ): Promise<MiddlewareResult<TOutput, TWorkingContext>> {
   const result = await errorHandlerResult;
-  
+
   if (result === undefined) {
     // Handler returned void - return original error
     return { output: undefined as any, context, success: false, error: originalError };
   }
-  
+
   if (result instanceof Error) {
     // Handler returned a new error
     return { output: undefined as any, context, success: false, error: result };
   }
-  
+
   if (typeof result === 'object' && 'success' in result) {
     // Handler returned a result object
     if (result.success) {
@@ -110,7 +108,7 @@ async function processErrorHandlerResult<TOutput, TWorkingContext extends Contex
       return { output: undefined as any, context, success: false, error: result.error };
     }
   }
-  
+
   // Fallback - return original error
   return { output: undefined as any, context, success: false, error: originalError };
 }
@@ -209,10 +207,10 @@ async function executeArrayInputHandler<
     const originalError = error instanceof Error ? error : new Error(String(error));
     // Use the context from middleware execution if available, otherwise fall back to fullContext
     const errorContext = (originalError as any)._middlewareContext || fullContext;
-    
+
     // Create validation helper for error handler
     const valid = createValidationHelper(args, args, inputValidator, inputValidator);
-    
+
     const errorResult = await processErrorHandlerResult<THandlerOutput, TWorkingContext>(
       errorHandlerFn({
         error: originalError,
@@ -225,7 +223,7 @@ async function executeArrayInputHandler<
       originalError,
       errorContext
     );
-    
+
     if (errorResult.success) {
       const validatedOutput = outputValidator ? await outputValidator(errorResult.output) : errorResult.output;
       return validatedOutput as THandlerOutput;
@@ -287,10 +285,10 @@ async function executeObjectInputHandler<
     const originalError = error instanceof Error ? error : new Error(String(error));
     // Use the context from middleware execution if available, otherwise fall back to fullContext
     const errorContext = (originalError as any)._middlewareContext || fullContext;
-    
+
     // Create validation helper for error handler
     const valid = createValidationHelper(input, undefined, inputValidator, undefined);
-    
+
     const errorResult = await processErrorHandlerResult<THandlerOutput, TWorkingContext>(
       errorHandlerFn({
         error: originalError,
@@ -303,7 +301,7 @@ async function executeObjectInputHandler<
       originalError,
       errorContext
     );
-    
+
     if (errorResult.success) {
       const validatedOutput = outputValidator ? await outputValidator(errorResult.output) : errorResult.output;
       return validatedOutput as THandlerOutput;
@@ -333,7 +331,6 @@ export function createSafeFn<
   let functionMiddlewares: MiddlewareFn<TMetadata, TBaseContext, any>[] = [];
   let errorHandler: ((error: Error, context: TBaseContext) => void) | undefined;
   let metadataValidator: ParseFn<TMetadata> | undefined;
-  let contextValidator: ParseFn<any> | undefined;
   let isArrayInput = false;
   let hasContextCapability = false;
 
@@ -343,8 +340,8 @@ export function createSafeFn<
     ): SafeFn<TBaseContext, TInputContext, unknown, unknown, TMetadata, 'none'> {
       // For the constructor, we use the raw metadata since validation might be async
       // Validation will happen at execution time
-      const newSafeFn = createSafeFn<TBaseContext, TInputContext, TMetadata>({ 
-        currentMetadata: metadata 
+      const newSafeFn = createSafeFn<TBaseContext, TInputContext, TMetadata>({
+        currentMetadata: metadata
       });
 
       // Store the raw metadata for validation at execution time
@@ -367,8 +364,8 @@ export function createSafeFn<
     use<TNextCtx extends Context>(
       middleware: MiddlewareFn<TMetadata, Prettify<TBaseContext & TInputContext>, Prettify<TBaseContext & TInputContext & TNextCtx>>,
     ): SafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, unknown, unknown, TMetadata, 'none'> {
-      const newSafeFn = createSafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, TMetadata>({ 
-        currentMetadata 
+      const newSafeFn = createSafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, TMetadata>({
+        currentMetadata
       });
 
       // Copy over current state
@@ -379,7 +376,7 @@ export function createSafeFn<
       (newSafeFn as any)._errorHandler = errorHandler;
       (newSafeFn as any)._metadataValidator = metadataValidator;
       (newSafeFn as any)._isArrayInput = isArrayInput;
-      
+
       // Copy context capability properties
       (newSafeFn as any)._hasContextCapability = (safeFn as any)._hasContextCapability;
       (newSafeFn as any)._contextValidator = (safeFn as any)._contextValidator;
@@ -397,8 +394,8 @@ export function createSafeFn<
     context<TNewInputContext extends Context>(
       schema?: SchemaValidator<TNewInputContext>
     ): SafeFn<TBaseContext, TNewInputContext, unknown, unknown, TMetadata, 'none', HasContext> {
-      const newSafeFn = createSafeFn<TBaseContext, TNewInputContext, TMetadata>({ 
-        currentMetadata 
+      const newSafeFn = createSafeFn<TBaseContext, TNewInputContext, TMetadata>({
+        currentMetadata
       });
 
       // Copy over current state
@@ -410,7 +407,7 @@ export function createSafeFn<
       (newSafeFn as any)._metadataValidator = metadataValidator;
       (newSafeFn as any)._isArrayInput = isArrayInput;
       (newSafeFn as any)._hasContextCapability = true;
-      
+
       // Set up context validation if schema provided
       if (schema) {
         (newSafeFn as any)._contextValidator = createParseFn(schema);
@@ -593,7 +590,7 @@ export function createSafeFn<
                 errorHandlerFn,
               });
             };
-            
+
             // Add execute method
             (executor as any).execute = (...args: any[]) => executor(...args);
             return executor;
@@ -634,7 +631,7 @@ export function createSafeFn<
                 errorHandlerFn,
               });
             };
-            
+
             // Add execute method
             (executor as any).execute = (input: any) => executor(input);
             return executor;
