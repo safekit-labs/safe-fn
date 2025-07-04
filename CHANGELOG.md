@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.3.0-alpha.9] - 2025-07-04
+## [0.4.0-alpha.1] - 2025-07-04
 - Refactored types into separate files
 - Added output type-only support
 - Added context-bound no-input functions
