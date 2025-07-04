@@ -350,6 +350,27 @@ client.input<{ name: string }>().handler(({ input }) => input.name);
 client.input(z.object({ name: z.string() })).handler(({ input }) => input.name);
 ```
 
+### Output Variants
+
+`safe-fn` supports three ways to handle output:
+
+- `<omitted>` - No output.
+- `.output(schema)` - Typed output WITH runtime validation.
+- `.output<T>()` - Typed output WITHOUT runtime validation.
+
+```typescript
+// No output - just call the function
+client.handler(() => {});
+
+// Type-only output - typed but no validation
+client.output<{ name: string }>().handler(({ output }) => output.name);
+client.output<void>().handler(() => {}); // void output
+
+// Validated output - schema validation + types
+client.output(z.object({ name: z.string() })).handler(({ output }) => output.name);
+client.output(z.void()).handler(() => {}); // void output
+```
+
 ### Middleware Type
 
 ```typescript
