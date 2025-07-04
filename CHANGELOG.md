@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-alpha.2] - 2025-07-04
+- fix: No input functions now work with context
+- fix: .output() means void output
+- test: Simplified input and output tests
+- test: Added with context tests in input and output specs
 
 
 ## [0.4.0-alpha.1] - 2025-07-04

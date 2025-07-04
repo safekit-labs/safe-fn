@@ -431,7 +431,7 @@ export function createSafeFn<
             return executor;
           } else {
             // Single input pattern executor
-            const executor = inputValidator
+            const executor = hasInputDefined
               ? async (input: any) => {
                   // Validate context if schema was provided
                   let validatedContext = context;
@@ -522,7 +522,7 @@ export function createSafeFn<
                 };
 
             // Add execute method
-            (executor as any).execute = inputValidator
+            (executor as any).execute = hasInputDefined
               ? (input: any) => (executor as any)(input)
               : () => (executor as any)();
             return executor;
