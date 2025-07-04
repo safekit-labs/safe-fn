@@ -1,0 +1,116 @@
+// ========================================================================
+// OUTPUT HANDLING AND VALIDATION UTILITIES
+// ========================================================================
+
+import { createParseFn } from "@/libs/parser";
+
+import type { SchemaValidator } from "@/types";
+import type { ParseFn } from "@/libs/parser";
+
+// ========================================================================
+// OUTPUT VALIDATION UTILITIES
+// ========================================================================
+
+/**
+ * Output validation options for execution handlers
+ */
+export interface OutputValidationOptions<TOutput> {
+  outputValidator?: ParseFn<TOutput>;
+  result: unknown;
+}
+
+/**
+ * Validates output if validator is provided
+ * @param options - Output validation options
+ * @returns Validated output or original result if no validator
+ */
+export async function validateOutput<TOutput>(
+  options: OutputValidationOptions<TOutput>,
+): Promise<TOutput> {
+  const { outputValidator, result } = options;
+
+  if (outputValidator) {
+    return await outputValidator(result);
+  }
+
+  return result as TOutput;
+}
+
+/**
+ * Creates an output validation helper for middleware and handlers
+ * @param outputValidator - Optional output validator function
+ * @returns Function that validates output when called
+ */
+export function createOutputValidator<TOutput>(
+  outputValidator?: ParseFn<TOutput>,
+): (result: unknown) => Promise<TOutput> {
+  return async (result: unknown) => {
+    return validateOutput<TOutput>({ outputValidator, result });
+  };
+}
+
+// ========================================================================
+// OUTPUT HANDLING UTILITIES
+// ========================================================================
+
+/**
+ * Result wrapper for output validation errors
+ */
+export interface OutputValidationResult<TOutput> {
+  success: boolean;
+  data?: TOutput;
+  error?: Error;
+}
+
+/**
+ * Safely validates output with error handling
+ * @param options - Output validation options
+ * @returns Result object with success/error information
+ */
+export async function safeValidateOutput<TOutput>(
+  options: OutputValidationOptions<TOutput>,
+): Promise<OutputValidationResult<TOutput>> {
+  try {
+    const validatedOutput = await validateOutput(options);
+    return {
+      success: true,
+      data: validatedOutput,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
+}
+
+/**
+ * Type-only output definition helper
+ * Used when output type is defined without runtime validation
+ */
+export function createTypeOnlyOutput<TOutput>(): {
+  validate: (result: unknown) => Promise<TOutput>;
+  hasValidation: false;
+} {
+  return {
+    validate: async (result: unknown) => result as TOutput,
+    hasValidation: false,
+  };
+}
+
+/**
+ * Schema-based output definition helper
+ * Used when output type is defined with runtime validation
+ */
+export function createSchemaBasedOutput<TOutput>(schema: SchemaValidator<TOutput>): {
+  validate: (result: unknown) => Promise<TOutput>;
+  hasValidation: true;
+} {
+  const parseFn = createParseFn(schema);
+  const outputValidator = createOutputValidator<TOutput>(parseFn);
+
+  return {
+    validate: outputValidator,
+    hasValidation: true,
+  };
+}

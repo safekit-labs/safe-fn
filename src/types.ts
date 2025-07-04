@@ -463,6 +463,12 @@ interface SafeFnBase<
     schema: SchemaValidator<TNewOutput>,
   ): SafeFn<TBaseContext, TInputContext, TInput, TNewOutput, TMetadata, TInputType, TContextCapable>;
 
+  /**
+   * Define output type without validation (type-only)
+   * @template TNewOutput - Output type (no runtime validation)
+   */
+  output<TNewOutput>(): SafeFn<TBaseContext, TInputContext, TInput, TNewOutput, TMetadata, TInputType, TContextCapable>;
+
 
   /**
    * Define the handler function
