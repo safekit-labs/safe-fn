@@ -51,32 +51,6 @@ export const createUser = safeFnClient
   });
 ```
 
-## Input Variants
-
-`safe-fn` supports three ways to handle input:
-
-- **No input**: `.handler()` only - for functions that don't need parameters
-- **Type-only input**: `.input<T>()` - TypeScript typing without runtime validation  
-- **Validated input**: `.input(schema)` - Full schema validation with type inference
-
-```typescript
-// No input - just call the function
-const ping = safeFnClient.handler(async () => "pong");
-await ping(); // "pong"
-
-// Type-only input - typed but no validation
-const echo = safeFnClient
-  .input<{ message: string }>()
-  .handler(async ({ input }) => input.message);
-await echo({ message: "hello" }); // "hello"
-
-// Validated input - schema validation + types
-const greet = safeFnClient
-  .input(z.object({ name: z.string() }))
-  .handler(async ({ input }) => `Hello ${input.name}`);
-await greet({ name: "Alice" }); // "Hello Alice"
-```
-
 ## Client Configuration
 
 Clients are created with `createSafeFnClient()` and support three main configuration options:
@@ -246,7 +220,7 @@ const safeFnClient = createSafeFnClient({
     console.error(`[${ctx.service}] Error for user ${ctx.userId}:`, error.message);
     console.log("Metadata:", metadata);
     console.log("Raw input:", rawInput);
-    
+
     // Access validated input if schema exists
     try {
       const validInput = valid("input");
@@ -254,9 +228,9 @@ const safeFnClient = createSafeFnClient({
     } catch {
       // No schema available
     }
-    
+
     // Return void to let error pass through (default behavior)
-  }
+  },
 });
 ```
 
@@ -269,13 +243,13 @@ const safeFnClient = createSafeFnClient({
   onError: ({ error, ctx, rawInput }) => {
     if (error.message.includes("recoverable")) {
       // Recover from the error
-      return { 
-        success: true, 
-        data: `Recovered: ${error.message} for input ${JSON.stringify(rawInput)}` 
+      return {
+        success: true,
+        data: `Recovered: ${error.message} for input ${JSON.stringify(rawInput)}`,
       };
     }
     // Let other errors pass through
-  }
+  },
 });
 ```
 
@@ -288,8 +262,8 @@ const safeFnClient = createSafeFnClient({
   defaultContext: { service: "payment" },
   onError: ({ error, ctx, metadata }) => {
     // Add service context to error
-    return new Error(`[${ctx.service}] ${error.message} (${metadata.operation || 'unknown'})`);
-  }
+    return new Error(`[${ctx.service}] ${error.message} (${metadata.operation || "unknown"})`);
+  },
 });
 ```
 
@@ -312,7 +286,7 @@ const safeFnClient = createSafeFnClient({
     console.log("Full context:", ctx);
     console.log("Metadata:", metadata);
     console.log("Raw input:", rawInput);
-    
+
     // Access validation helpers
     try {
       const validInput = valid("input");
@@ -320,14 +294,14 @@ const safeFnClient = createSafeFnClient({
     } catch {
       console.log("No validation schema");
     }
-  }
-})
-.use(authMiddleware);
+  },
+}).use(authMiddleware);
 ```
 
 ### Return Types
 
 The `onError` handler can return:
+
 - `void` - Error passes through unchanged (default)
 - `Error` - Replace with new error
 - `{ success: true, data: any }` - Recover with data
@@ -357,6 +331,25 @@ const safeFnClient = createSafeFnClient({
 - `.output(schema)` - Set output validation
 - `.handler(fn)` - Define the function
 
+## Input Variants
+
+`safe-fn` supports three ways to handle input:
+
+- `<omitted>` - No input.
+- `.input<T>()` - Typed input WITHOUT runtime validation.
+- `.input(schema)` - Typed input WITH runtime validation.
+
+```typescript
+// No input - just call the function
+client.handler(() => {});
+
+// Type-only input - typed but no validation
+client.input<{ message: string }>().handler(({ input }) => input.message);
+
+// Validated input - schema validation + types
+client.input(z.object({ name: z.string() })).handler(({ input }) => input.name);
+```
+
 ### Middleware Type
 
 ```typescript
@@ -366,8 +359,8 @@ type Middleware<TContext> = (params: {
   rawArgs: unknown;
   ctx: TContext;
   metadata: Metadata;
-  valid(type: "input"): any;   // Get validated input data
-  valid(type: "args"): any;    // Get validated args data
+  valid(type: "input"): any; // Get validated input data
+  valid(type: "args"): any; // Get validated args data
 }) => Promise<MiddlewareOutput>;
 ```
 
@@ -380,7 +373,7 @@ const middleware = createMiddleware(async ({ rawInput, rawArgs, valid, next }) =
   // Raw data is always available
   console.log("Raw input:", rawInput);
   console.log("Raw args:", rawArgs);
-  
+
   try {
     // Get validated data if schema exists
     const validInput = valid("input");
@@ -389,16 +382,16 @@ const middleware = createMiddleware(async ({ rawInput, rawArgs, valid, next }) =
     // No input schema defined, use rawInput
     console.log("ℹ️ Using raw input data");
   }
-  
+
   try {
-    // Get validated args if schema exists  
+    // Get validated args if schema exists
     const validArgs = valid("args");
     console.log("✅ Validated args:", validArgs);
   } catch (error) {
     // No args schema defined, use rawArgs
     console.log("ℹ️ Using raw args data");
   }
-  
+
   return next();
 });
 ```
@@ -423,9 +416,7 @@ const loggingMiddleware = createMiddleware(async ({ rawInput, next }) => {
 });
 
 // Use with any client
-const clientWithMiddleware = createSafeFnClient()
-  .use(timingMiddleware)
-  .use(loggingMiddleware);
+const clientWithMiddleware = createSafeFnClient().use(timingMiddleware).use(loggingMiddleware);
 ```
 
 ## Schema Support
