@@ -128,52 +128,6 @@ const search = await publicFunction({ query: "hello" });
 const post = await protectedFunction({ postId: "123" });
 ```
 
-## Context API
-
-The context API enables type-safe context binding at call-time. Define context types with `.context<T>()` and bind values with `.withContext()`:
-
-```typescript
-import { z } from "zod";
-import { createSafeFnClient } from "@safekit/safe-fn";
-
-type AuthContext = {
-  userId: string;
-  role: "admin" | "user";
-};
-
-// Enable context capabilities
-const client = createSafeFnClient().context<AuthContext>();
-
-const deleteUser = client
-  .input(z.object({ userId: z.string() }))
-  .handler(async ({ input, ctx }) => {
-    // ctx is fully typed as AuthContext
-    if (ctx.role !== "admin") {
-      throw new Error("Insufficient permissions");
-    }
-    return { deleted: true, deletedBy: ctx.userId };
-  });
-
-// Bind context at call-time
-const result = await deleteUser
-  .withContext({ userId: "admin-123", role: "admin" })
-  .execute({ userId: "user-456" });
-```
-
-Context works with middleware - middleware receives the working context (base + input context):
-
-```typescript
-const client = createSafeFnClient()
-  .context<AuthContext>()
-  .use(async ({ ctx, next }) => {
-    // ctx is properly typed as AuthContext
-    console.log(`Request from ${ctx.role} ${ctx.userId}`);
-    return next();
-  });
-```
-
-See [examples/context.example.ts](./examples/context.example.ts) for complete examples.
-
 ## Validation
 
 `safe-fn` supports multiple popular validation libraries, giving you flexibility to use your preferred validation approach. All libraries support both object schemas and tuple schemas (multiple arguments):
@@ -195,7 +149,7 @@ const zodObjectFn = safeFnClient
 
 // Tuple schemas - use `args` parameter
 const zodTupleFn = safeFnClient
-  .input([z.string(), z.number(), z.boolean()]) // name, age, active
+  .args(z.string(), z.number(), z.boolean()) // name, age, active
   .handler(async ({ args }) => {
     const [name, age, active] = args;
     // ...
@@ -322,16 +276,57 @@ const safeFnClient = createSafeFnClient({
 });
 ```
 
-### Methods
+### Client Methods
 
 - `.metadata(data)` - Set metadata
 - `.use(middleware)` - Add middleware
+- `.context<T>()` - Set context type
 - `.input(schema)` - Set input validation
 - `.args(schema)` - Set tuple input validation
 - `.output(schema)` - Set output validation
 - `.handler(fn)` - Define the function
 
-## Input Variants
+### Context API
+
+The context API enables type-safe context binding at call-time. Define context types with `.context<T>()` and bind values with `.withContext()`:
+
+```typescript
+import { z } from "zod";
+import { createSafeFnClient } from "@safekit/safe-fn";
+
+type AuthContext = {
+  db: Database;
+  logger: Console;
+};
+const ctx = { db: new Database(), logger: console };
+
+// Enable context capabilities
+const fn = createSafeFnClient()
+  .context<AuthContext>()
+  .handler(async ({ ctx }) => {
+    const user = await ctx.db.getUser("user-123");
+    ctx.logger.log(user);
+  });
+
+// Bind context at call-time
+const result = await fn.withContext(ctx).execute();
+```
+
+Context works with middleware - middleware receives the working context (base + input context):
+
+```typescript
+const client = createSafeFnClient()
+  .context<AuthContext>()
+  .use(async ({ ctx, next }) => {
+    // ctx is properly typed as AuthContext
+    ctx.logger.log("hi");
+    return next();
+  });
+```
+
+See [examples/context.example.ts](./examples/context.example.ts) for complete examples.
+
+### Input Variants
 
 `safe-fn` supports three ways to handle input:
 
@@ -385,7 +380,7 @@ type Middleware<TContext> = (params: {
 }) => Promise<MiddlewareOutput>;
 ```
 
-### Accessing Validated Data in Middleware
+#### Accessing Validated Data in Middleware
 
 Middleware can access both raw and validated data:
 
