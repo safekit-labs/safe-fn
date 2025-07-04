@@ -20,6 +20,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["./src/**/*.ts", "./__tests__/**/*.ts", "./examples/**/*.ts", "examples/issues/with-context-issue.ts"],
+  "include": ["./src/**/*.ts", "./__tests__/**/*.ts", "./examples/**/*.ts"],
   "exclude": ["dist", "build", "node_modules"]
 }
