@@ -18,40 +18,43 @@ describe("Factory Configuration", () => {
       });
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
-      const result = await fn({}, {});
+      const result = await fn();
 
       expect(result).toEqual({ userId: "test-user", role: "admin" });
     });
 
-    it("should merge runtime context with defaultContext", async () => {
+    it("should use only defaultContext when no input is defined", async () => {
       const safeFnClient = createSafeFnClient({
         defaultContext: { userId: "default", role: "user" },
       });
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
-      const result = await fn({}, { requestId: "req-123" } as any);
+      const result = await fn();
 
-      expect(result).toEqual({ userId: "default", role: "user", requestId: "req-123" });
+      expect(result).toEqual({ userId: "default", role: "user" });
     });
 
-    it("should allow runtime context to override defaultContext", async () => {
+    it("should use defaultContext when input is defined", async () => {
       const safeFnClient = createSafeFnClient({
         defaultContext: { userId: "default", role: "user" },
       });
 
-      const fn = safeFnClient.handler(async ({ ctx }) => ctx);
-      const result = await fn({}, { userId: "override" } as any);
+      const fn = safeFnClient
+        .input(z.object({ data: z.string() }))
+        .handler(async ({ input, ctx }) => ({ data: input.data, ...ctx }));
 
-      expect(result).toEqual({ userId: "override", role: "user" });
+      const result = await fn({ data: "test" });
+
+      expect(result).toEqual({ data: "test", userId: "default", role: "user" });
     });
 
     it("should work without defaultContext", async () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
-      const result = await fn({}, { custom: "data" } as any);
+      const result = await fn();
 
-      expect(result).toEqual({ custom: "data" });
+      expect(result).toEqual({});
     });
   });
 
@@ -67,7 +70,7 @@ describe("Factory Configuration", () => {
 
       const fn = safeFnClient.metadata({ op: "test", version: 1 }).handler(async () => "success");
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("success");
     });
 
@@ -76,7 +79,7 @@ describe("Factory Configuration", () => {
 
       const fn = safeFnClient.metadata({ anything: "goes" }).handler(async () => "success");
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("success");
     });
   });
@@ -97,15 +100,15 @@ describe("Factory Configuration", () => {
         throw new Error("test error");
       });
 
-      await expect(fn({}, {})).rejects.toThrow("test error");
+      await expect(fn()).rejects.toThrow("test error");
       expect(errorHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           error: expect.objectContaining({ message: "test error" }),
           ctx: expect.objectContaining({ userId: "test" }),
           metadata: expect.any(Object),
-          rawInput: {},
-          valid: expect.any(Function)
-        })
+          rawInput: undefined,
+          valid: expect.any(Function),
+        }),
       );
     });
 
@@ -120,15 +123,15 @@ describe("Factory Configuration", () => {
         throw new Error("test error");
       });
 
-      await expect(fn({}, { requestId: "req-123" } as any)).rejects.toThrow();
+      await expect(fn()).rejects.toThrow();
       expect(errorHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           error: expect.any(Error),
-          ctx: expect.objectContaining({ userId: "default", requestId: "req-123" }),
+          ctx: expect.objectContaining({ userId: "default" }),
           metadata: expect.any(Object),
-          rawInput: {},
-          valid: expect.any(Function)
-        })
+          rawInput: undefined,
+          valid: expect.any(Function),
+        }),
       );
     });
   });
@@ -142,7 +145,7 @@ describe("Factory Configuration", () => {
       const safeFnClient = createSafeFnClient();
 
       const fn = safeFnClient.handler(async ({ ctx }) => ctx);
-      const result = await fn({}, {});
+      const result = await fn();
 
       expect(result).toEqual({});
     });
@@ -151,7 +154,7 @@ describe("Factory Configuration", () => {
       const safeFnClient = createSafeFnClient({});
 
       const fn = safeFnClient.handler(async () => "empty config");
-      const result = await fn({}, {});
+      const result = await fn();
 
       expect(result).toBe("empty config");
     });
@@ -181,7 +184,7 @@ describe("Type Checking", () => {
         .metadata({ operationName: "test-op", priority: 1 })
         .handler(async () => "success");
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("success");
     });
 
@@ -196,15 +199,60 @@ describe("Type Checking", () => {
         metadataSchema,
       });
 
-      const fn = safeFnClient
-        .metadata({ action: "create" })
-        .handler(async ({ ctx }) => ({
-          user: ctx.userId,
-          role: ctx.role,
-        }));
+      const fn = safeFnClient.metadata({ action: "create" }).handler(async ({ ctx }) => ({
+        user: ctx.userId,
+        role: ctx.role,
+      }));
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toEqual({ user: "test", role: "admin" });
+    });
+
+    it("should preserve types through method chaining without explicit generics", async () => {
+      // This simulates the exact issue from the user's file
+      const safeFnClient = createSafeFnClient({
+        metadataSchema: z.object({
+          operationName: z.string(),
+        }),
+      });
+
+      // Test with .input() chaining first (this should work)
+      const getUserId = safeFnClient
+        .input(
+          z.object({
+            userId: z.string(),
+          }),
+        )
+        .handler(async ({ input }) => {
+          return {
+            userId: input.userId,
+          };
+        });
+
+      // Verify input works
+      const inputResult = await getUserId({ userId: "456" });
+      expect(inputResult).toEqual({ userId: "456" });
+
+      // Test metadata method works
+      const withMetadata = safeFnClient
+        .metadata({
+          operationName: "test",
+        })
+        .handler(async () => "success");
+
+      const metadataResult = await withMetadata();
+      expect(metadataResult).toBe("success");
+    });
+
+    it("should not require input parameter when no input is defined", async () => {
+      const safeFnClient = createSafeFnClient();
+
+      // Handler without input should be callable without parameters
+      const noInputFn = safeFnClient.handler(async () => ({ result: "no input needed" }));
+
+      // This should work without any arguments
+      const result = await (noInputFn as any)();
+      expect(result).toEqual({ result: "no input needed" });
     });
   });
 });
@@ -227,7 +275,7 @@ describe("Factory Integration", () => {
           service: ctx.service,
         }));
 
-      const result = await fn({ name: "World" }, {});
+      const result = await fn({ name: "World" });
       expect(result).toEqual({ greeting: "Hello World", service: "test" });
     });
 
@@ -240,7 +288,7 @@ describe("Factory Integration", () => {
         .output(z.object({ result: z.string() }))
         .handler(async ({ ctx }) => ({ result: `Environment: ${ctx.env}` }));
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toEqual({ result: "Environment: test" });
     });
 
@@ -256,7 +304,7 @@ describe("Factory Integration", () => {
           doubled: input.value * ctx.multiplier,
         }));
 
-      const result = await fn({ value: 5 }, {});
+      const result = await fn({ value: 5 });
       expect(result).toEqual({ doubled: 10 });
     });
   });
@@ -273,7 +321,7 @@ describe("Factory Integration", () => {
         })
         .handler(async ({ ctx }) => `Hello from ${ctx.userId}`);
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("Hello from default-user");
     });
 
@@ -284,7 +332,7 @@ describe("Factory Integration", () => {
 
       const fn = safeFnClient.metadata({ operation: "test-op" }).handler(async () => "completed");
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("completed");
     });
   });

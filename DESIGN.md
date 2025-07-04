@@ -44,6 +44,20 @@ This document outlines key design decisions and rationale for @safekit/safe-fn.
 
 **Summary:** The unified `.handler()` approach provides clearer intent than `.fn()` while maintaining purpose-agnostic flexibility. Purpose-specific methods would add complexity without functional benefit since they execute identical logic. Function purposes are better expressed through metadata.
 
+### Schema-less Input: `.input<T>()` vs Handler Generics vs Pass-through Schema
+
+**Decision: Use `.input<T>()` overload**
+
+| Option | Pros | Cons |
+|--------|------|------|
+| `.input<T>()` | • Consistent with `.args()` pattern<br>• Explicit intent declaration<br>• Natural TypeScript ergonomics<br>• Maintains orthogonal API design | • Two overloads might confuse users |
+| `.handler<TInput, TOutput>()` | • Minimal syntax<br>• Type where you need it | • Breaks explicitness principle<br>• Complex type inference<br>• Inconsistent with `.args()` pattern |
+| Pass-through schema `.input((x: any) => x as T)` | • Single API surface<br>• Flexible for minimal validation | • Verbose boilerplate<br>• Unintuitive syntax |
+
+**Recommendation:** Use `.input<T>()` overload
+
+**Summary:** Maintains consistency with the existing `.args()` vs `.args(schemas)` pattern while providing explicit intent declaration. Type placement feels natural where input is declared rather than hidden in handler generics.
+
 ### Support for other validators
 
 **Joi**

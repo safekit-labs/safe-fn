@@ -1,5 +1,5 @@
 import z from "zod";
-import { createSafeFnClient } from "../src";
+import { createSafeFnClient } from "../../src";
 
 // export const contextSchema = z.object({
 // 	env: z.object({

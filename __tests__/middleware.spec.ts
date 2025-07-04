@@ -18,7 +18,7 @@ describe("Middleware Support", () => {
         .use(async ({ next }) => next())
         .handler(async ({ ctx }) => `Hello ${ctx.userId}`);
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("Hello test");
     });
 
@@ -34,7 +34,7 @@ describe("Middleware Support", () => {
         .use(async ({ next }) => next())
         .handler(async ({ ctx }) => `Service: ${ctx.service}`);
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("Service: api");
     });
 
@@ -48,7 +48,7 @@ describe("Middleware Support", () => {
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => `${ctx.prefix} ${input.name}`);
 
-      const result = await fn({ name: "Smith" }, {});
+      const result = await fn({ name: "Smith" });
       expect(result).toBe("Mr. Smith");
     });
 
@@ -60,7 +60,7 @@ describe("Middleware Support", () => {
         .output(z.object({ greeting: z.string() }))
         .handler(async () => ({ greeting: "Hello World" }));
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toEqual({ greeting: "Hello World" });
     });
   });
@@ -78,7 +78,7 @@ describe("Middleware Support", () => {
           version: ctx.version,
         }));
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toEqual({ authenticated: true, version: "v1" });
     });
 
@@ -92,14 +92,12 @@ describe("Middleware Support", () => {
         .handler(async ({ ctx }) => ({
           service: ctx.service,
           env: ctx.env,
-          requestId: (ctx as any).requestId,
         }));
 
-      const result = await fn({}, { requestId: "req-123" } as any);
+      const result = await fn();
       expect(result).toEqual({
         service: "auth",
         env: "prod",
-        requestId: "req-123",
       });
     });
   });
@@ -115,7 +113,7 @@ describe("Middleware Support", () => {
         .metadata({ operation: "create-user", priority: 1 })
         .handler(async () => "operation completed");
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("operation completed");
     });
 
@@ -127,7 +125,7 @@ describe("Middleware Support", () => {
         .metadata({ custom: "value", tags: ["important"] })
         .handler(async () => "metadata accepted");
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("metadata accepted");
     });
 
@@ -146,7 +144,7 @@ describe("Middleware Support", () => {
         .metadata({ operationName: "get-node-env" })
         .handler(async () => "completed");
 
-      await fn({}, {});
+      await fn();
       expect(capturedMetadata).toEqual({ operationName: "get-node-env" });
     });
 
@@ -188,7 +186,7 @@ describe("Middleware Support", () => {
         .input(z.object({ message: z.string() }))
         .handler(async ({ input }) => `Received: ${input.message}`);
 
-      const result = await fn({ message: "hello" }, {});
+      const result = await fn({ message: "hello" });
       expect(result).toBe("Received: hello");
     });
 
@@ -226,7 +224,7 @@ describe("Middleware Support", () => {
         .input(z.object({ age: z.number() }))
         .handler(async ({ input }) => `Age: ${input.age}`);
 
-      await expect(fn({ age: "not-a-number" as any }, {})).rejects.toThrow();
+      await expect(fn({ age: "not-a-number" as any })).rejects.toThrow();
     });
 
     it("should handle output validation errors", async () => {
@@ -237,7 +235,7 @@ describe("Middleware Support", () => {
         .output(z.object({ result: z.string() }))
         .handler(async () => ({ result: 123 as any }));
 
-      await expect(fn({}, {})).rejects.toThrow();
+      await expect(fn()).rejects.toThrow();
     });
 
     it("should work with metadata schema validation", async () => {
@@ -249,7 +247,7 @@ describe("Middleware Support", () => {
         .metadata({ operation: "valid-operation" })
         .handler(async () => "validation passed");
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("validation passed");
     });
   });
@@ -273,7 +271,7 @@ describe("Middleware valid() function", () => {
         .input(z.object({ name: z.string(), age: z.number() }))
         .handler(async ({ input }) => input);
 
-      await fn({ name: "John", age: 30 }, {});
+      await fn({ name: "John", age: 30 });
       expect(capturedValidInput).toEqual({ name: "John", age: 30 });
     });
 
@@ -292,7 +290,7 @@ describe("Middleware valid() function", () => {
         })
         .handler(async () => "success");
 
-      await fn({}, {});
+      await fn();
       expect(validationError).toBeInstanceOf(Error);
       expect(validationError.message).toContain("No input schema defined");
     });
@@ -330,7 +328,7 @@ describe("Middleware valid() function", () => {
         })
         .handler(async () => "success");
 
-      await fn({}, {});
+      await fn();
       expect(validationError).toBeInstanceOf(Error);
       expect(validationError.message).toContain("No args schema defined");
     });
@@ -393,7 +391,7 @@ describe("Middleware valid() function", () => {
         .input(schema)
         .handler(async ({ input }) => input);
 
-      await fn({ name: "test" }, {});
+      await fn({ name: "test" });
       // Note: validation happens in middleware and potentially in handler execution
       // But within the middleware context, it should cache
       expect(validationCalls).toBeGreaterThanOrEqual(1);
@@ -443,6 +441,7 @@ describe("Middleware Integration", () => {
 
       const fn = safeFnClient
         .use(async ({ next }) => next())
+        .input<{ data?: any }>()
         .handler(async ({ ctx }) => ({
           environment: ctx.env,
           debugMode: ctx.debug,
@@ -485,9 +484,9 @@ describe("Middleware Integration", () => {
         .input(z.string())
         .handler(async ({ input }) => `Order 3: ${input}`);
 
-      const result1 = await fn1("test1", {});
-      const result2 = await fn2("test2", {});
-      const result3 = await fn3("test3", {});
+      const result1 = await fn1("test1");
+      const result2 = await fn2("test2");
+      const result3 = await fn3("test3");
 
       expect(result1).toBe("Order 1: test1");
       expect(result2).toBe("Order 2: test2");
@@ -510,7 +509,7 @@ describe("Middleware Integration", () => {
           processed: `${ctx.base}-${input.data}`,
         }));
 
-      const result = await fn({ data: "input" }, {});
+      const result = await fn({ data: "input" });
       expect(result).toEqual({ processed: "value-input" });
     });
   });

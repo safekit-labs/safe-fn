@@ -324,15 +324,26 @@ export function createSafeFn<
   TBaseContext extends Context = {},
   TInputContext extends Context = Context,
   TMetadata extends Metadata = Metadata,
->(initialState?: { currentMetadata?: TMetadata }): SafeFn<TBaseContext, TInputContext, unknown, unknown, TMetadata, 'none'> {
+>(initialState?: { 
+  currentMetadata?: TMetadata;
+  inputValidator?: ParseFn<any>;
+  outputValidator?: ParseFn<any>;
+  functionMiddlewares?: MiddlewareFn<TMetadata, TBaseContext, any>[];
+  errorHandler?: ((error: Error, context: TBaseContext) => void);
+  metadataValidator?: ParseFn<TMetadata>;
+  isArrayInput?: boolean;
+  hasContextCapability?: boolean;
+  hasInputDefined?: boolean;
+}): SafeFn<TBaseContext, TInputContext, unknown, unknown, TMetadata, 'none'> {
   let currentMetadata: TMetadata | undefined = initialState?.currentMetadata;
-  let inputValidator: ParseFn<any> | undefined;
-  let outputValidator: ParseFn<any> | undefined;
-  let functionMiddlewares: MiddlewareFn<TMetadata, TBaseContext, any>[] = [];
-  let errorHandler: ((error: Error, context: TBaseContext) => void) | undefined;
-  let metadataValidator: ParseFn<TMetadata> | undefined;
-  let isArrayInput = false;
-  let hasContextCapability = false;
+  let inputValidator: ParseFn<any> | undefined = initialState?.inputValidator;
+  let outputValidator: ParseFn<any> | undefined = initialState?.outputValidator;
+  let functionMiddlewares: MiddlewareFn<TMetadata, TBaseContext, any>[] = initialState?.functionMiddlewares || [];
+  let errorHandler: ((error: Error, context: TBaseContext) => void) | undefined = initialState?.errorHandler;
+  let metadataValidator: ParseFn<TMetadata> | undefined = initialState?.metadataValidator;
+  let isArrayInput = initialState?.isArrayInput || false;
+  let hasContextCapability = initialState?.hasContextCapability || false;
+  let hasInputDefined = initialState?.hasInputDefined || false;
 
   const safeFn: SafeFn<TBaseContext, TInputContext, unknown, unknown, TMetadata, 'none'> = {
     metadata(
@@ -341,7 +352,15 @@ export function createSafeFn<
       // For the constructor, we use the raw metadata since validation might be async
       // Validation will happen at execution time
       const newSafeFn = createSafeFn<TBaseContext, TInputContext, TMetadata>({
-        currentMetadata: metadata
+        currentMetadata: metadata,
+        inputValidator,
+        outputValidator,
+        functionMiddlewares,
+        errorHandler,
+        metadataValidator,
+        isArrayInput,
+        hasContextCapability,
+        hasInputDefined
       });
 
       // Store the raw metadata for validation at execution time
@@ -351,11 +370,15 @@ export function createSafeFn<
       (newSafeFn as any)._functionMiddlewares = functionMiddlewares;
       (newSafeFn as any)._errorHandler = errorHandler;
       (newSafeFn as any)._metadataValidator = metadataValidator;
+      (newSafeFn as any)._isArrayInput = isArrayInput;
+      (newSafeFn as any)._hasContextCapability = hasContextCapability;
+      (newSafeFn as any)._hasInputDefined = hasInputDefined;
 
       // Copy client configuration if present
       (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
       (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
+      (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
       (newSafeFn as any)._inputSchema = (safeFn as any)._inputSchema;
 
       return newSafeFn;
@@ -365,17 +388,16 @@ export function createSafeFn<
       middleware: MiddlewareFn<TMetadata, Prettify<TBaseContext & TInputContext>, Prettify<TBaseContext & TInputContext & TNextCtx>>,
     ): SafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, unknown, unknown, TMetadata, 'none'> {
       const newSafeFn = createSafeFn<Prettify<TBaseContext & TNextCtx>, TInputContext, TMetadata>({
-        currentMetadata
+        currentMetadata,
+        inputValidator,
+        outputValidator,
+        functionMiddlewares,
+        errorHandler,
+        metadataValidator,
+        isArrayInput,
+        hasContextCapability,
+        hasInputDefined
       });
-
-      // Copy over current state
-      (newSafeFn as any)._currentMetadata = currentMetadata;
-      (newSafeFn as any)._inputValidator = inputValidator;
-      (newSafeFn as any)._outputValidator = outputValidator;
-      (newSafeFn as any)._functionMiddlewares = functionMiddlewares;
-      (newSafeFn as any)._errorHandler = errorHandler;
-      (newSafeFn as any)._metadataValidator = metadataValidator;
-      (newSafeFn as any)._isArrayInput = isArrayInput;
 
       // Copy context capability properties
       (newSafeFn as any)._hasContextCapability = (safeFn as any)._hasContextCapability;
@@ -395,18 +417,16 @@ export function createSafeFn<
       schema?: SchemaValidator<TNewInputContext>
     ): SafeFn<TBaseContext, TNewInputContext, unknown, unknown, TMetadata, 'none', HasContext> {
       const newSafeFn = createSafeFn<TBaseContext, TNewInputContext, TMetadata>({
-        currentMetadata
+        currentMetadata,
+        inputValidator,
+        outputValidator,
+        functionMiddlewares,
+        errorHandler,
+        metadataValidator,
+        isArrayInput,
+        hasContextCapability: true,
+        hasInputDefined
       });
-
-      // Copy over current state
-      (newSafeFn as any)._currentMetadata = currentMetadata;
-      (newSafeFn as any)._inputValidator = inputValidator;
-      (newSafeFn as any)._outputValidator = outputValidator;
-      (newSafeFn as any)._functionMiddlewares = functionMiddlewares;
-      (newSafeFn as any)._errorHandler = errorHandler;
-      (newSafeFn as any)._metadataValidator = metadataValidator;
-      (newSafeFn as any)._isArrayInput = isArrayInput;
-      (newSafeFn as any)._hasContextCapability = true;
 
       // Set up context validation if schema provided
       if (schema) {
@@ -425,28 +445,41 @@ export function createSafeFn<
     input<TNewInput>(
       schema?: SchemaValidator<TNewInput>,
     ) {
-      isArrayInput = false;
+      // Create new SafeFn with updated input state - don't modify closure variables
+      const newInputValidator = schema !== undefined ? createParseFn(schema) : undefined;
+      
+      const newSafeFn = createSafeFn<TBaseContext, TInputContext, TMetadata>({
+        currentMetadata,
+        inputValidator: newInputValidator,
+        outputValidator,
+        functionMiddlewares,
+        errorHandler,
+        metadataValidator,
+        isArrayInput: false,
+        hasContextCapability,
+        hasInputDefined: true
+      });
 
-      // If schema is provided, set up validation
-      if (schema !== undefined) {
-        inputValidator = createParseFn(schema);
-      } else {
-        // Schema-less variant - no validation, type-only
-        inputValidator = undefined;
-      }
-
-      return safeFn as any; // Type assertion needed for the new input type
+      // Copy client configuration
+      (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
+      (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
+      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
+      (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
+      (newSafeFn as any)._contextValidator = (safeFn as any)._contextValidator;
+      
+      return newSafeFn as any; // Type assertion needed for the new input type
     },
 
     args<TArgs extends readonly any[]>(
       ...schemas: InputSchemaArray<TArgs>
     ) {
-      isArrayInput = true;
-
+      // Create new SafeFn with updated args state - don't modify closure variables
+      let newInputValidator: ParseFn<any> | undefined;
+      
       // If schemas are provided, set up validation
       if (schemas.length > 0) {
         // Create validator for multiple arguments
-        inputValidator = async (input: unknown) => {
+        newInputValidator = async (input: unknown) => {
           if (!Array.isArray(input)) {
             throw new Error("Expected array input for multiple argument validation");
           }
@@ -466,17 +499,55 @@ export function createSafeFn<
         };
       } else {
         // Schema-less variant - no validation, type-only
-        inputValidator = undefined;
+        newInputValidator = undefined;
       }
 
-      return safeFn as any; // Type assertion needed for the new input type
+      const newSafeFn = createSafeFn<TBaseContext, TInputContext, TMetadata>({
+        currentMetadata,
+        inputValidator: newInputValidator,
+        outputValidator,
+        functionMiddlewares,
+        errorHandler,
+        metadataValidator,
+        isArrayInput: true,
+        hasContextCapability,
+        hasInputDefined: true
+      });
+
+      // Copy client configuration
+      (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
+      (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
+      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
+      (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
+      (newSafeFn as any)._contextValidator = (safeFn as any)._contextValidator;
+
+      return newSafeFn as any; // Type assertion needed for the new input type
     },
 
     output<TNewOutput>(
       schema: SchemaValidator<TNewOutput>,
     ): SafeFn<TBaseContext, TInputContext, unknown, TNewOutput, TMetadata, 'none'> {
-      outputValidator = createParseFn(schema);
-      return safeFn as any; // Type assertion needed for the new output type
+      // Create new SafeFn with updated output state - don't modify closure variables
+      const newSafeFn = createSafeFn<TBaseContext, TInputContext, TMetadata>({
+        currentMetadata,
+        inputValidator,
+        outputValidator: createParseFn(schema),
+        functionMiddlewares,
+        errorHandler,
+        metadataValidator,
+        isArrayInput,
+        hasContextCapability,
+        hasInputDefined
+      });
+
+      // Copy client configuration
+      (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
+      (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
+      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
+      (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
+      (newSafeFn as any)._contextValidator = (safeFn as any)._contextValidator;
+      
+      return newSafeFn as any; // Type assertion needed for the new output type
     },
 
     handler<THandlerInput = any, THandlerOutput = any>(
@@ -494,8 +565,8 @@ export function createSafeFn<
       const defaultContext = (safeFn as any)._defaultContext || {};
       const metadata = ((safeFn as any)._currentMetadata || currentMetadata || {}) as TMetadata;
 
-      // Get meta validator from client if available
-      metadataValidator = (safeFn as any)._metadataValidator;
+      // Get meta validator from client if available - this should NOT affect input validation
+      // const clientMetadataValidator = (safeFn as any)._metadataValidator;
 
       // Use client error handler if available, otherwise use default
       const clientErrorHandler = (safeFn as any)._clientErrorHandler;
@@ -520,10 +591,26 @@ export function createSafeFn<
               errorHandlerFn,
             });
           }
-        : (input: THandlerInput, context: Partial<TBaseContext> = {}) => {
+        : hasInputDefined
+        ? (input: THandlerInput, context: Partial<TBaseContext> = {}) => {
             return executeObjectInputHandler({
               input,
               context,
+              defaultContext,
+              metadata,
+              clientMiddlewares,
+              inputValidator,
+              outputValidator,
+              functionMiddlewares,
+              handler,
+              errorHandlerFn,
+            });
+          }
+        : () => {
+            // No input required - only use defaultContext
+            return executeObjectInputHandler({
+              input: undefined as any,
+              context: {},
               defaultContext,
               metadata,
               clientMiddlewares,
@@ -596,7 +683,8 @@ export function createSafeFn<
             return executor;
           } else {
             // Single input pattern executor
-            const executor = async (input: any) => {
+            const executor = inputValidator 
+              ? async (input: any) => {
               // Validate context if schema was provided
               let validatedContext = context;
               if (contextValidatorFn) {
@@ -630,10 +718,47 @@ export function createSafeFn<
                 handler: handlerFn,
                 errorHandlerFn,
               });
-            };
+                }
+              : async () => {
+                  // No input required - validate context only
+                  let validatedContext = context;
+                  if (contextValidatorFn) {
+                    try {
+                      validatedContext = await contextValidatorFn(context);
+                    } catch (error) {
+                      throw new Error(`Context validation failed: ${error instanceof Error ? error.message : String(error)}`);
+                    }
+                  }
+
+                  const defaultContext = (safeFn as any)._defaultContext || {};
+                  const metadata = ((safeFn as any)._currentMetadata || currentMetadata || {}) as TMetadata;
+                  const clientMiddlewares = (safeFn as any)._clientMiddlewares || [];
+                  const errorHandlerFn = errorHandler || (safeFn as any)._clientErrorHandler || createDefaultErrorHandler<TMetadata, any>();
+
+                  // For context-bound functions, we need to get the handler from the internal state
+                  const handlerFn = (safeFn as any)._handler;
+                  if (!handlerFn) {
+                    throw new Error("Handler not defined. Call .handler() before using .withContext()");
+                  }
+
+                  return executeObjectInputHandler({
+                    input: undefined as any,
+                    context: validatedContext,
+                    defaultContext: defaultContext,
+                    metadata,
+                    clientMiddlewares,
+                    inputValidator,
+                    outputValidator,
+                    functionMiddlewares,
+                    handler: handlerFn,
+                    errorHandlerFn,
+                  });
+                };
 
             // Add execute method
-            (executor as any).execute = (input: any) => executor(input);
+            (executor as any).execute = inputValidator 
+              ? (input: any) => (executor as any)(input)
+              : () => (executor as any)();
             return executor;
           }
         };

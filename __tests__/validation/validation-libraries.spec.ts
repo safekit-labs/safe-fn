@@ -39,7 +39,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
         .input(schemas.objectSchemas.userSchema)
         .handler(async ({input}) => input);
 
-      const result = await fn(testData.validUser, {});
+      const result = await fn(testData.validUser);
       expect(result).toEqual(testData.validUser);
     });
 
@@ -52,10 +52,10 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
       // Skip email validation test for libraries that don't support it
       if (["Superstruct", "Scale", "Runtypes", "Effect"].includes(name)) {
         // These libraries don't have email validation, so test passes with invalid email
-        const result = await fn(testData.invalidEmail, {});
+        const result = await fn(testData.invalidEmail);
         expect(result).toEqual(testData.invalidEmail);
       } else {
-        await expect(fn(testData.invalidEmail, {})).rejects.toThrow();
+        await expect(fn(testData.invalidEmail)).rejects.toThrow();
       }
     });
   });
@@ -106,7 +106,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
         .output(schemas.outputSchemas.numberTransform)
         .handler(async ({input}: any) => ({ result: input.age * 2 }));
 
-      const result = await fn(testData.validUser, {});
+      const result = await fn(testData.validUser);
       expect(result).toEqual({ result: 50 });
     });
   });
@@ -122,7 +122,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
         .metadata(testData.validMetadata)
         .handler(async ({input}: any) => input.name);
 
-      const result = await fn(testData.validUser, {});
+      const result = await fn(testData.validUser);
       expect(result).toBe("John");
     });
 
@@ -136,7 +136,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
         .metadata(testData.validAuthMetadata)
         .handler(async ({input}: any) => input.name);
 
-      const result = await fn(testData.validUser, {});
+      const result = await fn(testData.validUser);
       expect(result).toBe("John");
     });
   });

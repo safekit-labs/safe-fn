@@ -49,6 +49,14 @@ export interface ContextBoundFunction<TInput, TOutput> {
 }
 
 /**
+ * Context-bound function for no-input functions
+ */
+export interface ContextBoundNoInputFunction<TOutput> {
+  (): Promise<TOutput>;
+  execute(): Promise<TOutput>;
+}
+
+/**
  * Context-bound function for args pattern
  */
 export interface ContextBoundArgsFunction<TArgs extends readonly any[], TOutput> {
@@ -240,9 +248,18 @@ export type SafeFnSignature<
   TInput,
   TOutput,
   TContext extends Context,
-> = TInput extends InferTupleFromSchemas<readonly SchemaValidator<any>[]>
-  ? CleanTupleSignature<TInput, TOutput>
-  : TInput extends readonly []
+  TInputType extends InputType = 'none',
+> = TInputType extends 'args'
+  ? TInput extends InferTupleFromSchemas<readonly SchemaValidator<any>[]>
+    ? CleanTupleSignature<TInput, TOutput>
+    : TInput extends readonly []
+    ? () => Promise<TOutput>
+    : (...args: any[]) => Promise<TOutput>
+  : TInputType extends 'single'
+  ? (input: TInput, context?: Partial<TContext>) => Promise<TOutput>
+  : TInputType extends 'none'
+  ? () => Promise<TOutput>
+  : unknown extends TInput
   ? () => Promise<TOutput>
   : (input: TInput, context?: Partial<TContext>) => Promise<TOutput>;
 
@@ -463,7 +480,7 @@ interface SafeFnBase<
       : SafeFnHandler<THandlerInput, THandlerOutput, Prettify<TBaseContext & TInputContext>, TMetadata>
   ): TContextCapable extends HasContext
     ? SafeFn<TBaseContext, TInputContext, THandlerInput, THandlerOutput, TMetadata, TInputType, TContextCapable>
-    : SafeFnSignature<THandlerInput, THandlerOutput, Prettify<TBaseContext & TInputContext>>;
+    : SafeFnSignature<THandlerInput, THandlerOutput, Prettify<TBaseContext & TInputContext>, TInputType>;
 }
 
 /**
@@ -484,6 +501,8 @@ export interface SafeFnWithContext<
     ? TInput extends readonly any[]
       ? ContextBoundArgsFunction<TInput, TOutput>
       : never
+    : TInputType extends 'none'
+    ? ContextBoundNoInputFunction<TOutput>
     : ContextBoundFunction<TInput, TOutput>;
 }
 

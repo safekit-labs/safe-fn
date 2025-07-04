@@ -5,8 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Schema-less Input**: Added `.input<T>()` overload for type-only input without runtime validation
+- **API Consistency**: Input methods now follow same pattern as args (`.input<T>()` vs `.input(schema)`)
+
+### Fixed  
+- **Metadata Chain Bug**: Fixed issue where functions with `.metadata()` but no input incorrectly required input parameters
+- **Type Safety**: Proper distinction between no-input functions and type-only input functions
+
 ## [0.3.0-alpha.9] - 2025-07-03
-- Fixed issue where metadata wasn't passing through when using .context()
+- fix: Fixed issue where metadata wasn't passing through when using .context()
+- fix: Metadata type can be passed properly as second argument in createSafeFnClient
 
 ## [0.3.0-alpha.8] - 2025-07-03
 - Fix: Exporting all types from types.ts

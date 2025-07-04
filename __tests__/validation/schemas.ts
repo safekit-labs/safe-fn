@@ -6,28 +6,52 @@ import * as v from "valibot";
 import * as arktype from "arktype";
 import { Schema } from "effect";
 import * as T from "runtypes";
+import type { SchemaValidator } from "@/types";
 
 /**
  * Test schema definitions for different validation libraries
  * Each library implements the same validation logic in its own dialect
  */
 
+// Define common types for better type inference
+export interface User {
+  name: string;
+  age: number;
+}
+
+export interface Email {
+  email: string;
+}
+
+export interface NumberTransform {
+  result: number;
+}
+
+export interface Operation {
+  op: string;
+}
+
+export interface AuthOperation {
+  op: string;
+  auth: boolean;
+}
+
 export interface TestSchemas {
   objectSchemas: {
-    userSchema: any;
-    emailSchema: any;
+    userSchema: SchemaValidator<User>;
+    emailSchema: SchemaValidator<Email>;
   };
   argumentSchemas: {
-    stringNumberArray: any[];
-    emptyArray: any[];
-    stringMinArray: any[];
+    stringNumberArray: [SchemaValidator<string>, SchemaValidator<number>];
+    emptyArray: [];
+    stringMinArray: [SchemaValidator<string>];
   };
   outputSchemas: {
-    numberTransform: any;
+    numberTransform: SchemaValidator<NumberTransform>;
   };
   metadataSchemas: {
-    operationSchema: any;
-    authSchema: any;
+    operationSchema: SchemaValidator<Operation>;
+    authSchema: SchemaValidator<AuthOperation>;
   };
 }
 

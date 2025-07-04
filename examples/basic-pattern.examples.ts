@@ -28,18 +28,20 @@ export const addUser = safeFnClient
 // 3. Zero Arguments Pattern
 export const healthCheck = safeFnClient.args().handler(async () => ({ status: "ok" }));
 
-// 4. Without Schema Validation
+// 4. Without Schema Validation (type-only)
 type Input = { a: number; b: number };
 
-export const add = safeFnClient.handler<Input, number>(async ({ input }) => {
-  return input.a + input.b;
-});
+export const add = safeFnClient
+  .input<Input>()
+  .handler(async ({ input }) => {
+    return input.a + input.b;
+  });
 
 // Usage examples
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function examples() {
-  // Object pattern usage
-  const user = await getUser({ id: "123" }, { userId: "user-1" });
+  // Object pattern usage (context comes from defaultContext)
+  const user = await getUser({ id: "123" });
 
   // Multiple arguments pattern usage
   const newUser = await addUser("John", 25);

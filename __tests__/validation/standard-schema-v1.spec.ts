@@ -97,7 +97,7 @@ describe("Standard Schema Support", () => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient.output(stringSchema).handler(async () => "valid string output");
 
-      const result = await fn({}, {});
+      const result = await fn();
       expect(result).toBe("valid string output");
     });
 
@@ -105,7 +105,7 @@ describe("Standard Schema Support", () => {
       const safeFnClient = createSafeFnClient();
       const fn = safeFnClient.output(stringSchema).handler(async () => 123 as any);
 
-      await expect(fn({}, {})).rejects.toThrow("Expected string");
+      await expect(fn()).rejects.toThrow("Expected string");
     });
 
     it("should validate both input and output schemas", async () => {

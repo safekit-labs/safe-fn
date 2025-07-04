@@ -1,4 +1,4 @@
-import { createMiddleware, createSafeFnClient } from "../src/index";
+import { createMiddleware, createSafeFnClient } from "../../src/index";
 import { z } from "zod";
 
 // ========================================================================

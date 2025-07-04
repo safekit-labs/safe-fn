@@ -51,6 +51,32 @@ export const createUser = safeFnClient
   });
 ```
 
+## Input Variants
+
+`safe-fn` supports three ways to handle input:
+
+- **No input**: `.handler()` only - for functions that don't need parameters
+- **Type-only input**: `.input<T>()` - TypeScript typing without runtime validation  
+- **Validated input**: `.input(schema)` - Full schema validation with type inference
+
+```typescript
+// No input - just call the function
+const ping = safeFnClient.handler(async () => "pong");
+await ping(); // "pong"
+
+// Type-only input - typed but no validation
+const echo = safeFnClient
+  .input<{ message: string }>()
+  .handler(async ({ input }) => input.message);
+await echo({ message: "hello" }); // "hello"
+
+// Validated input - schema validation + types
+const greet = safeFnClient
+  .input(z.object({ name: z.string() }))
+  .handler(async ({ input }) => `Hello ${input.name}`);
+await greet({ name: "Alice" }); // "Hello Alice"
+```
+
 ## Client Configuration
 
 Clients are created with `createSafeFnClient()` and support three main configuration options:

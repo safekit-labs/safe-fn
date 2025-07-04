@@ -103,8 +103,8 @@ describe("Mutual Exclusivity", () => {
   // If you try to use both .input() and .args(), you get compile-time errors
 });
 
-describe("Schema-less Variants", () => {
-  it("should support schema-less .input<T>() for type-only signatures", async () => {
+describe("Type-only Variants", () => {
+  it("should support type-only signatures with .input<T>()", async () => {
     const fn = createSafeFn()
       .input<{ name: string; age: number }>()
       .handler(async ({ input }) => {
