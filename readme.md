@@ -306,6 +306,7 @@ const fn = createSafeFnClient()
   .handler(async ({ ctx }) => {
     const user = await ctx.db.getUser("user-123");
     ctx.logger.log(user);
+    return user;
   });
 
 // Bind context at call-time
@@ -358,11 +359,11 @@ client.input(z.object({ name: z.string() })).handler(({ input }) => input.name);
 client.handler(() => {});
 
 // Type-only output - typed but no validation
-client.output<{ name: string }>().handler(({ output }) => output.name);
+client.output<{ name: string }>().handler(() => ({ name: "John" }));
 client.output<void>().handler(() => {}); // void output
 
 // Validated output - schema validation + types
-client.output(z.object({ name: z.string() })).handler(({ output }) => output.name);
+client.output(z.object({ name: z.string() })).handler(() => ({ name: "John" }));
 client.output(z.void()).handler(() => {}); // void output
 ```
 
