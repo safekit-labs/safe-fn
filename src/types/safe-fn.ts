@@ -118,13 +118,10 @@ interface SafeFnBase<
   ): SafeFn<TBaseContext, TNewInputContext, TInput, TOutput, TMetadata, TInputType, HasContext>;
 
   /**
-   * Define input schema for validation
-   * @template TNewInput - Input type inferred from schema
+   * Define no input (equivalent to omitting .input() entirely)
    */
-  input<TNewInput>(
-    schema: SchemaValidator<TNewInput>,
-  ): TInputType extends 'none'
-    ? SafeFn<TBaseContext, TInputContext, TNewInput, TOutput, TMetadata, 'single', TContextCapable>
+  input(): TInputType extends 'none'
+    ? SafeFn<TBaseContext, TInputContext, unknown, TOutput, TMetadata, 'none', TContextCapable>
     : never;
 
   /**
@@ -132,6 +129,16 @@ interface SafeFnBase<
    * @template TNewInput - Input type (no runtime validation)
    */
   input<TNewInput>(): TInputType extends 'none'
+    ? SafeFn<TBaseContext, TInputContext, TNewInput, TOutput, TMetadata, 'single', TContextCapable>
+    : never;
+
+  /**
+   * Define input schema for validation
+   * @template TNewInput - Input type inferred from schema
+   */
+  input<TNewInput>(
+    schema: SchemaValidator<TNewInput>,
+  ): TInputType extends 'none'
     ? SafeFn<TBaseContext, TInputContext, TNewInput, TOutput, TMetadata, 'single', TContextCapable>
     : never;
 
@@ -154,18 +161,23 @@ interface SafeFnBase<
     : never;
 
   /**
-   * Define output schema for validation
-   * @template TNewOutput - Output type inferred from schema
+   * Define void output (no meaningful return value)
    */
-  output<TNewOutput>(
-    schema: SchemaValidator<TNewOutput>,
-  ): SafeFn<TBaseContext, TInputContext, TInput, TNewOutput, TMetadata, TInputType, TContextCapable>;
+  output(): SafeFn<TBaseContext, TInputContext, TInput, void, TMetadata, TInputType, TContextCapable>;
 
   /**
    * Define output type without validation (type-only)
    * @template TNewOutput - Output type (no runtime validation)
    */
   output<TNewOutput>(): SafeFn<TBaseContext, TInputContext, TInput, TNewOutput, TMetadata, TInputType, TContextCapable>;
+
+  /**
+   * Define output schema for validation
+   * @template TNewOutput - Output type inferred from schema
+   */
+  output<TNewOutput>(
+    schema: SchemaValidator<TNewOutput>,
+  ): SafeFn<TBaseContext, TInputContext, TInput, TNewOutput, TMetadata, TInputType, TContextCapable>;
 
 
   /**
