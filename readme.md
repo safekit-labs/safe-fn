@@ -344,7 +344,7 @@ const safeFnClient = createSafeFnClient({
 client.handler(() => {});
 
 // Type-only input - typed but no validation
-client.input<{ message: string }>().handler(({ input }) => input.message);
+client.input<{ name: string }>().handler(({ input }) => input.name);
 
 // Validated input - schema validation + types
 client.input(z.object({ name: z.string() })).handler(({ input }) => input.name);
