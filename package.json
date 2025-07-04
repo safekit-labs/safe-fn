@@ -16,6 +16,7 @@
     "arktype": "^2.1.20",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
+    "jiti": "^2.4.2",
     "next-safe-action": "^8.0.7",
     "prettier": "^3.6.2",
     "runtypes": "^7.0.4",
@@ -78,7 +79,7 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,html}\"",
     "test": "vitest",
-    "git": "bun run typecheck && bun run build && bun run test --run && git add . && git commit -m",
+    "git": "bun run lint && bun run typecheck && bun run build && bun run test --run && git add . && git commit -m",
     "postgit": "git push --all"
   },
   "type": "module",
