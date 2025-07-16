@@ -33,9 +33,8 @@ function createDefaultErrorHandler<
   TMetadata extends Metadata,
   TWorkingContext extends Context,
 >(): ErrorHandlerFn<TMetadata, TWorkingContext> {
-  return ({ error, ctx }): ErrorHandlerResult => {
-    console.error("SafeFn Error:", error.message, { context: ctx });
-    // Return void - just log the error
+  return (): ErrorHandlerResult => {
+    // Return void
   };
 }
 

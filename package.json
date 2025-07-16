@@ -1,6 +1,6 @@
 {
   "name": "@safekit/safe-fn",
-  "version": "0.4.0-alpha.2",
+  "version": "0.4.1-alpha.1",
   "author": "safekit",
   "repository": {
     "type": "git",
@@ -70,12 +70,12 @@
     "access": "public"
   },
   "scripts": {
+    "clean": "rm -rf dist",
     "build:tsc": "tsc -p tsconfig.build.json",
     "build:resolve": "tsc-alias -p tsconfig.build.json -f",
     "build": "bun run clean && bun run build:tsc && bun run build:resolve",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "clean": "rm -rf dist",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,html}\"",
     "test": "vitest",
