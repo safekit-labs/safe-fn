@@ -10,8 +10,8 @@ import { createClient, createMiddleware } from "@safekit/safe-fn";
 
 const loggingMetadataSchema = z.object({
   operationName: z.string(),
-  filterInputForLog: z.function().args(z.any()).returns(z.any()).optional(),
-  filterOutputForLog: z.function().args(z.any()).returns(z.any()).optional(),
+  filterInputForLog: z.any().refine(val => typeof val === "function").optional(),
+  filterOutputForLog: z.any().refine(val => typeof val === "function").optional(),
 });
 
 // ========================================================================

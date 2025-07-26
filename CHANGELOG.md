@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Comprehensive Sync Handler Tests**: Added 22 new test cases covering all sync handler patterns
 
 ### Changed
+- **Zod Upgrade**: Upgraded from Zod v3.25.68-beta.0 to v4.0.10 for latest features and stability
 - **File Organization**: Moved standard schema and parser files to src root for cleaner structure
   - `src/libs/standard-schema-v1/` → `src/standard-schema.ts`
   - `src/libs/parser.ts` → `src/parser.ts`
@@ -21,27 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Migration Guide
 **No breaking changes** - all existing async handlers continue to work unchanged.
 
-**New synchronous handler patterns:**
-```typescript
-// ✅ NEW: Synchronous handlers
-const syncFn = createSafeFn()
-  .input(z.string())
-  .handler(({ input }) => input.toUpperCase()); // No async/await needed
-
-// ✅ EXISTING: Async handlers still work
-const asyncFn = createSafeFn()
-  .input(z.string())
-  .handler(async ({ input }) => {
-    await someAsyncOperation();
-    return input.toLowerCase();
-  });
-```
+**New features:**
+- Handlers can now be either synchronous or asynchronous
+- Zod v4 introduces new function validation syntax for metadata schemas
 
 ### Technical
 - **Performance**: Sync handlers avoid Promise overhead for simple computations
 - **Error Handling**: Synchronous handlers properly propagate errors through the middleware chain
 - **Type Safety**: Full TypeScript inference for both sync and async patterns
 - **Standard Schema**: Added `standardValidate()` function for sync-only Standard Schema validation
+- **Zod v4 Compatibility**: Updated example files to use new function validation syntax (`z.any().refine()` for function properties)
 
 ## [0.5.0] - 2025-07-26
 
