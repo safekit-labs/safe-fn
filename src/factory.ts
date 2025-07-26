@@ -131,7 +131,7 @@ export function createClient(
   // Store the client configuration for use in the SafeFn client
   (safeFn as any)._defaultContext = config?.defaultContext || {};
   (safeFn as any)._metadataValidator = metadataValidator;
-  (safeFn as any)._clientErrorHandler = config?.errorHandler;
+  (safeFn as any)._clientErrorHandler = config?.onError;
   (safeFn as any)._clientMiddlewares = [];
 
   return safeFn;

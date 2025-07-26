@@ -55,21 +55,6 @@ export interface SafeFnBuilder<TBaseContext extends Context, TMetadata extends M
   create(): SafeFn<TBaseContext, Context, unknown, unknown, TMetadata, 'none'>;
 }
 
-// ========================================================================
-// SAFEFN CLIENT CONFIGURATION
-// ========================================================================
-
-/**
- * Configuration for creating a SafeFn client
- */
-export interface ClientConfig<TBaseContext extends Context, TMetadata extends Metadata> {
-  defaultContext?: TBaseContext;
-  metadataSchema?: SchemaValidator<TMetadata>;
-  onError?: ErrorHandlerFn<TMetadata, TBaseContext>;
-}
-
-// Import ErrorHandlerFn from core
-import type { ErrorHandlerFn } from "./core";
 
 // ========================================================================
 // SAFEFN INTERFACE

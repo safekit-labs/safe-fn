@@ -78,6 +78,6 @@ export interface ClientConfig<
   TMetadata extends Metadata = Metadata,
 > {
   defaultContext?: TContext;
-  errorHandler?: ErrorHandlerFn<TMetadata, TContext>;
+  onError?: ErrorHandlerFn<TMetadata, TContext>;
   metadataSchema?: SchemaValidator<TMetadata>;
 }
