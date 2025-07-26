@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-07-26
+
+### Added
+- **Synchronous Handler Support**: Handlers can now be either synchronous or asynchronous, providing better performance for simple operations
+- **Comprehensive Sync Handler Tests**: Added 22 new test cases covering all sync handler patterns
+
+### Changed
+- **File Organization**: Moved standard schema and parser files to src root for cleaner structure
+  - `src/libs/standard-schema-v1/` → `src/standard-schema.ts`
+  - `src/libs/parser.ts` → `src/parser.ts`
+- **Validation System**: Made validation synchronous by default, prioritizing `parse()` over `parseAsync()` for better performance
+- **Type System**: Updated all handler types to support both `Promise<T> | T` return types
+
+### Migration Guide
+**No breaking changes** - all existing async handlers continue to work unchanged.
+
+**New synchronous handler patterns:**
+```typescript
+// ✅ NEW: Synchronous handlers
+const syncFn = createSafeFn()
+  .input(z.string())
+  .handler(({ input }) => input.toUpperCase()); // No async/await needed
+
+// ✅ EXISTING: Async handlers still work
+const asyncFn = createSafeFn()
+  .input(z.string())
+  .handler(async ({ input }) => {
+    await someAsyncOperation();
+    return input.toLowerCase();
+  });
+```
+
+### Technical
+- **Performance**: Sync handlers avoid Promise overhead for simple computations
+- **Error Handling**: Synchronous handlers properly propagate errors through the middleware chain
+- **Type Safety**: Full TypeScript inference for both sync and async patterns
+- **Standard Schema**: Added `standardValidate()` function for sync-only Standard Schema validation
+
 ## [0.5.0] - 2025-07-26
 
 ### BREAKING CHANGES

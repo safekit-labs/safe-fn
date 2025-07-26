@@ -18,7 +18,7 @@ import type {
 } from "@/types";
 
 import { executeArrayInputHandler, executeObjectInputHandler } from "@/input";
-import { createParseFn, type ParseFn } from "@/libs/parser";
+import { createParseFn, type ParseFn } from "@/parser";
 
 // ========================================================================
 // ERROR HANDLING UTILITIES
@@ -211,7 +211,7 @@ export function createSafeFn<
       // If schemas are provided, set up validation
       if (schemas.length > 0) {
         // Create validator for multiple arguments
-        newInputValidator = async (input: unknown) => {
+        newInputValidator = (input: unknown) => {
           if (!Array.isArray(input)) {
             throw new Error("Expected array input for multiple argument validation");
           }
@@ -221,13 +221,11 @@ export function createSafeFn<
             throw new Error(`Expected ${schemas.length} arguments, but got ${input.length}`);
           }
 
-          // Parse each argument and await all results
-          const parsePromises = input.map((arg, index) => {
+          // Parse each argument synchronously
+          return input.map((arg, index) => {
             const parseFn = createParseFn(schemas[index]);
-            return Promise.resolve(parseFn(arg));
+            return parseFn(arg);
           });
-
-          return Promise.all(parsePromises);
         };
       } else {
         // Schema-less variant - no validation, type-only
@@ -379,7 +377,7 @@ export function createSafeFn<
               let validatedContext = context;
               if (contextValidatorFn) {
                 try {
-                  validatedContext = await contextValidatorFn(context);
+                  validatedContext = contextValidatorFn(context);
                 } catch (error) {
                   throw new Error(
                     `Context validation failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -426,7 +424,7 @@ export function createSafeFn<
                   let validatedContext = context;
                   if (contextValidatorFn) {
                     try {
-                      validatedContext = await contextValidatorFn(context);
+                      validatedContext = contextValidatorFn(context);
                     } catch (error) {
                       throw new Error(
                         `Context validation failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -468,7 +466,7 @@ export function createSafeFn<
                   let validatedContext = context;
                   if (contextValidatorFn) {
                     try {
-                      validatedContext = await contextValidatorFn(context);
+                      validatedContext = contextValidatorFn(context);
                     } catch (error) {
                       throw new Error(
                         `Context validation failed: ${error instanceof Error ? error.message : String(error)}`,

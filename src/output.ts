@@ -2,10 +2,10 @@
 // OUTPUT HANDLING AND VALIDATION UTILITIES
 // ========================================================================
 
-import { createParseFn } from "@/libs/parser";
+import { createParseFn } from "@/parser";
 
 import type { SchemaValidator } from "@/types";
-import type { ParseFn } from "@/libs/parser";
+import type { ParseFn } from "@/parser";
 
 // ========================================================================
 // OUTPUT VALIDATION UTILITIES
@@ -24,13 +24,13 @@ export interface OutputValidationOptions<TOutput> {
  * @param options - Output validation options
  * @returns Validated output or original result if no validator
  */
-export async function validateOutput<TOutput>(
+export function validateOutput<TOutput>(
   options: OutputValidationOptions<TOutput>,
-): Promise<TOutput> {
+): TOutput {
   const { outputValidator, result } = options;
 
   if (outputValidator) {
-    return await outputValidator(result);
+    return outputValidator(result);
   }
 
   return result as TOutput;
@@ -43,8 +43,8 @@ export async function validateOutput<TOutput>(
  */
 export function createOutputValidator<TOutput>(
   outputValidator?: ParseFn<TOutput>,
-): (result: unknown) => Promise<TOutput> {
-  return async (result: unknown) => {
+): (result: unknown) => TOutput {
+  return (result: unknown) => {
     return validateOutput<TOutput>({ outputValidator, result });
   };
 }
@@ -67,11 +67,11 @@ export interface OutputValidationResult<TOutput> {
  * @param options - Output validation options
  * @returns Result object with success/error information
  */
-export async function safeValidateOutput<TOutput>(
+export function safeValidateOutput<TOutput>(
   options: OutputValidationOptions<TOutput>,
-): Promise<OutputValidationResult<TOutput>> {
+): OutputValidationResult<TOutput> {
   try {
-    const validatedOutput = await validateOutput(options);
+    const validatedOutput = validateOutput(options);
     return {
       success: true,
       data: validatedOutput,
@@ -89,11 +89,11 @@ export async function safeValidateOutput<TOutput>(
  * Used when output type is defined without runtime validation
  */
 export function createTypeOnlyOutput<TOutput>(): {
-  validate: (result: unknown) => Promise<TOutput>;
+  validate: (result: unknown) => TOutput;
   hasValidation: false;
 } {
   return {
-    validate: async (result: unknown) => result as TOutput,
+    validate: (result: unknown) => result as TOutput,
     hasValidation: false,
   };
 }
@@ -103,7 +103,7 @@ export function createTypeOnlyOutput<TOutput>(): {
  * Used when output type is defined with runtime validation
  */
 export function createSchemaBasedOutput<TOutput>(schema: SchemaValidator<TOutput>): {
-  validate: (result: unknown) => Promise<TOutput>;
+  validate: (result: unknown) => TOutput;
   hasValidation: true;
 } {
   const parseFn = createParseFn(schema);

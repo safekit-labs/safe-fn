@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createClient } from "@/factory";
 
-import type { StandardSchemaV1 } from "@/libs/standard-schema-v1/spec";
+import type { StandardSchemaV1 } from "@/standard-schema";
 
 // ========================================================================
 // MOCK SCHEMA UTILITIES

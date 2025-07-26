@@ -2,7 +2,7 @@
  * Unified middleware execution system
  */
 import type { MiddlewareFn, MiddlewareResult, Context, Metadata, ValidateFunction } from "@/types";
-import type { ParseFn } from "@/libs/parser";
+import type { ParseFn } from "@/parser";
 
 /**
  * Creates a validation helper function for middleware
@@ -57,7 +57,7 @@ export interface ExecuteMiddlewareChainParams<
   metadata: TMetadata;
   inputValidator?: ParseFn<any>;
   argsValidator?: ParseFn<any>;
-  handler: (input: unknown, context: TContext) => Promise<TOutput>;
+  handler: (input: unknown, context: TContext) => Promise<TOutput> | TOutput;
 }
 
 /**
@@ -74,8 +74,8 @@ export async function executeMiddlewareChain<
   // Fast path for no middlewares
   if (middlewares.length === 0) {
     // If no middlewares, use validated input if available, otherwise raw
-    const finalInput = inputValidator ? await inputValidator(rawInput) : rawInput;
-    return handler(finalInput, context);
+    const finalInput = inputValidator ? inputValidator(rawInput) : rawInput;
+    return await Promise.resolve(handler(finalInput, context));
   }
 
   let index = -1;
@@ -92,8 +92,8 @@ export async function executeMiddlewareChain<
     // Base case: all middlewares executed, call the handler
     if (index === middlewares.length) {
       // Use validated input if available, otherwise raw
-      const finalInput = inputValidator ? await inputValidator(rawInput) : rawInput;
-      const output = await handler(finalInput, currentContext as TContext);
+      const finalInput = inputValidator ? inputValidator(rawInput) : rawInput;
+      const output = await Promise.resolve(handler(finalInput, currentContext as TContext));
       middlewareResult.output = output;
       middlewareResult.context = currentContext;
       middlewareResult.success = true;

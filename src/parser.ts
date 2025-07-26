@@ -2,9 +2,9 @@
 // SCHEMA PARSING UTILITIES
 // ========================================================================
 
-import { StandardSchemaV1Error } from "@/libs/standard-schema-v1/error";
+import { StandardSchemaV1Error } from "@/standard-schema";
 
-import type { StandardSchemaV1 } from "@/libs/standard-schema-v1/spec";
+import type { StandardSchemaV1 } from "@/standard-schema";
 import type { SchemaValidator } from "@/types";
 
 // ========================================================================
@@ -52,7 +52,7 @@ export type ParserSuperstructEsque<TInput> = {
 };
 
 // Custom validator function
-export type ParserCustomValidatorEsque<TInput> = (input: unknown) => Promise<TInput> | TInput;
+export type ParserCustomValidatorEsque<TInput> = (input: unknown) => TInput;
 
 // Yup
 export type ParserYupEsque<TInput> = {
@@ -85,7 +85,35 @@ export type Parser = ParserWithInputOutput<any, any> | ParserWithoutInput<any>;
 // PARSE FUNCTION TYPE
 // ========================================================================
 
-export type ParseFn<TType> = (value: unknown) => Promise<TType> | TType;
+export type ParseFn<TType> = (value: unknown) => TType;
+
+// ========================================================================
+// STANDARD SCHEMA VALIDATION
+// ========================================================================
+
+/**
+ * Validates input using Standard Schema specification directly
+ * Uses proper Standard Schema type inference for input/output
+ * Note: Only supports synchronous validation
+ */
+function standardValidate<T extends StandardSchemaV1>(
+  schema: T,
+  input: StandardSchemaV1.InferInput<T>
+): StandardSchemaV1.InferOutput<T> {
+  const result = schema["~standard"].validate(input);
+
+  // Handle async results by throwing an error - we only support sync validation
+  if (result instanceof Promise) {
+    throw new Error("Async validation is not supported. Please use synchronous Standard Schema validation.");
+  }
+
+  // If the `issues` field exists, the validation failed
+  if (result.issues) {
+    throw new StandardSchemaV1Error(result.issues);
+  }
+
+  return result.value;
+}
 
 // ========================================================================
 // MAIN VALIDATOR FUNCTION
@@ -116,14 +144,17 @@ export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
     return parser;
   }
 
-  // Zod async parsing
-  if (typeof parser.parseAsync === "function") {
-    return parser.parseAsync.bind(parser);
-  }
-
-  // Zod/Valibot sync parsing
+  // Zod/Valibot sync parsing (prioritize sync over async)
   if (typeof parser.parse === "function") {
     return parser.parse.bind(parser);
+  }
+
+  // Zod async parsing (fallback - but we throw error for async)
+  if (typeof parser.parseAsync === "function") {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return (_value: unknown) => {
+      throw new Error("Async validation is not supported. Use synchronous parsing methods only.");
+    };
   }
 
   // Yup validation
@@ -144,14 +175,10 @@ export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
     };
   }
 
-  // Standard Schema - only case where we need to create our own error
+  // Standard Schema - use standardValidate function
   if (isStandardSchema) {
-    return async (value: unknown) => {
-      const result = await parser["~standard"].validate(value);
-      if (result.issues) {
-        throw new StandardSchemaV1Error(result.issues);
-      }
-      return result.value;
+    return (value: unknown) => {
+      return standardValidate(parser, value);
     };
   }
 

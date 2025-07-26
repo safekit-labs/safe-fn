@@ -4,7 +4,6 @@
  */
 
 /* eslint-disable @typescript-eslint/no-namespace */
-/* eslint-disable @typescript-eslint/naming-convention */
 
 /** The Standard Schema interface. */
 export interface StandardSchemaV1<Input = unknown, Output = Input> {
@@ -12,6 +11,7 @@ export interface StandardSchemaV1<Input = unknown, Output = Input> {
   readonly "~standard": StandardSchemaV1.Props<Input, Output>;
 }
 
+// eslint-disable-next-line no-redeclare
 export declare namespace StandardSchemaV1 {
   /** The Standard Schema properties interface. */
   export interface Props<Input = unknown, Output = Input> {
@@ -74,3 +74,22 @@ export declare namespace StandardSchemaV1 {
     Schema["~standard"]["types"]
   >["output"];
 }
+
+/** A schema error with useful information. */
+
+export class StandardSchemaV1Error extends Error {
+  /** The schema issues. */
+  public readonly issues: ReadonlyArray<StandardSchemaV1.Issue>;
+
+  /**
+   * Creates a schema error with useful information.
+   *
+   * @param issues The schema issues.
+   */
+  constructor(issues: ReadonlyArray<StandardSchemaV1.Issue>) {
+    super(issues[0]?.message);
+    this.name = "SchemaError";
+    this.issues = issues;
+  }
+}
+

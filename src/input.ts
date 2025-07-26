@@ -13,7 +13,7 @@ import type {
 } from "@/types";
 
 import { executeMiddlewareChain } from "@/middleware";
-import { type ParseFn } from "@/libs/parser";
+import { type ParseFn } from "@/parser";
 
 // ========================================================================
 // VALIDATION HELPER
@@ -177,7 +177,7 @@ export async function executeArrayInputHandler<
       },
     });
 
-    const validatedOutput = outputValidator ? await outputValidator(result) : result;
+    const validatedOutput = outputValidator ? outputValidator(result) : result;
     return validatedOutput as THandlerOutput;
   } catch (error) {
     const originalError = error instanceof Error ? error : new Error(String(error));
@@ -201,7 +201,7 @@ export async function executeArrayInputHandler<
     );
 
     if (errorResult.success) {
-      const validatedOutput = outputValidator ? await outputValidator(errorResult.output) : errorResult.output;
+      const validatedOutput = outputValidator ? outputValidator(errorResult.output) : errorResult.output;
       return validatedOutput as THandlerOutput;
     } else {
       throw errorResult.error;
@@ -252,7 +252,7 @@ export async function executeObjectInputHandler<
       },
     });
 
-    const validatedOutput = outputValidator ? await outputValidator(result) : result;
+    const validatedOutput = outputValidator ? outputValidator(result) : result;
     return validatedOutput as THandlerOutput;
   } catch (error) {
     const originalError = error instanceof Error ? error : new Error(String(error));
@@ -276,7 +276,7 @@ export async function executeObjectInputHandler<
     );
 
     if (errorResult.success) {
-      const validatedOutput = outputValidator ? await outputValidator(errorResult.output) : errorResult.output;
+      const validatedOutput = outputValidator ? outputValidator(errorResult.output) : errorResult.output;
       return validatedOutput as THandlerOutput;
     } else {
       throw errorResult.error;

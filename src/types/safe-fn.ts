@@ -172,10 +172,10 @@ interface SafeFnBase<
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
     handler: TInputType extends 'args'
       ? THandlerInput extends readonly any[]
-        ? (input: ArgsHandlerInput<THandlerInput, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<THandlerOutput>
+        ? (input: ArgsHandlerInput<THandlerInput, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<THandlerOutput> | THandlerOutput
         : never
       : TInputType extends 'single'
-      ? (input: HandlerInput<THandlerInput, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<THandlerOutput>
+      ? (input: HandlerInput<THandlerInput, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<THandlerOutput> | THandlerOutput
       : SafeFnHandler<THandlerInput, THandlerOutput, Prettify<TBaseContext & TInputContext>, TMetadata>
   ): TContextCapable extends HasContext
     ? SafeFn<TBaseContext, TInputContext, THandlerInput, THandlerOutput, TMetadata, TInputType, TContextCapable>

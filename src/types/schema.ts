@@ -2,7 +2,7 @@
  * Schema validation types for the SafeFn library
  */
 
-import type { StandardSchemaV1 } from "@/libs/standard-schema-v1/spec";
+import type { StandardSchemaV1 } from "@/standard-schema";
 
 // ========================================================================
 // SCHEMA VALIDATION TYPES

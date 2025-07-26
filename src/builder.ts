@@ -3,7 +3,7 @@
 // ========================================================================
 
 import { createSafeFn } from "@/safe-fn";
-import { createParseFn, type ParseFn } from "@/libs/parser";
+import { createParseFn, type ParseFn } from "@/parser";
 
 import type {
   SafeFnBuilder,
