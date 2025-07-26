@@ -13,7 +13,7 @@ import type {
 } from "@/types";
 
 import { executeMiddlewareChain } from "@/middleware";
-import { type ParseFn } from "@/parser";
+import { type ParseFn } from "@/validator";
 
 // ========================================================================
 // VALIDATION HELPER

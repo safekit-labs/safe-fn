@@ -18,7 +18,7 @@ import type {
 } from "@/types";
 
 import { executeArrayInputHandler, executeObjectInputHandler } from "@/input";
-import { createParseFn, type ParseFn } from "@/parser";
+import { createParseFn, type ParseFn } from "@/validator";
 
 // ========================================================================
 // ERROR HANDLING UTILITIES

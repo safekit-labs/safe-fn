@@ -1,6 +1,6 @@
 {
   "name": "@safekit/safe-fn",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "author": "safekit",
   "license": "MIT",
   "private": false,
@@ -40,7 +40,6 @@
     "jiti": "^2.4.2",
     "next-safe-action": "^8.0.7",
     "prettier": "^3.6.2",
-    "runtypes": "^7.0.4",
     "superstruct": "^2.0.2",
     "tsc-alias": "^1.8.16",
     "typescript": "^5.8.3",
@@ -49,7 +48,6 @@
     "vite": "^7.0.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4",
-    "yup": "^1.6.1",
     "zod": "4.0.10"
   },
   "exports": {

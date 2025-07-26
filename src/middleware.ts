@@ -2,7 +2,7 @@
  * Unified middleware execution system
  */
 import type { MiddlewareFn, MiddlewareResult, Context, Metadata, ValidateFunction } from "@/types";
-import type { ParseFn } from "@/parser";
+import type { ParseFn } from "@/validator";
 
 /**
  * Creates a validation helper function for middleware

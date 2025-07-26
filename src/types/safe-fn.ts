@@ -3,7 +3,7 @@
  */
 
 import type { Context, Metadata, Prettify, HasContext } from "./core";
-import type { SchemaValidator, InputSchemaArray } from "./schema";
+import type { SchemaValidator, InputSchemaArray, InferSchemaOutput } from "./schema";
 import type { HandlerInput, ArgsHandlerInput, SafeFnHandler, SafeFnSignature, InputType } from "./handler";
 import type { MiddlewareFn } from "./middleware";
 
@@ -117,12 +117,12 @@ interface SafeFnBase<
 
   /**
    * Define input schema for validation
-   * @template TNewInput - Input type inferred from schema
+   * @template TSchema - Schema type for validation
    */
-  input<TNewInput>(
-    schema: SchemaValidator<TNewInput>,
+  input<TSchema extends SchemaValidator<any>>(
+    schema: TSchema,
   ): TInputType extends 'none'
-    ? SafeFn<TBaseContext, TInputContext, TNewInput, TOutput, TMetadata, 'single', TContextCapable>
+    ? SafeFn<TBaseContext, TInputContext, InferSchemaOutput<TSchema>, TOutput, TMetadata, 'single', TContextCapable>
     : never;
 
   /**

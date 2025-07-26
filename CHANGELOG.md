@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-07-26
+
+### 🎯 **BREAKING CHANGES**
+This is a major release that simplifies the validation system by only supporting StandardSchema V1 compatible validators.
+
+### Added
+- **StandardSchema V1 Only**: Simplified validation system supporting only StandardSchema V1 compatible validators
+- **Perfect Type Inference**: Native input/output type distinction using `StandardSchemaV1.InferInput<T>` and `InferOutput<T>`
+- **Migration Guide**: Added documentation for migrating from unsupported libraries
+
+### Changed
+- **Validation System**: Renamed `src/parser.ts` to `src/validator.ts` following reference implementation pattern
+- **Type System**: Simplified `SchemaValidator<T>` to only accept `StandardSchemaV1<T> | null`
+- **Library Support**: Now only supports Zod, Valibot, ArkType, and Effect Schema (with StandardSchema wrappers)
+
+### Removed
+- **⚠️ BREAKING**: Removed support for Yup, Runtypes, Superstruct, and custom function validators
+- **⚠️ BREAKING**: Removed Scale codec support and function validator patterns
+- **Parser Complexity**: Eliminated 85% of parser complexity by removing multi-library detection logic
+
+### Fixed
+- **Type Inference**: Coerce validation now works perfectly with proper input/output type distinction
+- **Consistency**: All validation behavior is now consistent across supported libraries
+
+### Migration Notes
+- **Yup → Zod/Valibot**: Migrate schemas to supported libraries
+- **Runtypes → ArkType**: ArkType provides similar TypeScript-first validation
+- **Superstruct**: Migrate to Zod or create StandardSchema V1 wrapper
+- **Custom Functions**: Implement StandardSchema V1 interface or migrate to supported library
+
 ## [0.6.0] - 2025-07-26
 
 ### Added

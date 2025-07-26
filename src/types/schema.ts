@@ -1,5 +1,6 @@
 /**
  * Schema validation types for the SafeFn library
+ * Simplified to support only StandardSchema V1 compatible validators
  */
 
 import type { StandardSchemaV1 } from "@/standard-schema";
@@ -9,20 +10,12 @@ import type { StandardSchemaV1 } from "@/standard-schema";
 // ========================================================================
 
 /**
- * Schema validation function type - supports multiple validation libraries
- *
- * Supports Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Scale Codec,
- * Runtypes, custom functions, Standard Schema spec, and null for unvalidated arguments.
+ * Schema validation function type - supports only StandardSchema V1 compatible validators
+ * 
+ * All validators must implement the StandardSchema V1 interface or be null for unvalidated arguments.
+ * This includes Zod, Valibot, ArkType, Effect Schema, and Superstruct when used with StandardSchema adapters.
  */
-export type SchemaValidator<T> =
-  | { parse: (input: unknown) => T } // Zod schemas
-  | { parseAsync: (input: unknown) => Promise<T> } // Zod async
-  | { validateSync: (input: unknown) => T } // Yup schemas
-  | { create: (input: unknown) => T } // Superstruct schemas
-  | { assert: (value: unknown) => asserts value is T } // Scale Codec schemas
-  | ((input: unknown) => T) // Plain validation functions & ArkType
-  | StandardSchemaV1<T> // Standard Schema spec
-  | null; // Skip validation marker
+export type SchemaValidator<T> = StandardSchemaV1<T> | null;
 
 // ========================================================================
 // TUPLE INFERENCE UTILITIES
@@ -36,26 +29,23 @@ export type InputSchemaArray<TArgs extends readonly any[]> = {
 };
 
 /**
+ * Utility type to infer the input type of a schema validator
+ * Uses StandardSchema V1's InferInput for proper type inference
+ */
+export type InferSchemaInput<T> = T extends null
+  ? unknown // null markers produce unknown type
+  : T extends StandardSchemaV1
+  ? StandardSchemaV1.InferInput<T>
+  : never;
+
+/**
  * Utility type to infer the output type of a schema validator
+ * Uses StandardSchema V1's InferOutput for proper type inference
  */
 export type InferSchemaOutput<T> = T extends null
   ? unknown // null markers produce unknown type
-  : T extends StandardSchemaV1<any, infer Output>
-  ? Output
-  : T extends { parse: (input: unknown) => infer U }
-  ? U
-  : T extends { parseAsync: (input: unknown) => Promise<infer U> }
-  ? U
-  : T extends { validateSync: (input: unknown) => infer U }
-  ? U
-  : T extends { create: (input: unknown) => infer U }
-  ? U
-  : T extends { assert: (value: unknown) => asserts value is infer U }
-  ? U
-  : T extends (input: unknown) => infer U
-  ? U
-  : T extends SchemaValidator<infer U>
-  ? U
+  : T extends StandardSchemaV1
+  ? StandardSchemaV1.InferOutput<T>
   : never;
 
 /**

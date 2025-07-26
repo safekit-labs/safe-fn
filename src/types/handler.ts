@@ -84,6 +84,19 @@ export type SafeFnSignature<
   : (input: TInput, context?: Partial<TContext>) => Promise<TOutput> | TOutput;
 
 /**
+ * Function signature type that uses schema input types for the call signature
+ * This handles coerce schemas where input type differs from output type
+ */
+export type SafeFnSchemaSignature<
+  TSchema extends SchemaValidator<any>,
+  TOutput,
+  TContext extends Context,
+  TInputType extends InputType = 'none',
+> = TInputType extends 'single'
+  ? (input: InferSchemaInput<TSchema>, context?: Partial<TContext>) => Promise<TOutput>
+  : SafeFnSignature<InferSchemaOutput<TSchema>, TOutput, TContext, TInputType>;
+
+/**
  * Safe function handler type - conditionally uses args or input based on input type
  */
 export type SafeFnHandler<TInput, TOutput, TContext extends Context, TMetadata extends Metadata = Metadata> = TInput extends readonly any[]
@@ -91,4 +104,4 @@ export type SafeFnHandler<TInput, TOutput, TContext extends Context, TMetadata e
   : (input: HandlerInput<TInput, TContext, TMetadata>) => Promise<TOutput> | TOutput;
 
 // Import types needed for SafeFnSignature
-import type { SchemaValidator, InferTupleFromSchemas } from "./schema";
+import type { SchemaValidator, InferTupleFromSchemas, InferSchemaInput, InferSchemaOutput } from "./schema";

@@ -3,33 +3,21 @@ import { createClient } from "@/factory";
 import {
   zod3Schemas,
   zod4Schemas,
-  yupSchemas,
-  superstructSchemas,
   valibotSchemas,
   arktypeSchemas,
   effectSchemas,
-  runtypesSchemas,
   testData,
 } from "./schemas";
 
-// Test configuration for each validation library
-// Working libraries with full support
-const workingLibraries = [
+// Test configuration for each validation library  
+// StandardSchema V1 compatible libraries
+const libraries = [
   { name: "Zod v3", schemas: zod3Schemas },
   { name: "Zod v4", schemas: zod4Schemas },
-  { name: "Yup", schemas: yupSchemas },
   { name: "Valibot", schemas: valibotSchemas },
   { name: "ArkType", schemas: arktypeSchemas },
   { name: "Effect", schemas: effectSchemas },
 ];
-
-// Libraries that need conditional tests (no email validation)
-const conditionalLibraries = [
-  { name: "Superstruct", schemas: superstructSchemas },
-  { name: "Runtypes", schemas: runtypesSchemas },
-];
-
-const libraries = [...workingLibraries, ...conditionalLibraries];
 
 describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
   describe(`${name} Object Schemas`, () => {
@@ -50,8 +38,8 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
         .handler(async ({input}) => input);
 
       // Skip email validation test for libraries that don't support it
-      if (["Superstruct", "Scale", "Runtypes", "Effect"].includes(name)) {
-        // These libraries don't have email validation, so test passes with invalid email
+      if (["Effect"].includes(name)) {
+        // Effect doesn't have email validation, so test passes with invalid email
         const result = await fn(testData.invalidEmail);
         expect(result).toEqual(testData.invalidEmail);
       } else {
@@ -88,7 +76,7 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
         .handler(async ({ args }) => args);
 
       // Skip min length validation test for libraries that don't support it
-      if (["Scale", "Runtypes", "Effect"].includes(name)) {
+      if (["Effect"].includes(name)) {
         // These libraries don't have min length validation, so test passes with empty string
         const result = await fn(testData.emptyString);
         expect(result).toEqual([testData.emptyString]);

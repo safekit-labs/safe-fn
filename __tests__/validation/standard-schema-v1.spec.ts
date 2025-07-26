@@ -123,27 +123,4 @@ describe("Standard Schema Support", () => {
   // ========================================================================
   // COMPATIBILITY TESTS
   // ========================================================================
-
-  describe("Legacy Function Validator Compatibility", () => {
-    it("should work with both function validators and Standard Schema", async () => {
-      const client = createClient();
-
-      const legacyFn = client
-        .input((input: unknown) => {
-          if (typeof input !== "string") throw new Error("Expected string");
-          return input;
-        })
-        .handler(async ({ input }) => input.toUpperCase());
-
-      const standardFn = client
-        .input(stringSchema)
-        .handler(async ({ input }) => input.toLowerCase());
-
-      const legacyResult = await legacyFn("hello", {});
-      const standardResult = await standardFn("WORLD", {});
-
-      expect(legacyResult).toBe("HELLO");
-      expect(standardResult).toBe("world");
-    });
-  });
 });

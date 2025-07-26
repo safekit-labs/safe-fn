@@ -2,10 +2,10 @@
 // OUTPUT HANDLING AND VALIDATION UTILITIES
 // ========================================================================
 
-import { createParseFn } from "@/parser";
+import { createParseFn } from "@/validator";
 
 import type { SchemaValidator } from "@/types";
-import type { ParseFn } from "@/parser";
+import type { ParseFn } from "@/validator";
 
 // ========================================================================
 // OUTPUT VALIDATION UTILITIES

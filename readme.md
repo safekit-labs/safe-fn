@@ -13,7 +13,7 @@ A lightweight type-safe function builder with interceptors, schema validation, a
 
 - 🔒 **Type-Safe**: Full TypeScript support with automatic type inference and structural typing
 - 🔗 **Middleware**: Chainable middleware for cross-cutting concerns with proper context evolution
-- ✅ **Multi-Library Support**: Works with Zod, Yup, Valibot, ArkType, Effect Schema, Superstruct, Runtypes, and custom validators
+- ✅ **StandardSchema Support**: Works with StandardSchema V1 compatible validators including Zod, Valibot, ArkType, and Effect Schema
 - 🎨 **Context Management**: Type-safe context passing and binding with `.context<T>()` and `.withContext()`
 - 🚀 **Lightweight**: Zero runtime dependencies
 
@@ -414,20 +414,22 @@ const clientWithMiddleware = createClient().use(timingMiddleware).use(loggingMid
 
 ## Schema Support
 
-`safe-fn` provides comprehensive support for multiple validation libraries with automatic type inference. All libraries support both object and tuple schemas, with full TypeScript integration.
+`safe-fn` supports StandardSchema V1 compatible validation libraries with automatic type inference and perfect input/output type distinction. All supported libraries provide both object and tuple schemas with full TypeScript integration.
 
 ### Supported Validation Libraries
 
-- Zodv3
-- Zodv4
-- Yup
-- Valibot
-- ArkType
-- Effect Schema
-- Superstruct
-- Runtypes
+- **Zod v3/v4**: Native StandardSchema support
+- **Valibot**: Native StandardSchema support  
+- **ArkType**: StandardSchema compatible
+- **Effect Schema**: StandardSchema wrapper (`Schema.standardSchemaV1()`)
 
-For detailed examples of all supported validation libraries, see [examples/validation-libraries.ts](./examples/validation-libraries.ts).
+### Migration from Other Libraries
+
+For libraries that don't natively support StandardSchema V1 (like Yup, Superstruct, Runtypes), you can:
+1. Migrate to a supported library, or
+2. Create StandardSchema V1 wrappers for your existing schemas
+
+For detailed examples of supported validation libraries, see [examples/validation-libraries.ts](./examples/validation-libraries.ts).
 
 ## What’s _Not_ Included in `safe-fn`
 

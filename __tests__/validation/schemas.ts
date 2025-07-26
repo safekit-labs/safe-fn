@@ -1,11 +1,8 @@
 import { z as zod3 } from "zod/v3";
 import { z as zod4 } from "zod/v4";
-import * as yup from "yup";
-import * as st from "superstruct";
 import * as v from "valibot";
 import * as arktype from "arktype";
 import { Schema } from "effect";
-import * as T from "runtypes";
 import type { SchemaValidator } from "@/types";
 
 /**
@@ -97,47 +94,7 @@ export const zod4Schemas: TestSchemas = {
   },
 };
 
-// ------------------ YUP SCHEMAS ------------------
 
-export const yupSchemas: TestSchemas = {
-  objectSchemas: {
-    userSchema: yup.object({ name: yup.string().required(), age: yup.number().required() }),
-    emailSchema: yup.object({ email: yup.string().email().required() }),
-  },
-  argumentSchemas: {
-    stringNumberArray: [yup.string().required(), yup.number().required()],
-    emptyArray: [],
-    stringMinArray: [yup.string().min(1).required()],
-  },
-  outputSchemas: {
-    numberTransform: yup.object({ result: yup.number().required() }),
-  },
-  metadataSchemas: {
-    operationSchema: yup.object({ op: yup.string().required() }),
-    authSchema: yup.object({ op: yup.string().required(), auth: yup.boolean().required() }),
-  },
-};
-
-// ------------------ SUPERSTRUCT SCHEMAS ------------------
-
-export const superstructSchemas: TestSchemas = {
-  objectSchemas: {
-    userSchema: st.object({ name: st.string(), age: st.number() }),
-    emailSchema: st.object({ email: st.string() }), // Note: superstruct doesn't have built-in email validation
-  },
-  argumentSchemas: {
-    stringNumberArray: [st.string(), st.number()],
-    emptyArray: [],
-    stringMinArray: [st.size(st.string(), 1, Infinity)],
-  },
-  outputSchemas: {
-    numberTransform: st.object({ result: st.number() }),
-  },
-  metadataSchemas: {
-    operationSchema: st.object({ op: st.string() }),
-    authSchema: st.object({ op: st.string(), auth: st.boolean() }),
-  },
-};
 
 // ------------------ VALIBOT SCHEMAS ------------------
 
@@ -205,26 +162,6 @@ export const effectSchemas: TestSchemas = {
   },
 };
 
-// ------------------ RUNTYPES SCHEMAS ------------------
-
-export const runtypesSchemas: TestSchemas = {
-  objectSchemas: {
-    userSchema: T.Object({ name: T.String, age: T.Number }),
-    emailSchema: T.Object({ email: T.String }), // runtypes doesn't have built-in email validation
-  },
-  argumentSchemas: {
-    stringNumberArray: [T.String, T.Number],
-    emptyArray: [],
-    stringMinArray: [T.String], // runtypes doesn't have built-in min length
-  },
-  outputSchemas: {
-    numberTransform: T.Object({ result: T.Number }),
-  },
-  metadataSchemas: {
-    operationSchema: T.Object({ op: T.String }),
-    authSchema: T.Object({ op: T.String, auth: T.Boolean }),
-  },
-};
 
 // ------------------ TEST DATA ------------------
 
