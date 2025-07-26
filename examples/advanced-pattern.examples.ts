@@ -5,25 +5,28 @@
 import { z } from "zod";
 import { createClient } from "@/factory";
 
-// Create a SafeFn client with default context
-const client = createClient({
-  defaultContext: {
-    requestId: "default",
-    userId: undefined as string | undefined,
-  },
-});
+// Create a SafeFn client with middleware context
+const client = createClient()
+  .use(async ({ next }) => {
+    return next({ ctx: {
+      requestId: "default",
+      userId: undefined as string | undefined,
+    } });
+  });
 
 // Create a SafeFn client with metadata schema for advanced examples
 const advancedClient = createClient({
-  defaultContext: {
-    requestId: "default",
-    userId: undefined as string | undefined,
-    role: undefined as string | undefined,
-    permissions: undefined as string[] | undefined,
-    timestamp: undefined as string | undefined,
-  },
   metadataSchema: z.object({ operationName: z.string() }),
-});
+})
+  .use(async ({ next }) => {
+    return next({ ctx: {
+      requestId: "default",
+      userId: undefined as string | undefined,
+      role: undefined as string | undefined,
+      permissions: undefined as string[] | undefined,
+      timestamp: undefined as string | undefined,
+    } });
+  });
 
 // 1. With Metadata
 export const createUser = client
@@ -81,12 +84,10 @@ export const contextChainExample = advancedClient
     };
   });
 
-// 5. Context Building from Empty - Starting with no default context
+// 5. Context Building from Empty - Starting with no context
 // Note: TypeScript has limitations with complex context inference from inline middleware
 // For now, this example shows the structure but may require type assertions
-const emptyContextClient = createClient({
-  defaultContext: {} as Record<string, any>, // Start with flexible context
-});
+const emptyContextClient = createClient();
 
 export const contextBuildingExample = emptyContextClient
   .input(z.object({ username: z.string() }))

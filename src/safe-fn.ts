@@ -106,7 +106,6 @@ export function createSafeFn<
       // Copy client configuration if present
       (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
-      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
       (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
       (newSafeFn as any)._inputSchema = (safeFn as any)._inputSchema;
 
@@ -147,7 +146,6 @@ export function createSafeFn<
       const existingClientMiddlewares = (safeFn as any)._clientMiddlewares || [];
       (newSafeFn as any)._clientMiddlewares = [...existingClientMiddlewares, middleware];
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
-      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
       (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
 
       return newSafeFn;
@@ -176,7 +174,6 @@ export function createSafeFn<
       // Copy client configuration if present
       (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
-      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
       (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
 
       return newSafeFn as any;
@@ -201,7 +198,6 @@ export function createSafeFn<
       // Copy client configuration
       (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
-      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
       (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
       (newSafeFn as any)._contextValidator = (safeFn as any)._contextValidator;
 
@@ -253,7 +249,6 @@ export function createSafeFn<
       // Copy client configuration
       (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
-      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
       (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
       (newSafeFn as any)._contextValidator = (safeFn as any)._contextValidator;
 
@@ -281,7 +276,6 @@ export function createSafeFn<
       // Copy client configuration
       (newSafeFn as any)._clientMiddlewares = (safeFn as any)._clientMiddlewares;
       (newSafeFn as any)._clientErrorHandler = (safeFn as any)._clientErrorHandler;
-      (newSafeFn as any)._defaultContext = (safeFn as any)._defaultContext;
       (newSafeFn as any)._metadataValidator = (safeFn as any)._metadataValidator;
       (newSafeFn as any)._contextValidator = (safeFn as any)._contextValidator;
 
@@ -300,7 +294,6 @@ export function createSafeFn<
       }
 
       // For non-context functions, create the function implementation as before
-      const defaultContext = (safeFn as any)._defaultContext || {};
       const metadata = ((safeFn as any)._currentMetadata || currentMetadata || {}) as TMetadata;
 
       // Get meta validator from client if available - this should NOT affect input validation
@@ -319,7 +312,7 @@ export function createSafeFn<
         ? (...args: any[]) => {
             return executeArrayInputHandler({
               args,
-              defaultContext,
+              context: {},
               metadata,
               clientMiddlewares,
               inputValidator,
@@ -334,7 +327,6 @@ export function createSafeFn<
               return executeObjectInputHandler({
                 input,
                 context,
-                defaultContext,
                 metadata,
                 clientMiddlewares,
                 inputValidator,
@@ -345,11 +337,10 @@ export function createSafeFn<
               });
             }
           : () => {
-              // No input required - only use defaultContext
+              // No input required
               return executeObjectInputHandler({
                 input: undefined as any,
                 context: {},
-                defaultContext,
                 metadata,
                 clientMiddlewares,
                 inputValidator,
@@ -396,7 +387,6 @@ export function createSafeFn<
                 }
               }
 
-              const defaultContext = (safeFn as any)._defaultContext || {};
               const metadata = ((safeFn as any)._currentMetadata ||
                 currentMetadata ||
                 {}) as TMetadata;
@@ -414,7 +404,7 @@ export function createSafeFn<
 
               return executeArrayInputHandler({
                 args,
-                defaultContext: { ...defaultContext, ...validatedContext },
+                context: validatedContext,
                 metadata,
                 clientMiddlewares,
                 inputValidator,
@@ -444,8 +434,7 @@ export function createSafeFn<
                     }
                   }
 
-                  const defaultContext = (safeFn as any)._defaultContext || {};
-                  const metadata = ((safeFn as any)._currentMetadata ||
+                      const metadata = ((safeFn as any)._currentMetadata ||
                     currentMetadata ||
                     {}) as TMetadata;
                   const clientMiddlewares = (safeFn as any)._clientMiddlewares || [];
@@ -465,7 +454,6 @@ export function createSafeFn<
                   return executeObjectInputHandler({
                     input,
                     context: validatedContext,
-                    defaultContext: defaultContext,
                     metadata,
                     clientMiddlewares,
                     inputValidator,
@@ -488,8 +476,7 @@ export function createSafeFn<
                     }
                   }
 
-                  const defaultContext = (safeFn as any)._defaultContext || {};
-                  const metadata = ((safeFn as any)._currentMetadata ||
+                      const metadata = ((safeFn as any)._currentMetadata ||
                     currentMetadata ||
                     {}) as TMetadata;
                   const clientMiddlewares = (safeFn as any)._clientMiddlewares || [];
@@ -509,7 +496,6 @@ export function createSafeFn<
                   return executeObjectInputHandler({
                     input: undefined as any,
                     context: validatedContext,
-                    defaultContext: defaultContext,
                     metadata,
                     clientMiddlewares,
                     inputValidator,

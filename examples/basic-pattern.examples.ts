@@ -5,10 +5,11 @@
 import { z } from "zod";
 import { createClient } from "@/factory";
 
-// Create a SafeFn client with default context
-const client = createClient({
-  defaultContext: { userId: "anonymous" },
-});
+// Create a SafeFn client with middleware context
+const client = createClient()
+  .use(async ({ next }) => {
+    return next({ ctx: { userId: "anonymous" } });
+  });
 
 // 1. Single Object Pattern
 export const getUser = client
@@ -40,7 +41,7 @@ export const add = client
 // Usage examples
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function examples() {
-  // Object pattern usage (context comes from defaultContext)
+  // Object pattern usage (context comes from middleware)
   const user = await getUser({ id: "123" });
 
   // Multiple arguments pattern usage

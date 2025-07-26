@@ -11,29 +11,30 @@ import { z } from "zod";
 
 // ------------------ 1. BASIC CLIENT ------------------
 
-export const basicClient = createClient({
-  defaultContext: {},
-});
+export const basicClient = createClient();
 
-// ------------------ 2. WITH DEFAULT CONTEXT ------------------
+// ------------------ 2. WITH MIDDLEWARE CONTEXT ------------------
 
-export const clientWithDefaults = createClient({
-  defaultContext: {
-    requestId: "default",
-    version: "1.0.0",
-  },
-});
+export const clientWithDefaults = createClient()
+  .use(async ({ next }) => {
+    return next({ ctx: {
+      requestId: "default",
+      version: "1.0.0",
+    } });
+  });
 
 // ------------------ 3. WITH ERROR HANDLING ------------------
 
 export const clientWithErrorHandler = createClient({
-  defaultContext: { requestId: "default" },
   onError: ({ error, ctx }) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Request ${ctx.requestId || "unknown"} failed:`, errorMessage);
+    console.error(`Request ${(ctx as any).requestId || "unknown"} failed:`, errorMessage);
     // Send to monitoring service
   },
-});
+})
+  .use(async ({ next }) => {
+    return next({ ctx: { requestId: "default" } });
+  });
 
 // ------------------ 4. WITH METADATA SCHEMA ------------------
 
@@ -44,11 +45,13 @@ const operationMetaSchema = z.object({
 });
 
 export const clientWithMetadata = createClient({
-  defaultContext: {
-    userId: undefined as string | undefined,
-  },
   metadataSchema: operationMetaSchema,
-});
+})
+  .use(async ({ next }) => {
+    return next({ ctx: {
+      userId: undefined as string | undefined,
+    } });
+  });
 
 // ------------------ 5. FULL CONFIGURATION WITH CONTEXT INFERENCE ------------------
 
@@ -57,22 +60,20 @@ const appMetaSchema = z.object({
   requiresAuth: z.boolean().optional(),
 });
 
-// Context is inferred from defaultContext - no need for generics!
-export const fullConfigClient = createClient<{
-  userId: string | undefined;
-  requestId: string;
-  permissions: string[];
-}, typeof appMetaSchema>({
-  defaultContext: {
-    userId: undefined as string | undefined,
-    requestId: "default",
-    permissions: [] as string[],
-  },
+// Context is inferred from middleware - with type safety!
+export const fullConfigClient = createClient({
   metadataSchema: appMetaSchema,
   onError: ({ error, ctx }) => {
-    console.error(`Request ${ctx.requestId} failed:`, error.message);
+    console.error(`Request ${(ctx as any).requestId} failed:`, error.message);
   },
-});
+})
+  .use(async ({ next }) => {
+    return next({ ctx: {
+      userId: undefined as string | undefined,
+      requestId: "default",
+      permissions: [] as string[],
+    } });
+  });
 
 // ------------------ 6. USAGE EXAMPLES WITH MIDDLEWARE ------------------
 
@@ -88,14 +89,16 @@ export const exampleFunction = clientWithMetadata
 
 // Client for public API functions
 export const publicApiClient = createClient({
-  defaultContext: {
-    isPublic: true,
-    rateLimit: 1000,
-  },
   onError: ({ error }) => {
     console.error("Public API error:", error.message);
   },
-});
+})
+  .use(async ({ next }) => {
+    return next({ ctx: {
+      isPublic: true,
+      rateLimit: 1000,
+    } });
+  });
 
 // Admin metadata schema
 const adminMetaSchema = z.object({
@@ -104,21 +107,19 @@ const adminMetaSchema = z.object({
 });
 
 // Client for admin functions
-export const adminClient = createClient<{
-  userId: string | undefined;
-  role: "admin";
-  permissions: readonly ["read", "write", "delete"];
-}, typeof adminMetaSchema>({
-  defaultContext: {
-    userId: undefined as string | undefined,
-    role: "admin" as const,
-    permissions: ["read", "write", "delete"] as const,
-  },
+export const adminClient = createClient({
   metadataSchema: adminMetaSchema,
   onError: ({ error, ctx }) => {
-    console.error(`Admin operation failed for user ${ctx.userId}:`, error.message);
+    console.error(`Admin operation failed for user ${(ctx as any).userId}:`, error.message);
   },
-});
+})
+  .use(async ({ next }) => {
+    return next({ ctx: {
+      userId: undefined as string | undefined,
+      role: "admin" as const,
+      permissions: ["read", "write", "delete"] as const,
+    } });
+  });
 
 // Example usage with different clients
 export const publicFunction = publicApiClient

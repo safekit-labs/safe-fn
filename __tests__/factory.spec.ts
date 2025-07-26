@@ -8,38 +8,37 @@ import { createClient } from "@/factory";
 
 describe("Factory Configuration", () => {
   // ========================================================================
-  // DEFAULT CONTEXT TESTS
+  // MIDDLEWARE CONTEXT TESTS
   // ========================================================================
 
-  describe("defaultContext", () => {
-    it("should use provided defaultContext in handlers", async () => {
-      const client = createClient({
-        defaultContext: { userId: "test-user", role: "admin" },
-      });
+  describe("middleware context", () => {
+    it("should use context provided by middleware in handlers", async () => {
+      const client = createClient();
 
-      const fn = client.handler(async ({ ctx }) => ctx);
+      const fn = client
+        .use(async ({ next }) => next({ ctx: { userId: "test-user", role: "admin" } }))
+        .handler(async ({ ctx }) => ctx);
       const result = await fn();
 
       expect(result).toEqual({ userId: "test-user", role: "admin" });
     });
 
-    it("should use only defaultContext when no input is defined", async () => {
-      const client = createClient({
-        defaultContext: { userId: "default", role: "user" },
-      });
+    it("should use middleware context when no input is defined", async () => {
+      const client = createClient();
 
-      const fn = client.handler(async ({ ctx }) => ctx);
+      const fn = client
+        .use(async ({ next }) => next({ ctx: { userId: "default", role: "user" } }))
+        .handler(async ({ ctx }) => ctx);
       const result = await fn();
 
       expect(result).toEqual({ userId: "default", role: "user" });
     });
 
-    it("should use defaultContext when input is defined", async () => {
-      const client = createClient({
-        defaultContext: { userId: "default", role: "user" },
-      });
+    it("should use middleware context when input is defined", async () => {
+      const client = createClient();
 
       const fn = client
+        .use(async ({ next }) => next({ ctx: { userId: "default", role: "user" } }))
         .input(z.object({ data: z.string() }))
         .handler(async ({ input, ctx }) => ({ data: input.data, ...ctx }));
 
@@ -48,7 +47,7 @@ describe("Factory Configuration", () => {
       expect(result).toEqual({ data: "test", userId: "default", role: "user" });
     });
 
-    it("should work without defaultContext", async () => {
+    it("should work without any middleware context", async () => {
       const client = createClient();
 
       const fn = client.handler(async ({ ctx }) => ctx);
@@ -92,13 +91,14 @@ describe("Factory Configuration", () => {
     it("should call onError when handler throws", async () => {
       const errorHandler = vi.fn();
       const client = createClient({
-        defaultContext: { userId: "test" },
         onError: errorHandler,
       });
 
-      const fn = client.handler(async () => {
-        throw new Error("test error");
-      });
+      const fn = client
+        .use(async ({ next }) => next({ ctx: { userId: "test" } }))
+        .handler(async () => {
+          throw new Error("test error");
+        });
 
       await expect(fn()).rejects.toThrow("test error");
       expect(errorHandler).toHaveBeenCalledWith(
@@ -112,16 +112,17 @@ describe("Factory Configuration", () => {
       );
     });
 
-    it("should call onError with merged context", async () => {
+    it("should call onError with middleware context", async () => {
       const errorHandler = vi.fn();
       const client = createClient({
-        defaultContext: { userId: "default" },
         onError: errorHandler,
       });
 
-      const fn = client.handler(async () => {
-        throw new Error("test error");
-      });
+      const fn = client
+        .use(async ({ next }) => next({ ctx: { userId: "default" } }))
+        .handler(async () => {
+          throw new Error("test error");
+        });
 
       await expect(fn()).rejects.toThrow();
       expect(errorHandler).toHaveBeenCalledWith(
@@ -176,7 +177,7 @@ describe("Type Checking", () => {
       type Metadata = z.infer<typeof metadataSchema>;
 
       // This should work with the new overload
-      const client = createClient<{}, Metadata>({
+      const client = createClient<Metadata>({
         metadataSchema,
       });
 
@@ -194,15 +195,17 @@ describe("Type Checking", () => {
       const metadataSchema = z.object({ action: z.string() });
       type Metadata = z.infer<typeof metadataSchema>;
 
-      const client = createClient<Context, Metadata>({
-        defaultContext: { userId: "test", role: "admin" },
+      const client = createClient<Metadata>({
         metadataSchema,
       });
 
-      const fn = client.metadata({ action: "create" }).handler(async ({ ctx }) => ({
-        user: ctx.userId,
-        role: ctx.role,
-      }));
+      const fn = client
+        .use(async ({ next }) => next({ ctx: { userId: "test", role: "admin" } }))
+        .metadata({ action: "create" })
+        .handler(async ({ ctx }) => ({
+          user: ctx.userId,
+          role: ctx.role,
+        }));
 
       const result = await fn();
       expect(result).toEqual({ user: "test", role: "admin" });
@@ -264,11 +267,10 @@ describe("Type Checking", () => {
 describe("Factory Integration", () => {
   describe("input and output validation", () => {
     it("should work with input validation", async () => {
-      const client = createClient({
-        defaultContext: { service: "test" },
-      });
+      const client = createClient();
 
       const fn = client
+        .use(async ({ next }) => next({ ctx: { service: "test" } }))
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => ({
           greeting: `Hello ${input.name}`,
@@ -280,11 +282,10 @@ describe("Factory Integration", () => {
     });
 
     it("should work with output validation", async () => {
-      const client = createClient({
-        defaultContext: { env: "test" },
-      });
+      const client = createClient();
 
       const fn = client
+        .use(async ({ next }) => next({ ctx: { env: "test" } }))
         .output(z.object({ result: z.string() }))
         .handler(async ({ ctx }) => ({ result: `Environment: ${ctx.env}` }));
 
@@ -293,11 +294,10 @@ describe("Factory Integration", () => {
     });
 
     it("should work with both input and output validation", async () => {
-      const client = createClient({
-        defaultContext: { multiplier: 2 },
-      });
+      const client = createClient();
 
       const fn = client
+        .use(async ({ next }) => next({ ctx: { multiplier: 2 } }))
         .input(z.object({ value: z.number() }))
         .output(z.object({ doubled: z.number() }))
         .handler(async ({ input, ctx }) => ({
@@ -311,11 +311,10 @@ describe("Factory Integration", () => {
 
   describe("middleware support", () => {
     it("should support basic middleware", async () => {
-      const client = createClient({
-        defaultContext: { userId: "default-user" },
-      });
+      const client = createClient();
 
       const fn = client
+        .use(async ({ next }) => next({ ctx: { userId: "default-user" } }))
         .use(async ({ next }) => {
           return next();
         })

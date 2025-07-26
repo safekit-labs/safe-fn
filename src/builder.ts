@@ -28,16 +28,13 @@ class SafeFnBuilderImpl<TBaseContext extends Context, TMetadata extends Metadata
   implements SafeFnBuilder<TBaseContext, TMetadata>
 {
   // Use readonly public properties instead of private to allow exports
-  readonly defaultContext?: TBaseContext;
   readonly metadataValidator?: ParseFn<TMetadata>;
   readonly middlewares: Middleware<any, any, TMetadata>[];
 
   constructor(options?: {
-    defaultContext?: TBaseContext;
     metadataValidator?: ParseFn<TMetadata>;
     middlewares?: Middleware<any, any, TMetadata>[];
   }) {
-    this.defaultContext = options?.defaultContext;
     this.metadataValidator = options?.metadataValidator;
     this.middlewares = options?.middlewares || [];
   }
@@ -48,17 +45,13 @@ class SafeFnBuilderImpl<TBaseContext extends Context, TMetadata extends Metadata
     // We create a NEW Builder whose generic is the NEW context type.
     // This is how the type information is preserved and chained.
     return new SafeFnBuilderImpl<Prettify<TBaseContext & TNextCtx>, TMetadata>({
-      defaultContext: this.defaultContext as Prettify<TBaseContext & TNextCtx>,
       metadataValidator: this.metadataValidator,
       middlewares: [...this.middlewares, middleware],
     });
   }
 
-  context<TNewBaseContext extends Context = TBaseContext>(
-    defaultContext?: TNewBaseContext,
-  ): SafeFnBuilder<TNewBaseContext, TMetadata> {
+  context<TNewBaseContext extends Context = TBaseContext>(): SafeFnBuilder<TNewBaseContext, TMetadata> {
     return new SafeFnBuilderImpl<TNewBaseContext, TMetadata>({
-      defaultContext,
       metadataValidator: this.metadataValidator,
       middlewares: this.middlewares,
     });
@@ -69,7 +62,6 @@ class SafeFnBuilderImpl<TBaseContext extends Context, TMetadata extends Metadata
   ): SafeFnBuilder<TBaseContext, TNewMetadata> {
     const newMetadataValidator = schema ? createParseFn(schema) : undefined;
     return new SafeFnBuilderImpl<TBaseContext, TNewMetadata>({
-      defaultContext: this.defaultContext,
       metadataValidator: newMetadataValidator,
       middlewares: this.middlewares as unknown as Middleware<any, any, TNewMetadata>[],
     });
@@ -86,7 +78,6 @@ class SafeFnBuilderImpl<TBaseContext extends Context, TMetadata extends Metadata
 
     // Store the builder configuration for use in the SafeFn client
     (safeFn as any)._clientMiddlewares = this.middlewares;
-    (safeFn as any)._defaultContext = this.defaultContext;
     (safeFn as any)._metadataValidator = this.metadataValidator;
 
     return safeFn;

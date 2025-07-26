@@ -31,7 +31,6 @@ const authMiddleware = async ({ next, ctx }: any) => {
 };
 
 const safeFn = createClient({
-  defaultContext: { userId: "user123", role: "admin" },
   onError: ({ error, ctx, metadata, rawInput, rawArgs, valid }) => {
     console.log({ error, ctx, metadata, rawInput, rawArgs, valid }, "onError");
 
@@ -46,6 +45,9 @@ const safeFn = createClient({
     // Let other errors pass through
   },
 })
+  .use(async ({ next }) => {
+    return next({ ctx: { userId: "user123", role: "admin" } });
+  })
   .use(authMiddleware)
   .metadata({ operation: "demo", version: "1.0" })
   .input(
@@ -99,11 +101,13 @@ export async function test2() {
 // ========================================================================
 
 const safeFn3 = createClient({
-  defaultContext: { userId: "user123", role: "admin" },
   onError: ({ error }) => {
     throw new CustomTestError(error.message, "ERR_HANDLER_001");
   },
 })
+  .use(async ({ next }) => {
+    return next({ ctx: { userId: "user123", role: "admin" } });
+  })
   .use(authMiddleware)
   .input(z.object({ action: z.string() }))
   .handler(async () => {

@@ -237,12 +237,10 @@ export const typeSafetyExample = createClient()
  * Example 5: Middleware that doesn't modify context
  * Shows that middleware can be used for side effects without changing context
  */
-export const sideEffectMiddlewareExample = createClient({
-  defaultContext: { service: "example-api" },
-})
+export const sideEffectMiddlewareExample = createClient()
   .use(async ({ next }) => {
-    // Add some initial context
-    return next({ ctx: { startTime: Date.now() } });
+    // Add initial context including service and timing
+    return next({ ctx: { service: "example-api", startTime: Date.now() } });
   })
   .use(async ({ ctx, next }) => {
     // Logging middleware - doesn't modify context

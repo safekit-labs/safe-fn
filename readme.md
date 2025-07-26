@@ -53,25 +53,29 @@ export const createUser = client
 
 ## Client Configuration
 
-Clients are created with `createClient()` and support three main configuration options:
+Clients are created with `createClient()` and support two main configuration options:
 
-- `defaultContext` - default context for all functions
 - `metadataSchema` - schema for metadata
 - `onError` - error handler
+
+Context is provided through middleware for maximum flexibility:
 
 ```typescript
 import { z } from "zod";
 
 import { createClient } from "@safekit/safe-fn";
 
-// 1. Create client
+// 1. Create client with configuration
 const client = createClient({
-  defaultContext: { logger: console },
   metadataSchema: z.object({ traceId: z.string() }),
   onError: ({ error, ctx }) => {
-    ctx.logger.error(`Error: ${error.message}`);
+    (ctx as any).logger?.error(`Error: ${error.message}`);
     // Return void to let error pass through
   },
+})
+// 2. Add context through middleware
+.use(async ({ next }) => {
+  return next({ ctx: { logger: console } });
 });
 ```
 
@@ -84,16 +88,15 @@ import { z } from "zod";
 import { createClient } from "@safekit/safe-fn";
 
 // Base client with logging
-const publicClient = createClient({
-  defaultContext: {
-    logger: console,
-    db: any,
-  },
-})
+const publicClient = createClient()
+  .use(async ({ next }) => {
+    // Base context middleware
+    return next({ ctx: { logger: console } });
+  })
   .use(async ({ ctx, metadata, next }) => {
-    // Context middleware
+    // Database middleware
     const db = getDbConnection();
-    return next({ ctx: { ...ctx, db } });
+    return next({ ctx: { db } });
   })
   .use(async ({ ctx, metadata, next }) => {
     // Logger middleware
@@ -168,10 +171,9 @@ Safe-fn provides flexible error handling through the `onError` handler configure
 
 ```typescript
 const client = createClient({
-  defaultContext: { userId: "user123", service: "api" },
   onError: ({ error, ctx, metadata, rawInput, valid }) => {
     // Log error with full context
-    console.error(`[${ctx.service}] Error for user ${ctx.userId}:`, error.message);
+    console.error(`[${(ctx as any).service}] Error for user ${(ctx as any).userId}:`, error.message);
     console.log("Metadata:", metadata);
     console.log("Raw input:", rawInput);
 
@@ -185,72 +187,53 @@ const client = createClient({
 
     // Return void to let error pass through (default behavior)
   },
+})
+.use(async ({ next }) => {
+  // Provide context through middleware
+  return next({ ctx: { userId: "user123", service: "api" } });
 });
 ```
 
-### Error Recovery
+### Advanced Error Handling
 
-The `onError` handler can recover from errors by returning a success object:
-
-```typescript
-const client = createClient({
-  onError: ({ error, ctx, rawInput }) => {
-    if (error.message.includes("recoverable")) {
-      // Recover from the error
-      return {
-        success: true,
-        data: `Recovered: ${error.message} for input ${JSON.stringify(rawInput)}`,
-      };
-    }
-    // Let other errors pass through
-  },
-});
-```
-
-### Error Transformation
-
-Transform errors by returning a new Error object:
+The `onError` handler supports error recovery, transformation, and comprehensive logging:
 
 ```typescript
 const client = createClient({
-  defaultContext: { service: "payment" },
-  onError: ({ error, ctx, metadata }) => {
-    // Add service context to error
-    return new Error(`[${ctx.service}] ${error.message} (${metadata.operation || "unknown"})`);
-  },
-});
-```
-
-### Context and Metadata Access
-
-The error handler receives the complete context including middleware modifications:
-
-```typescript
-const authMiddleware = async ({ next, ctx }) => {
-  return next({ ctx: { ...ctx, authTime: new Date().toISOString() } });
-};
-
-const client = createClient({
-  defaultContext: { userId: "user123" },
   onError: ({ error, ctx, metadata, rawInput, valid }) => {
-    // ctx includes:
-    // - Default context: { userId: "user123" }
-    // - Additional context passed to function
-    // - Middleware context: { authTime: "..." }
-    console.log("Full context:", ctx);
-    console.log("Metadata:", metadata);
-    console.log("Raw input:", rawInput);
-
-    // Access validation helpers
+    // Log error with full context
+    console.error(`[${(ctx as any).service}] Error for user ${(ctx as any).userId}:`, error.message);
+    
+    // Access validated input if available
     try {
       const validInput = valid("input");
       console.log("Validated input:", validInput);
     } catch {
-      console.log("No validation schema");
+      console.log("Raw input:", rawInput);
     }
+
+    // Error recovery for specific cases
+    if (error.message.includes("recoverable")) {
+      return {
+        success: true,
+        data: `Recovered: ${error.message}`,
+      };
+    }
+
+    // Error transformation
+    if (error.message.includes("payment")) {
+      return new Error(`[PAYMENT_ERROR] ${error.message} (${metadata.operation || "unknown"})`);
+    }
+
+    // Let other errors pass through
   },
-}).use(authMiddleware);
+})
+.use(async ({ next }) => {
+  // Provide context through middleware
+  return next({ ctx: { userId: "user123", service: "api" } });
+});
 ```
+
 
 ### Return Types
 
@@ -267,14 +250,7 @@ See [examples/error.examples.ts](./examples/error.examples.ts) for a complete wo
 
 ### createClient(config?)
 
-```typescript
-const client = createClient({
-  defaultContext: { requestId: "default" },
-  onError: ({ error, ctx }) => {
-    console.error(`[${ctx.requestId}] Error:`, error.message);
-  },
-});
-```
+Creates a new SafeFn client with optional configuration. See the Client Configuration section above for detailed examples.
 
 ### Client Methods
 

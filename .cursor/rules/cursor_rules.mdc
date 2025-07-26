@@ -1,9 +1,0 @@
----
-description:
-globs:
-alwaysApply: true
----
-# Cursor Rules
-
-- When running tests, make sure to use the `--run` flag so it finishes executing after all tests are run
-  - For example, `bun run test <name_of_file> --run`

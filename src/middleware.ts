@@ -108,8 +108,8 @@ export async function executeMiddlewareChain<
       (): Promise<MiddlewareResult<unknown, any>>;
       <NC extends Context>(opts: { ctx: NC }): Promise<MiddlewareResult<unknown, any>>;
     } = async (params?: { ctx?: any }): Promise<MiddlewareResult<unknown, any>> => {
-      // Merge provided context with current context (similar to next-safe-action's deepmerge)
-      currentContext = params?.ctx ? { ...currentContext, ...params.ctx } : currentContext;
+      // Merge provided context with current context (current context takes precedence over middleware)
+      currentContext = params?.ctx ? { ...params.ctx, ...currentContext } : currentContext;
       await executeMiddlewareStack(idx + 1);
       return middlewareResult; // Always return the same middlewareResult object
     };

@@ -46,9 +46,7 @@ export interface SafeFnBuilder<TBaseContext extends Context, TMetadata extends M
   use<TNextCtx extends Context>(
     middleware: MiddlewareFn<TMetadata, TBaseContext, TBaseContext & TNextCtx>,
   ): SafeFnBuilder<Prettify<TBaseContext & TNextCtx>, TMetadata>;
-  context<TNewBaseContext extends Context = TBaseContext>(
-    defaultContext?: TNewBaseContext,
-  ): SafeFnBuilder<TNewBaseContext, TMetadata>;
+  context<TNewBaseContext extends Context = TBaseContext>(): SafeFnBuilder<TNewBaseContext, TMetadata>;
   metadataSchema<TNewMetadata extends Metadata = TMetadata>(
     schema?: SchemaValidator<TNewMetadata>,
   ): SafeFnBuilder<TBaseContext, TNewMetadata>;
@@ -62,7 +60,7 @@ export interface SafeFnBuilder<TBaseContext extends Context, TMetadata extends M
 
 /**
  * Base SafeFn interface with common methods
- * @template TBaseContext - Base context from factory (defaultContext)
+ * @template TBaseContext - Base context from middleware
  * @template TInputContext - Input context defined via .context<T>() and passed to .withContext()
  * @template TInput - Input type (from .input() or .args())
  * @template TOutput - Output type (from .output())

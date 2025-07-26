@@ -9,12 +9,11 @@ import { createClient } from "@/factory";
 describe("Middleware Support", () => {
   describe("basic middleware usage", () => {
     it("should support .use() chaining", async () => {
-      const client = createClient({
-        defaultContext: { userId: "test" },
-      });
+      const client = createClient();
 
       // Test that .use() doesn't break the chain
       const fn = client
+        .use(async ({ next }) => next({ ctx: { userId: "test" } }))
         .use(async ({ next }) => next())
         .handler(async ({ ctx }) => `Hello ${ctx.userId}`);
 
@@ -23,13 +22,11 @@ describe("Middleware Support", () => {
     });
 
     it("should support multiple .use() calls", async () => {
-      const client = createClient({
-        defaultContext: { service: "api" },
-      });
+      const client = createClient();
 
       // Test that multiple .use() calls work
       const fn = client
-        .use(async ({ next }) => next())
+        .use(async ({ next }) => next({ ctx: { service: "api" } }))
         .use(async ({ next }) => next())
         .use(async ({ next }) => next())
         .handler(async ({ ctx }) => `Service: ${ctx.service}`);
@@ -39,12 +36,10 @@ describe("Middleware Support", () => {
     });
 
     it("should work with middleware and input validation", async () => {
-      const client = createClient({
-        defaultContext: { prefix: "Mr." },
-      });
+      const client = createClient();
 
       const fn = client
-        .use(async ({ next }) => next())
+        .use(async ({ next }) => next({ ctx: { prefix: "Mr." } }))
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => `${ctx.prefix} ${input.name}`);
 
@@ -66,13 +61,11 @@ describe("Middleware Support", () => {
   });
 
   describe("middleware with context", () => {
-    it("should provide context from factory to middleware and handlers", async () => {
-      const client = createClient({
-        defaultContext: { apiKey: "secret", version: "v1" },
-      });
+    it("should provide context from middleware to handlers", async () => {
+      const client = createClient();
 
       const fn = client
-        .use(async ({ next }) => next())
+        .use(async ({ next }) => next({ ctx: { apiKey: "secret", version: "v1" } }))
         .handler(async ({ ctx }) => ({
           authenticated: !!ctx.apiKey,
           version: ctx.version,
@@ -82,13 +75,12 @@ describe("Middleware Support", () => {
       expect(result).toEqual({ authenticated: true, version: "v1" });
     });
 
-    it("should merge runtime context properly", async () => {
-      const client = createClient({
-        defaultContext: { service: "auth", env: "prod" },
-      });
+    it("should merge context from multiple middleware", async () => {
+      const client = createClient();
 
       const fn = client
-        .use(async ({ next }) => next())
+        .use(async ({ next }) => next({ ctx: { service: "auth" } }))
+        .use(async ({ next }) => next({ ctx: { env: "prod" } }))
         .handler(async ({ ctx }) => ({
           service: ctx.service,
           env: ctx.env,
@@ -407,12 +399,11 @@ describe("Middleware Integration", () => {
   describe("full feature integration", () => {
     it("should work with all features combined", async () => {
       const client = createClient({
-        defaultContext: { service: "user-service", version: "1.0" },
         metadataSchema: z.object({ operation: z.string(), userId: z.string() }),
       });
 
       const fn = client
-        .use(async ({ next }) => next())
+        .use(async ({ next }) => next({ ctx: { service: "user-service", version: "1.0" } }))
         .use(async ({ next }) => next())
         .metadata({ operation: "create-user", userId: "admin" })
         .input(z.object({ name: z.string(), email: z.string() }))
@@ -434,13 +425,11 @@ describe("Middleware Integration", () => {
       expect(result.id).toMatch(/^user-service-\d+$/);
     });
 
-    it("should work with factory config and runtime overrides", async () => {
-      const client = createClient({
-        defaultContext: { env: "dev", debug: true },
-      });
+    it("should work with middleware config and runtime overrides", async () => {
+      const client = createClient();
 
       const fn = client
-        .use(async ({ next }) => next())
+        .use(async ({ next }) => next({ ctx: { env: "dev", debug: true } }))
         .input<{ data?: any }>()
         .handler(async ({ ctx }) => ({
           environment: ctx.env,
@@ -494,12 +483,10 @@ describe("Middleware Integration", () => {
     });
 
     it("should handle complex chaining scenarios", async () => {
-      const client = createClient({
-        defaultContext: { base: "value" },
-      });
+      const client = createClient();
 
       const fn = client
-        .use(async ({ next }) => next())
+        .use(async ({ next }) => next({ ctx: { base: "value" } }))
         .metadata({ step: 1 })
         .use(async ({ next }) => next())
         .input(z.object({ data: z.string() }))

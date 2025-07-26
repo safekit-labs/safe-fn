@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-07-26
+
+### BREAKING CHANGES
+- **Removed defaultContext**: The `defaultContext` configuration option has been removed from `createClient()`. Use middleware instead for context injection.
+
+### Changed
+- **Context Management**: Context is now provided exclusively through middleware using `.use()` for more consistent and flexible patterns
+- **API Simplification**: `createClient()` now only accepts `metadataSchema` and `onError` configuration options
+- **Type System**: Simplified type parameters by removing defaultContext-related generics
+
+### Migration Guide
+Replace `defaultContext` with middleware:
+
+**Before:**
+```typescript
+const client = createClient({
+  defaultContext: { userId: "anonymous", logger: console }
+});
+```
+
+**After:**
+```typescript
+const client = createClient()
+  .use(async ({ next }) => {
+    return next({ ctx: { userId: "anonymous", logger: console } });
+  });
+```
+
+### Documentation
+- Updated README.md to show middleware-based context patterns
+- Removed all defaultContext examples and replaced with middleware examples
+- Updated API reference to reflect new configuration options
+
 ## [0.4.1] - 2025-07-26
 - refactor: Changed from createSafeFnClient to createClient
 

@@ -70,7 +70,7 @@ export interface ArrayInputHandlerOptions<
   TMetadata extends Metadata,
 > {
   args: any[];
-  defaultContext: TWorkingContext;
+  context?: Partial<TWorkingContext>;
   metadata: TMetadata;
   clientMiddlewares: MiddlewareFn<TMetadata, any, any>[];
   inputValidator: ParseFn<any> | undefined;
@@ -91,7 +91,6 @@ export interface ObjectInputHandlerOptions<
 > {
   input: THandlerInput;
   context: Partial<TWorkingContext>;
-  defaultContext: TWorkingContext;
   metadata: TMetadata;
   clientMiddlewares: MiddlewareFn<TMetadata, any, any>[];
   inputValidator: ParseFn<any> | undefined;
@@ -148,7 +147,7 @@ export async function executeArrayInputHandler<
 >(options: ArrayInputHandlerOptions<THandlerOutput, TWorkingContext, TMetadata>): Promise<THandlerOutput> {
   const {
     args,
-    defaultContext,
+    context,
     metadata,
     clientMiddlewares,
     inputValidator,
@@ -158,7 +157,7 @@ export async function executeArrayInputHandler<
     errorHandlerFn,
   } = options;
 
-  const fullContext = { ...defaultContext } as TWorkingContext;
+  const fullContext = { ...context } as TWorkingContext;
 
   try {
     // Combine client and function middlewares
@@ -224,7 +223,6 @@ export async function executeObjectInputHandler<
   const {
     input,
     context,
-    defaultContext,
     metadata,
     clientMiddlewares,
     inputValidator,
@@ -234,7 +232,7 @@ export async function executeObjectInputHandler<
     errorHandlerFn,
   } = options;
 
-  const fullContext = { ...defaultContext, ...context } as TWorkingContext;
+  const fullContext = { ...context } as TWorkingContext;
 
   try {
     // Combine client and function middlewares

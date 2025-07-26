@@ -101,13 +101,13 @@ describe("Error Handling", () => {
 
   it("should pass correct context and metadata to onError", async () => {
     const onError = vi.fn();
-    const defaultContext = { userId: "test-user", role: "admin" };
+    const contextData = { userId: "test-user", role: "admin" };
     const metadata = { operation: "test", version: "1.0" };
 
     const safeFn = createClient({
-      onError,
-      defaultContext
+      onError
     })
+      .use(async ({ next }) => next({ ctx: contextData }))
       .metadata(metadata)
       .input(z.object({ name: z.string() }))
       .handler(async () => {
