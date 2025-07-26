@@ -28,25 +28,29 @@ export type InputSchemaArray<TArgs extends readonly any[]> = {
   [K in keyof TArgs]: SchemaValidator<TArgs[K]> | null;
 };
 
+// ========================================================================
+// TYPE UTILITIES (following better-call pattern)
+// ========================================================================
+
 /**
  * Utility type to infer the input type of a schema validator
- * Uses StandardSchema V1's InferInput for proper type inference
+ * Following better-call pattern from router implementation
  */
-export type InferSchemaInput<T> = T extends null
+export type InferSchemaInput<T> = T extends StandardSchemaV1 
+  ? StandardSchemaV1.InferInput<T> 
+  : T extends null
   ? unknown // null markers produce unknown type
-  : T extends StandardSchemaV1
-  ? StandardSchemaV1.InferInput<T>
-  : never;
+  : unknown;
 
 /**
  * Utility type to infer the output type of a schema validator
- * Uses StandardSchema V1's InferOutput for proper type inference
+ * Following better-call pattern from router implementation
  */
-export type InferSchemaOutput<T> = T extends null
+export type InferSchemaOutput<T> = T extends StandardSchemaV1 
+  ? StandardSchemaV1.InferOutput<T> 
+  : T extends null
   ? unknown // null markers produce unknown type
-  : T extends StandardSchemaV1
-  ? StandardSchemaV1.InferOutput<T>
-  : never;
+  : unknown;
 
 /**
  * Utility type to convert array of schema validators to tuple of their output types

@@ -1,7 +1,7 @@
 # @safekit/safe-fn
 
 ⚠️ **EXPERIMENTAL ALPHA VERSION** ⚠️
-This package is in active development and **not ready for production use**. Expect breaking changes between versions.
+This package is an experimental package in active development and **not ready for production use**. Expect breaking changes between versions.
 
 A lightweight type-safe function builder with interceptors, schema validation, and context management for TypeScript applications.
 
@@ -203,7 +203,7 @@ const client = createClient({
   onError: ({ error, ctx, metadata, rawInput, valid }) => {
     // Log error with full context
     console.error(`[${(ctx as any).service}] Error for user ${(ctx as any).userId}:`, error.message);
-    
+
     // Access validated input if available
     try {
       const validInput = valid("input");
@@ -419,7 +419,7 @@ const clientWithMiddleware = createClient().use(timingMiddleware).use(loggingMid
 ### Supported Validation Libraries
 
 - **Zod v3/v4**: Native StandardSchema support
-- **Valibot**: Native StandardSchema support  
+- **Valibot**: Native StandardSchema support
 - **ArkType**: StandardSchema compatible
 - **Effect Schema**: StandardSchema wrapper (`Schema.standardSchemaV1()`)
 

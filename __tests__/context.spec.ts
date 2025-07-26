@@ -118,7 +118,7 @@ describe("Context API", () => {
         });
 
       const result = await contextFunction
-        .withContext!(authContext)
+        .withContext(authContext)
         .execute({ name: "John" });
 
       expect(result).toEqual({
@@ -192,8 +192,8 @@ describe("Context API", () => {
       const adminContext = { userId: "admin", role: "admin" as const };
       const userContext = { userId: "user", role: "user" as const };
 
-      const adminHandler = contextFunction.withContext!(adminContext);
-      const userHandler = contextFunction.withContext!(userContext);
+      const adminHandler = contextFunction.withContext(adminContext);
+      const userHandler = contextFunction.withContext(userContext);
 
       const adminResult = await adminHandler({ name: "Admin" });
       const userResult = await userHandler({ name: "User" });
@@ -224,7 +224,7 @@ describe("Context API", () => {
       // Invalid context should throw
       const invalidContext = { userId: 123, role: "invalid" };
       await expect(
-        contextFunction.withContext!(invalidContext as any).execute({ message: "test" })
+        contextFunction.withContext(invalidContext as any).execute({ message: "test" })
       ).rejects.toThrow();
     });
 

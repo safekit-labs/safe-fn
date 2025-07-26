@@ -1,5 +1,5 @@
 // ========================================================================
-// STANDARDSCHEMA V1 VALIDATION UTILITIES
+// STANDARD SCHEMA V1 VALIDATION
 // ========================================================================
 
 import { StandardSchemaV1Error } from "@/standard-schema";
@@ -12,10 +12,6 @@ import type { SchemaValidator } from "@/types";
 // ========================================================================
 
 export type ParseFn<TType> = (value: unknown) => TType;
-
-// ========================================================================
-// STANDARD SCHEMA VALIDATION
-// ========================================================================
 
 /**
  * Validates input using Standard Schema specification directly
@@ -42,12 +38,12 @@ export function standardValidate<T extends StandardSchemaV1>(
 }
 
 // ========================================================================
-// MAIN VALIDATOR FUNCTION
+// SIMPLIFIED PARSE FUNCTION FACTORY
 // ========================================================================
 
 /**
  * Creates a parser function that supports StandardSchema V1 compatible validators
- * Simplified from multi-library support to StandardSchema-only approach
+ * Simplified to follow router pattern - just wraps standardValidate
  */
 export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
   // Handle null marker - skip validation and return input as-is
@@ -55,19 +51,8 @@ export function createParseFn<T>(schema: SchemaValidator<T>): ParseFn<T> {
     return (value: unknown) => value as T;
   }
 
-  const parser = schema as any;
-  const isStandardSchema = "~standard" in parser;
-
-  // StandardSchema V1 - the only supported validation pattern
-  if (isStandardSchema) {
-    return (value: unknown) => {
-      return standardValidate(parser, value);
-    };
-  }
-
-  // All other validators must implement StandardSchema V1 interface
-  throw new Error(
-    "Only StandardSchema V1 compatible validators are supported. " +
-    "Please ensure your validator implements the StandardSchema V1 interface with a '~standard' property."
-  );
+  // For StandardSchema V1 compatible validators, use standardValidate directly
+  return (value: unknown) => {
+    return standardValidate(schema as StandardSchemaV1, value) as T;
+  };
 }

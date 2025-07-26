@@ -68,9 +68,6 @@ export type MiddlewareFn<
   valid: ValidateFunction;
 }) => Promise<MiddlewareResult<unknown, TNextCtx>>;
 
-/**
- * @deprecated Use MiddlewareFn instead - keeping for backward compatibility
- */
 export type Middleware<
   TCurrentContext extends Context = Context,
   TNewContext extends Context = Context,
