@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSafeFnClient } from "../src";
+import { createClient } from "../src";
 
 describe("Context API", () => {
   // Test types and schemas
@@ -21,7 +21,7 @@ describe("Context API", () => {
 
   describe("Context Definition", () => {
     it("should create client without context capabilities", () => {
-      const client = createSafeFnClient();
+      const client = createClient();
 
       const simpleFunction = client
         .input(z.object({ name: z.string() }))
@@ -37,7 +37,7 @@ describe("Context API", () => {
     });
 
     it("should create client with type-only context", () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
 
       const contextFunction = client
         .input(z.object({ userId: z.string() }))
@@ -57,7 +57,7 @@ describe("Context API", () => {
     });
 
     it("should create client with schema-inferred context", () => {
-      const client = createSafeFnClient().context(authContextSchema);
+      const client = createClient().context(authContextSchema);
 
       const contextFunction = client
         .input(z.object({ message: z.string() }))
@@ -77,7 +77,7 @@ describe("Context API", () => {
     });
 
     it("should create client with explicit type override", () => {
-      const client = createSafeFnClient().context<AuthContext>(authContextSchema);
+      const client = createClient().context<AuthContext>(authContextSchema);
 
       const contextFunction = client
         .input(z.object({ action: z.string() }))
@@ -106,7 +106,7 @@ describe("Context API", () => {
     });
 
     it("should execute with chained .execute() method", async () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
       const contextFunction = client
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => {
@@ -129,7 +129,7 @@ describe("Context API", () => {
     });
 
     it("should execute with direct function call", async () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
       const contextFunction = client
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => {
@@ -151,7 +151,7 @@ describe("Context API", () => {
     });
 
     it("should support reusable handler pattern", async () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
       const contextFunction = client
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => {
@@ -178,7 +178,7 @@ describe("Context API", () => {
     });
 
     it("should maintain separate context bindings", async () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
       const contextFunction = client
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => {
@@ -205,7 +205,7 @@ describe("Context API", () => {
 
   describe("Context Validation", () => {
     it("should validate context when schema is provided", async () => {
-      const client = createSafeFnClient().context(authContextSchema);
+      const client = createClient().context(authContextSchema);
 
       const contextFunction = client
         .input(z.object({ message: z.string() }))
@@ -229,7 +229,7 @@ describe("Context API", () => {
     });
 
     it("should not validate context when no schema is provided", async () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
 
       const contextFunction = client
         .input(z.object({ message: z.string() }))
@@ -249,7 +249,7 @@ describe("Context API", () => {
 
   describe("Integration with Middleware", () => {
     it("should work with middleware that modifies context", async () => {
-      const client = createSafeFnClient()
+      const client = createClient()
         .context<AuthContext>()
         .use(async ({ ctx, next }) => {
           // Middleware can access and modify context
@@ -275,7 +275,7 @@ describe("Context API", () => {
     });
 
     it("should work with multiple middleware layers", async () => {
-      const client = createSafeFnClient()
+      const client = createClient()
         .context<AuthContext>()
         .use(async ({ ctx, next }) => {
           return next({ ctx: { ...ctx, layer1: true } });
@@ -305,7 +305,7 @@ describe("Context API", () => {
 
   describe("Error Handling", () => {
     it("should provide clear error when calling context function without withContext", () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
 
       const contextFunction = client
         .input(z.object({ test: z.string() }))
@@ -320,7 +320,7 @@ describe("Context API", () => {
     });
 
     it("should handle errors in context-bound functions", async () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
 
       const contextFunction = client
         .input(z.object({ shouldFail: z.boolean() }))
@@ -341,7 +341,7 @@ describe("Context API", () => {
 
   describe("Type Safety", () => {
     it("should enforce context type in handler", () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
 
       // This should compile without errors
       const validFunction = client
@@ -357,7 +357,7 @@ describe("Context API", () => {
     });
 
     it("should enforce context type in withContext", () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
 
       const contextFunction = client
         .input(z.object({ test: z.string() }))
@@ -374,7 +374,7 @@ describe("Context API", () => {
 
   describe("Args Pattern with Context", () => {
     it("should work with .args() pattern", async () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
 
       const contextFunction = client
         .args(z.string(), z.number())
@@ -399,7 +399,7 @@ describe("Context API", () => {
     });
 
     it("should support reusable handler with args pattern", async () => {
-      const client = createSafeFnClient().context<AuthContext>();
+      const client = createClient().context<AuthContext>();
 
       const contextFunction = client
         .args(z.string())
@@ -423,7 +423,7 @@ describe("Context API", () => {
 
   describe("Complex Context Types", () => {
     it("should handle complex nested context types", async () => {
-      const client = createSafeFnClient().context<DatabaseContext>();
+      const client = createClient().context<DatabaseContext>();
 
       const mockDb = {
         query: vi.fn().mockResolvedValue({ rows: [{ id: 1, name: "test" }] })

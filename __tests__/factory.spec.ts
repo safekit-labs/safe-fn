@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { z } from "zod/v4";
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 
 // ========================================================================
 // FACTORY CONFIGURATION TESTS
@@ -13,33 +13,33 @@ describe("Factory Configuration", () => {
 
   describe("defaultContext", () => {
     it("should use provided defaultContext in handlers", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { userId: "test-user", role: "admin" },
       });
 
-      const fn = safeFnClient.handler(async ({ ctx }) => ctx);
+      const fn = client.handler(async ({ ctx }) => ctx);
       const result = await fn();
 
       expect(result).toEqual({ userId: "test-user", role: "admin" });
     });
 
     it("should use only defaultContext when no input is defined", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { userId: "default", role: "user" },
       });
 
-      const fn = safeFnClient.handler(async ({ ctx }) => ctx);
+      const fn = client.handler(async ({ ctx }) => ctx);
       const result = await fn();
 
       expect(result).toEqual({ userId: "default", role: "user" });
     });
 
     it("should use defaultContext when input is defined", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { userId: "default", role: "user" },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .input(z.object({ data: z.string() }))
         .handler(async ({ input, ctx }) => ({ data: input.data, ...ctx }));
 
@@ -49,9 +49,9 @@ describe("Factory Configuration", () => {
     });
 
     it("should work without defaultContext", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient.handler(async ({ ctx }) => ctx);
+      const fn = client.handler(async ({ ctx }) => ctx);
       const result = await fn();
 
       expect(result).toEqual({});
@@ -64,20 +64,20 @@ describe("Factory Configuration", () => {
 
   describe("metadataSchema", () => {
     it("should validate metadata with provided schema", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: z.object({ op: z.string(), version: z.number() }),
       });
 
-      const fn = safeFnClient.metadata({ op: "test", version: 1 }).handler(async () => "success");
+      const fn = client.metadata({ op: "test", version: 1 }).handler(async () => "success");
 
       const result = await fn();
       expect(result).toBe("success");
     });
 
     it("should work without metadata schema", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient.metadata({ anything: "goes" }).handler(async () => "success");
+      const fn = client.metadata({ anything: "goes" }).handler(async () => "success");
 
       const result = await fn();
       expect(result).toBe("success");
@@ -91,12 +91,12 @@ describe("Factory Configuration", () => {
   describe("onError", () => {
     it("should call onError when handler throws", async () => {
       const errorHandler = vi.fn();
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { userId: "test" },
         onError: errorHandler,
       });
 
-      const fn = safeFnClient.handler(async () => {
+      const fn = client.handler(async () => {
         throw new Error("test error");
       });
 
@@ -114,12 +114,12 @@ describe("Factory Configuration", () => {
 
     it("should call onError with merged context", async () => {
       const errorHandler = vi.fn();
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { userId: "default" },
         onError: errorHandler,
       });
 
-      const fn = safeFnClient.handler(async () => {
+      const fn = client.handler(async () => {
         throw new Error("test error");
       });
 
@@ -142,18 +142,18 @@ describe("Factory Configuration", () => {
 
   describe("optional configuration", () => {
     it("should work with no configuration", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient.handler(async ({ ctx }) => ctx);
+      const fn = client.handler(async ({ ctx }) => ctx);
       const result = await fn();
 
       expect(result).toEqual({});
     });
 
     it("should work with empty configuration", async () => {
-      const safeFnClient = createSafeFnClient({});
+      const client = createClient({});
 
-      const fn = safeFnClient.handler(async () => "empty config");
+      const fn = client.handler(async () => "empty config");
       const result = await fn();
 
       expect(result).toBe("empty config");
@@ -176,11 +176,11 @@ describe("Type Checking", () => {
       type Metadata = z.infer<typeof metadataSchema>;
 
       // This should work with the new overload
-      const safeFnClient = createSafeFnClient<{}, Metadata>({
+      const client = createClient<{}, Metadata>({
         metadataSchema,
       });
 
-      const fn = safeFnClient
+      const fn = client
         .metadata({ operationName: "test-op", priority: 1 })
         .handler(async () => "success");
 
@@ -194,12 +194,12 @@ describe("Type Checking", () => {
       const metadataSchema = z.object({ action: z.string() });
       type Metadata = z.infer<typeof metadataSchema>;
 
-      const safeFnClient = createSafeFnClient<Context, Metadata>({
+      const client = createClient<Context, Metadata>({
         defaultContext: { userId: "test", role: "admin" },
         metadataSchema,
       });
 
-      const fn = safeFnClient.metadata({ action: "create" }).handler(async ({ ctx }) => ({
+      const fn = client.metadata({ action: "create" }).handler(async ({ ctx }) => ({
         user: ctx.userId,
         role: ctx.role,
       }));
@@ -210,14 +210,14 @@ describe("Type Checking", () => {
 
     it("should preserve types through method chaining without explicit generics", async () => {
       // This simulates the exact issue from the user's file
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: z.object({
           operationName: z.string(),
         }),
       });
 
       // Test with .input() chaining first (this should work)
-      const getUserId = safeFnClient
+      const getUserId = client
         .input(
           z.object({
             userId: z.string(),
@@ -234,7 +234,7 @@ describe("Type Checking", () => {
       expect(inputResult).toEqual({ userId: "456" });
 
       // Test metadata method works
-      const withMetadata = safeFnClient
+      const withMetadata = client
         .metadata({
           operationName: "test",
         })
@@ -245,10 +245,10 @@ describe("Type Checking", () => {
     });
 
     it("should not require input parameter when no input is defined", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
       // Handler without input should be callable without parameters
-      const noInputFn = safeFnClient.handler(async () => ({ result: "no input needed" }));
+      const noInputFn = client.handler(async () => ({ result: "no input needed" }));
 
       // This should work without any arguments
       const result = await (noInputFn as any)();
@@ -264,11 +264,11 @@ describe("Type Checking", () => {
 describe("Factory Integration", () => {
   describe("input and output validation", () => {
     it("should work with input validation", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { service: "test" },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => ({
           greeting: `Hello ${input.name}`,
@@ -280,11 +280,11 @@ describe("Factory Integration", () => {
     });
 
     it("should work with output validation", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { env: "test" },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .output(z.object({ result: z.string() }))
         .handler(async ({ ctx }) => ({ result: `Environment: ${ctx.env}` }));
 
@@ -293,11 +293,11 @@ describe("Factory Integration", () => {
     });
 
     it("should work with both input and output validation", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { multiplier: 2 },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .input(z.object({ value: z.number() }))
         .output(z.object({ doubled: z.number() }))
         .handler(async ({ input, ctx }) => ({
@@ -311,11 +311,11 @@ describe("Factory Integration", () => {
 
   describe("middleware support", () => {
     it("should support basic middleware", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { userId: "default-user" },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => {
           return next();
         })
@@ -326,11 +326,11 @@ describe("Factory Integration", () => {
     });
 
     it("should support metadata configuration", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: z.object({ operation: z.string() }),
       });
 
-      const fn = safeFnClient.metadata({ operation: "test-op" }).handler(async () => "completed");
+      const fn = client.metadata({ operation: "test-op" }).handler(async () => "completed");
 
       const result = await fn();
       expect(result).toBe("completed");

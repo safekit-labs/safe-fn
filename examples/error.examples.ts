@@ -1,4 +1,4 @@
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 import { z } from "zod";
 
 // Custom Error class for testing
@@ -30,7 +30,7 @@ const authMiddleware = async ({ next, ctx }: any) => {
   });
 };
 
-const safeFn = createSafeFnClient({
+const safeFn = createClient({
   defaultContext: { userId: "user123", role: "admin" },
   onError: ({ error, ctx, metadata, rawInput, rawArgs, valid }) => {
     console.log({ error, ctx, metadata, rawInput, rawArgs, valid }, "onError");
@@ -98,7 +98,7 @@ export async function test2() {
 // TEST 3 - Custom Error with instanceof check
 // ========================================================================
 
-const safeFn3 = createSafeFnClient({
+const safeFn3 = createClient({
   defaultContext: { userId: "user123", role: "admin" },
   onError: ({ error }) => {
     throw new CustomTestError(error.message, "ERR_HANDLER_001");

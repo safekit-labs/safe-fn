@@ -5,19 +5,19 @@ import { Schema } from "effect";
 import * as st from "superstruct";
 import * as T from "runtypes";
 
-import { createSafeFnClient } from "@safekit/safe-fn";
+import { createClient } from "@safekit/safe-fn";
 
-const safeFnClient = createSafeFnClient();
+const client = createClient();
 
 // ========================================================================
 // ZOD
 // ========================================================================
 
-export const zodUserFn = safeFnClient
+export const zodUserFn = client
   .input(z.object({ name: z.string(), email: z.string().email() }))
   .handler(async ({ input }) => input);
 
-export const zodTupleFn = safeFnClient
+export const zodTupleFn = client
   .args(z.string(), z.number().positive())
   .handler(async ({ args }) => args);
 
@@ -25,11 +25,11 @@ export const zodTupleFn = safeFnClient
 // YUP
 // ========================================================================
 
-export const yupUserFn = safeFnClient
+export const yupUserFn = client
   .input(yup.object({ name: yup.string().required(), age: yup.number().required() }))
   .handler(async ({ input }) => input);
 
-export const yupTupleFn = safeFnClient
+export const yupTupleFn = client
   .args(yup.string().required(), yup.number().positive().required())
   .handler(async ({ args }) => args);
 
@@ -39,11 +39,11 @@ export const yupTupleFn = safeFnClient
 
 import * as v from "valibot";
 
-export const valibotUserFn = safeFnClient
+export const valibotUserFn = client
   .input(v.object({ name: v.string(), email: v.pipe(v.string(), v.email()) }))
   .handler(async ({ input }) => input);
 
-export const valibotTupleFn = safeFnClient
+export const valibotTupleFn = client
   .args(v.string(), v.pipe(v.number(), v.minValue(0)))
   .handler(async ({ args }) => args);
 
@@ -51,11 +51,11 @@ export const valibotTupleFn = safeFnClient
 // ARKTYPE
 // ========================================================================
 
-export const arkTypeUserFn = safeFnClient
+export const arkTypeUserFn = client
   .input(type({ name: "string", email: "string.email" }))
   .handler(async ({ input }) => input);
 
-export const arkTypeTupleFn = safeFnClient
+export const arkTypeTupleFn = client
   .args(type("string"), type("number>0"))
   .handler(async ({ args }) => args);
 
@@ -63,7 +63,7 @@ export const arkTypeTupleFn = safeFnClient
 // EFFECT SCHEMA
 // ========================================================================
 
-export const effectUserFn = safeFnClient
+export const effectUserFn = client
   .input(
     Schema.standardSchemaV1(
       Schema.Struct({
@@ -74,7 +74,7 @@ export const effectUserFn = safeFnClient
   )
   .handler(async ({ input }) => input);
 
-export const effectTupleFn = safeFnClient
+export const effectTupleFn = client
   .args(Schema.standardSchemaV1(Schema.String), Schema.standardSchemaV1(Schema.Number))
   .handler(async ({ args }) => args);
 
@@ -82,11 +82,11 @@ export const effectTupleFn = safeFnClient
 // SUPERSTRUCT
 // ========================================================================
 
-export const superstructUserFn = safeFnClient
+export const superstructUserFn = client
   .input(st.object({ name: st.string(), age: st.number() }))
   .handler(async ({ input }) => input);
 
-export const superstructTupleFn = safeFnClient
+export const superstructTupleFn = client
   .args(st.string(), st.number())
   .handler(async ({ args }) => args);
 
@@ -94,10 +94,10 @@ export const superstructTupleFn = safeFnClient
 // RUNTYPES
 // ========================================================================
 
-export const runtypesUserFn = safeFnClient
+export const runtypesUserFn = client
   .input(T.Object({ name: T.String, age: T.Number }))
   .handler(async ({ input }) => input);
 
-export const runtypesTupleFn = safeFnClient
+export const runtypesTupleFn = client
   .args(T.String, T.Number)
   .handler(async ({ args }) => args);

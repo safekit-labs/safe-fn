@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod/v4";
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 
 // ========================================================================
 // BASIC MIDDLEWARE FUNCTIONALITY TESTS
@@ -9,12 +9,12 @@ import { createSafeFnClient } from "@/factory";
 describe("Middleware Support", () => {
   describe("basic middleware usage", () => {
     it("should support .use() chaining", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { userId: "test" },
       });
 
       // Test that .use() doesn't break the chain
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .handler(async ({ ctx }) => `Hello ${ctx.userId}`);
 
@@ -23,12 +23,12 @@ describe("Middleware Support", () => {
     });
 
     it("should support multiple .use() calls", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { service: "api" },
       });
 
       // Test that multiple .use() calls work
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .use(async ({ next }) => next())
         .use(async ({ next }) => next())
@@ -39,11 +39,11 @@ describe("Middleware Support", () => {
     });
 
     it("should work with middleware and input validation", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { prefix: "Mr." },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .input(z.object({ name: z.string() }))
         .handler(async ({ input, ctx }) => `${ctx.prefix} ${input.name}`);
@@ -53,9 +53,9 @@ describe("Middleware Support", () => {
     });
 
     it("should work with middleware and output validation", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .output(z.object({ greeting: z.string() }))
         .handler(async () => ({ greeting: "Hello World" }));
@@ -67,11 +67,11 @@ describe("Middleware Support", () => {
 
   describe("middleware with context", () => {
     it("should provide context from factory to middleware and handlers", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { apiKey: "secret", version: "v1" },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .handler(async ({ ctx }) => ({
           authenticated: !!ctx.apiKey,
@@ -83,11 +83,11 @@ describe("Middleware Support", () => {
     });
 
     it("should merge runtime context properly", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { service: "auth", env: "prod" },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .handler(async ({ ctx }) => ({
           service: ctx.service,
@@ -104,11 +104,11 @@ describe("Middleware Support", () => {
 
   describe("middleware with metadata", () => {
     it("should work with metadata validation", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: z.object({ operation: z.string(), priority: z.number() }),
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .metadata({ operation: "create-user", priority: 1 })
         .handler(async () => "operation completed");
@@ -118,9 +118,9 @@ describe("Middleware Support", () => {
     });
 
     it("should work with unvalidated metadata", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .metadata({ custom: "value", tags: ["important"] })
         .handler(async () => "metadata accepted");
@@ -132,11 +132,11 @@ describe("Middleware Support", () => {
     it("should provide metadata to middleware", async () => {
       let capturedMetadata: any;
 
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: z.object({ operationName: z.string() }),
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ metadata, next }) => {
           capturedMetadata = metadata;
           return next();
@@ -151,11 +151,11 @@ describe("Middleware Support", () => {
     it("should provide metadata to middleware when using .context()", async () => {
       let capturedMetadata: any;
 
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: z.object({ operationName: z.string() }),
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ metadata, next }) => {
           capturedMetadata = metadata;
           return next();
@@ -179,9 +179,9 @@ describe("Middleware Support", () => {
 
   describe("middleware with different input types", () => {
     it("should work with object input", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .input(z.object({ message: z.string() }))
         .handler(async ({ input }) => `Received: ${input.message}`);
@@ -191,9 +191,9 @@ describe("Middleware Support", () => {
     });
 
     it("should work with tuple arguments", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .args(z.string(), z.number())
         .handler(async ({ args }) => `${args[0]}: ${args[1]}`);
@@ -203,9 +203,9 @@ describe("Middleware Support", () => {
     });
 
     it("should work with empty arguments", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .args()
         .handler(async ({ args }) => `Args length: ${args.length}`);
@@ -217,9 +217,9 @@ describe("Middleware Support", () => {
 
   describe("middleware error scenarios", () => {
     it("should handle input validation errors", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .input(z.object({ age: z.number() }))
         .handler(async ({ input }) => `Age: ${input.age}`);
@@ -228,9 +228,9 @@ describe("Middleware Support", () => {
     });
 
     it("should handle output validation errors", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .output(z.object({ result: z.string() }))
         .handler(async () => ({ result: 123 as any }));
@@ -239,11 +239,11 @@ describe("Middleware Support", () => {
     });
 
     it("should work with metadata schema validation", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: z.object({ operation: z.string().min(1) }),
       });
 
-      const fn = safeFnClient
+      const fn = client
         .metadata({ operation: "valid-operation" })
         .handler(async () => "validation passed");
 
@@ -262,8 +262,8 @@ describe("Middleware valid() function", () => {
     it("should provide validated input when schema exists", async () => {
       let capturedValidInput: any;
 
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .use(async ({ valid, next }) => {
           capturedValidInput = await valid("input");
           return next();
@@ -278,8 +278,8 @@ describe("Middleware valid() function", () => {
     it("should throw error when no input schema exists", async () => {
       let validationError: any;
 
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .use(async ({ valid, next }) => {
           try {
             valid("input");
@@ -300,8 +300,8 @@ describe("Middleware valid() function", () => {
     it("should provide validated args when schema exists", async () => {
       let capturedValidArgs: any;
 
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .use(async ({ valid, next }) => {
           capturedValidArgs = await valid("args");
           return next();
@@ -316,8 +316,8 @@ describe("Middleware valid() function", () => {
     it("should throw error when no args schema exists", async () => {
       let validationError: any;
 
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .use(async ({ valid, next }) => {
           try {
             valid("args");
@@ -339,8 +339,8 @@ describe("Middleware valid() function", () => {
       let capturedRawInput: any;
       let capturedRawArgs: any;
 
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .use(async ({ rawInput, rawArgs, next }) => {
           capturedRawInput = rawInput;
           capturedRawArgs = rawArgs;
@@ -357,8 +357,8 @@ describe("Middleware valid() function", () => {
     it("should provide raw args for multi-argument functions", async () => {
       let capturedRawArgs: any;
 
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .use(async ({ rawArgs, next }) => {
           capturedRawArgs = rawArgs;
           return next();
@@ -379,8 +379,8 @@ describe("Middleware valid() function", () => {
         return data;
       });
 
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .use(async ({ valid, next }) => {
           // Call valid multiple times
           await valid("input");
@@ -406,12 +406,12 @@ describe("Middleware valid() function", () => {
 describe("Middleware Integration", () => {
   describe("full feature integration", () => {
     it("should work with all features combined", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { service: "user-service", version: "1.0" },
         metadataSchema: z.object({ operation: z.string(), userId: z.string() }),
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .use(async ({ next }) => next())
         .metadata({ operation: "create-user", userId: "admin" })
@@ -435,11 +435,11 @@ describe("Middleware Integration", () => {
     });
 
     it("should work with factory config and runtime overrides", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { env: "dev", debug: true },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .input<{ data?: any }>()
         .handler(async ({ ctx }) => ({
@@ -465,20 +465,20 @@ describe("Middleware Integration", () => {
 
   describe("middleware method chaining", () => {
     it("should support chaining in different orders", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
       // Test different chaining orders
-      const fn1 = safeFnClient
+      const fn1 = client
         .input(z.string())
         .use(async ({ next }) => next())
         .handler(async ({ input }) => `Order 1: ${input}`);
 
-      const fn2 = safeFnClient
+      const fn2 = client
         .use(async ({ next }) => next())
         .input(z.string())
         .handler(async ({ input }) => `Order 2: ${input}`);
 
-      const fn3 = safeFnClient
+      const fn3 = client
         .metadata({ test: true })
         .use(async ({ next }) => next())
         .input(z.string())
@@ -494,11 +494,11 @@ describe("Middleware Integration", () => {
     });
 
     it("should handle complex chaining scenarios", async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         defaultContext: { base: "value" },
       });
 
-      const fn = safeFnClient
+      const fn = client
         .use(async ({ next }) => next())
         .metadata({ step: 1 })
         .use(async ({ next }) => next())

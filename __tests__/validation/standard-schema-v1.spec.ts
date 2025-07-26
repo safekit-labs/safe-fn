@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 
 import type { StandardSchemaV1 } from "@/libs/standard-schema-v1/spec";
 
@@ -59,8 +59,8 @@ describe("Standard Schema Support", () => {
 
   describe("Input Validation", () => {
     it("should validate input with Standard Schema", async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .input(stringSchema)
         .handler(async ({ input }) => `Hello, ${input}!`);
 
@@ -69,8 +69,8 @@ describe("Standard Schema Support", () => {
     });
 
     it("should throw validation error for invalid input", async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .input(numberSchema)
         .handler(async ({ input }) => input * 2);
 
@@ -78,8 +78,8 @@ describe("Standard Schema Support", () => {
     });
 
     it("should work with complex Standard Schema objects", async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .input(objectSchema)
         .handler(async ({ input }) => `${input.name} is ${input.age} years old`);
 
@@ -94,23 +94,23 @@ describe("Standard Schema Support", () => {
 
   describe("Output Validation", () => {
     it("should validate output with Standard Schema", async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient.output(stringSchema).handler(async () => "valid string output");
+      const client = createClient();
+      const fn = client.output(stringSchema).handler(async () => "valid string output");
 
       const result = await fn();
       expect(result).toBe("valid string output");
     });
 
     it("should handle output validation errors", async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient.output(stringSchema).handler(async () => 123 as any);
+      const client = createClient();
+      const fn = client.output(stringSchema).handler(async () => 123 as any);
 
       await expect(fn()).rejects.toThrow("Expected string");
     });
 
     it("should validate both input and output schemas", async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .input(objectSchema)
         .output(stringSchema)
         .handler(async ({ input }) => `${input.name} is ${input.age} years old`);
@@ -126,16 +126,16 @@ describe("Standard Schema Support", () => {
 
   describe("Legacy Function Validator Compatibility", () => {
     it("should work with both function validators and Standard Schema", async () => {
-      const safeFnClient = createSafeFnClient();
+      const client = createClient();
 
-      const legacyFn = safeFnClient
+      const legacyFn = client
         .input((input: unknown) => {
           if (typeof input !== "string") throw new Error("Expected string");
           return input;
         })
         .handler(async ({ input }) => input.toUpperCase());
 
-      const standardFn = safeFnClient
+      const standardFn = client
         .input(stringSchema)
         .handler(async ({ input }) => input.toLowerCase());
 

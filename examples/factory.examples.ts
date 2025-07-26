@@ -2,7 +2,7 @@
  * Factory Setup Examples
  * Different ways to configure your SafeFn clients
  */
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 import { z } from "zod";
 
 // ========================================================================
@@ -11,13 +11,13 @@ import { z } from "zod";
 
 // ------------------ 1. BASIC CLIENT ------------------
 
-export const basicClient = createSafeFnClient({
+export const basicClient = createClient({
   defaultContext: {},
 });
 
 // ------------------ 2. WITH DEFAULT CONTEXT ------------------
 
-export const clientWithDefaults = createSafeFnClient({
+export const clientWithDefaults = createClient({
   defaultContext: {
     requestId: "default",
     version: "1.0.0",
@@ -26,7 +26,7 @@ export const clientWithDefaults = createSafeFnClient({
 
 // ------------------ 3. WITH ERROR HANDLING ------------------
 
-export const clientWithErrorHandler = createSafeFnClient({
+export const clientWithErrorHandler = createClient({
   defaultContext: { requestId: "default" },
   onError: ({ error, ctx }) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -43,7 +43,7 @@ const operationMetaSchema = z.object({
   version: z.string().optional(),
 });
 
-export const clientWithMetadata = createSafeFnClient({
+export const clientWithMetadata = createClient({
   defaultContext: {
     userId: undefined as string | undefined,
   },
@@ -58,7 +58,7 @@ const appMetaSchema = z.object({
 });
 
 // Context is inferred from defaultContext - no need for generics!
-export const fullConfigClient = createSafeFnClient<{
+export const fullConfigClient = createClient<{
   userId: string | undefined;
   requestId: string;
   permissions: string[];
@@ -87,7 +87,7 @@ export const exampleFunction = clientWithMetadata
 // ------------------ 7. MULTIPLE CLIENTS FOR DIFFERENT PURPOSES ------------------
 
 // Client for public API functions
-export const publicApiClient = createSafeFnClient({
+export const publicApiClient = createClient({
   defaultContext: {
     isPublic: true,
     rateLimit: 1000,
@@ -104,7 +104,7 @@ const adminMetaSchema = z.object({
 });
 
 // Client for admin functions
-export const adminClient = createSafeFnClient<{
+export const adminClient = createClient<{
   userId: string | undefined;
   role: "admin";
   permissions: readonly ["read", "write", "delete"];

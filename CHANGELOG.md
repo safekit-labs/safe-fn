@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Metadata Chain Bug**: Fixed issue where functions with `.metadata()` but no input incorrectly required input parameters
 - **Type Safety**: Proper distinction between no-input functions and type-only input functions
 - fix: Fixed issue where metadata wasn't passing through when using .context()
-- fix: Metadata type can be passed properly as second argument in createSafeFnClient
+- fix: Metadata type can be passed properly as second argument in createClient
 
 ## [0.3.0-alpha.8] - 2025-07-03
 - Fix: Exporting all types from types.ts
@@ -78,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SafeFnHandler<TInput, TOutput, TContext, TMetadata>`
   - Updated middleware execution to pass metadata through
   - Updated safe-fn handler calls to include metadata
-- Added `TContext` generic to `createSafeFnClient` to allow for context to be passed to the client
+- Added `TContext` generic to `createClient` to allow for context to be passed to the client
 - Fixed Metadata Validation - The `.metadata()` method now properly enforces the metadata schema type
 
 ## [0.3.0-alpha.3] - 2025-07-01
@@ -98,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0-alpha.1] - 2025-07-01
 
 - Removed `@standard-schema/spec` dependency
-- Factory pattern to initialize a safeFnClient
+- Factory pattern to initialize a client
 
 ## [0.2.0-alpha.1] - 2025-06-29
 
@@ -163,7 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Type-safe function builder with full TypeScript support
-- Client-only architecture with `createSafeFnClient`
+- Client-only architecture with `createClient`
 - Chainable interceptor system with `.use()` support
 - Standard Schema support for universal validation
 - Generic handler types: `.handler<TInput, TOutput>()`

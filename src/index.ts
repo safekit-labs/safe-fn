@@ -2,7 +2,7 @@
 export * from "./types";
 
 // Builder factory
-export { createSafeFnClient } from "./factory";
+export { createClient } from "./factory";
 
 // Direct SafeFn creation
 export { createSafeFn } from "./safe-fn";

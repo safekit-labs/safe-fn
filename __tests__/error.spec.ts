@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 import { z } from "zod";
 
 describe("Error Handling", () => {
   it("should call onError when handler throws", async () => {
     const onError = vi.fn();
-    const safeFn = createSafeFnClient({ onError })
+    const safeFn = createClient({ onError })
       .input(z.object({ name: z.string() }))
       .handler(async () => {
         throw new Error("Handler error");
@@ -26,7 +26,7 @@ describe("Error Handling", () => {
 
   it("should allow onError to recover by returning success object", async () => {
     const onError = vi.fn().mockReturnValue({ success: true, data: "recovered" });
-    const safeFn = createSafeFnClient({ onError })
+    const safeFn = createClient({ onError })
       .input(z.object({ name: z.string() }))
       .handler(async () => {
         throw new Error("Handler error");
@@ -39,7 +39,7 @@ describe("Error Handling", () => {
 
   it("should allow onError to transform error", async () => {
     const onError = vi.fn().mockReturnValue(new Error("Transformed error"));
-    const safeFn = createSafeFnClient({ onError })
+    const safeFn = createClient({ onError })
       .input(z.object({ name: z.string() }))
       .handler(async () => {
         throw new Error("Original error");
@@ -58,7 +58,7 @@ describe("Error Handling", () => {
       }
     });
 
-    const safeFn = createSafeFnClient({ onError })
+    const safeFn = createClient({ onError })
       .use(middleware)
       .input(z.object({ name: z.string() }))
       .handler(async () => {
@@ -79,7 +79,7 @@ describe("Error Handling", () => {
 
   it("should not wrap validation errors", async () => {
     const onError = vi.fn();
-    const safeFn = createSafeFnClient({ onError })
+    const safeFn = createClient({ onError })
       .input(z.object({ age: z.number() }))
       .handler(async () => "success");
 
@@ -104,9 +104,9 @@ describe("Error Handling", () => {
     const defaultContext = { userId: "test-user", role: "admin" };
     const metadata = { operation: "test", version: "1.0" };
 
-    const safeFn = createSafeFnClient({ 
+    const safeFn = createClient({
       onError,
-      defaultContext 
+      defaultContext
     })
       .metadata(metadata)
       .input(z.object({ name: z.string() }))
@@ -116,13 +116,13 @@ describe("Error Handling", () => {
 
     const additionalContext = { requestId: "req-123" } as any;
     await expect(safeFn({ name: "test" }, additionalContext)).rejects.toThrow("Handler error");
-    
+
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({
         error: expect.objectContaining({ message: "Handler error" }),
         ctx: expect.objectContaining({
           userId: "test-user",
-          role: "admin", 
+          role: "admin",
           requestId: "req-123"
         }),
         metadata: expect.objectContaining({
@@ -141,7 +141,7 @@ describe("Error Handling", () => {
       return next({ ctx: { middlewareData: "added-by-middleware" } });
     });
 
-    const safeFn = createSafeFnClient({ onError })
+    const safeFn = createClient({ onError })
       .use(middleware)
       .input(z.object({ name: z.string() }))
       .handler(async () => {
@@ -149,7 +149,7 @@ describe("Error Handling", () => {
       });
 
     await expect(safeFn({ name: "test" })).rejects.toThrow("Handler error");
-    
+
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({
         error: expect.objectContaining({ message: "Handler error" }),

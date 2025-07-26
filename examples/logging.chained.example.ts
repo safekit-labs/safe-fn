@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createSafeFnClient, createMiddleware } from "@safekit/safe-fn";
+import { createClient, createMiddleware } from "@safekit/safe-fn";
 
 // bun run examples/logging.chained.example.ts
 
@@ -23,7 +23,7 @@ type FnContext = { logger: typeof console };
 /**
  * Creates a client with chained middleware - no separate definitions, no generics
  */
-const client = createSafeFnClient({
+const client = createClient({
   metadataSchema: loggingMetadataSchema,
 })
   .use(

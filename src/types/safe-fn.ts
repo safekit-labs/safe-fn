@@ -62,7 +62,7 @@ export interface SafeFnBuilder<TBaseContext extends Context, TMetadata extends M
 /**
  * Configuration for creating a SafeFn client
  */
-export interface SafeFnClientConfig<TBaseContext extends Context, TMetadata extends Metadata> {
+export interface ClientConfig<TBaseContext extends Context, TMetadata extends Metadata> {
   defaultContext?: TBaseContext;
   metadataSchema?: SchemaValidator<TMetadata>;
   onError?: ErrorHandlerFn<TMetadata, TBaseContext>;

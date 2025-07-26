@@ -37,13 +37,13 @@ Here's a simple example showing how to create a client and define a function:
 ```typescript
 import { z } from "zod";
 
-import { createSafeFnClient } from "@safekit/safe-fn";
+import { createClient } from "@safekit/safe-fn";
 
 // 1. Create client
-const safeFnClient = createSafeFnClient();
+const client = createClient();
 
 // 2. Define function
-export const createUser = safeFnClient
+export const createUser = client
   .input(z.object({ username: z.string() }))
   .output(z.object({ id: z.string() }))
   .handler(async ({ ctx, input }) => {
@@ -53,7 +53,7 @@ export const createUser = safeFnClient
 
 ## Client Configuration
 
-Clients are created with `createSafeFnClient()` and support three main configuration options:
+Clients are created with `createClient()` and support three main configuration options:
 
 - `defaultContext` - default context for all functions
 - `metadataSchema` - schema for metadata
@@ -62,10 +62,10 @@ Clients are created with `createSafeFnClient()` and support three main configura
 ```typescript
 import { z } from "zod";
 
-import { createSafeFnClient } from "@safekit/safe-fn";
+import { createClient } from "@safekit/safe-fn";
 
 // 1. Create client
-const safeFnClient = createSafeFnClient({
+const client = createClient({
   defaultContext: { logger: console },
   metadataSchema: z.object({ traceId: z.string() }),
   onError: ({ error, ctx }) => {
@@ -81,10 +81,10 @@ Middleware functions run before your handler and can modify context, validate pe
 
 ```typescript
 import { z } from "zod";
-import { createSafeFnClient } from "@safekit/safe-fn";
+import { createClient } from "@safekit/safe-fn";
 
 // Base client with logging
-const publicClient = createSafeFnClient({
+const publicClient = createClient({
   defaultContext: {
     logger: console,
     db: any,
@@ -135,12 +135,12 @@ const post = await protectedFunction({ postId: "123" });
 ```typescript
 import { z } from "zod";
 
-import { createSafeFnClient } from "@safekit/safe-fn";
+import { createClient } from "@safekit/safe-fn";
 
-const safeFnClient = createSafeFnClient();
+const client = createClient();
 
 // Object schemas - use `input` parameter
-const zodObjectFn = safeFnClient
+const zodObjectFn = client
   .input(z.object({ name: z.string(), age: z.number() }))
   .handler(async ({ input }) => {
     const { name, age } = input;
@@ -148,7 +148,7 @@ const zodObjectFn = safeFnClient
   });
 
 // Tuple schemas - use `args` parameter
-const zodTupleFn = safeFnClient
+const zodTupleFn = client
   .args(z.string(), z.number(), z.boolean()) // name, age, active
   .handler(async ({ args }) => {
     const [name, age, active] = args;
@@ -167,7 +167,7 @@ Safe-fn provides flexible error handling through the `onError` handler configure
 ### Basic Error Handling
 
 ```typescript
-const safeFnClient = createSafeFnClient({
+const client = createClient({
   defaultContext: { userId: "user123", service: "api" },
   onError: ({ error, ctx, metadata, rawInput, valid }) => {
     // Log error with full context
@@ -193,7 +193,7 @@ const safeFnClient = createSafeFnClient({
 The `onError` handler can recover from errors by returning a success object:
 
 ```typescript
-const safeFnClient = createSafeFnClient({
+const client = createClient({
   onError: ({ error, ctx, rawInput }) => {
     if (error.message.includes("recoverable")) {
       // Recover from the error
@@ -212,7 +212,7 @@ const safeFnClient = createSafeFnClient({
 Transform errors by returning a new Error object:
 
 ```typescript
-const safeFnClient = createSafeFnClient({
+const client = createClient({
   defaultContext: { service: "payment" },
   onError: ({ error, ctx, metadata }) => {
     // Add service context to error
@@ -230,7 +230,7 @@ const authMiddleware = async ({ next, ctx }) => {
   return next({ ctx: { ...ctx, authTime: new Date().toISOString() } });
 };
 
-const safeFnClient = createSafeFnClient({
+const client = createClient({
   defaultContext: { userId: "user123" },
   onError: ({ error, ctx, metadata, rawInput, valid }) => {
     // ctx includes:
@@ -265,10 +265,10 @@ See [examples/error.examples.ts](./examples/error.examples.ts) for a complete wo
 
 ## API Reference
 
-### createSafeFnClient(config?)
+### createClient(config?)
 
 ```typescript
-const safeFnClient = createSafeFnClient({
+const client = createClient({
   defaultContext: { requestId: "default" },
   onError: ({ error, ctx }) => {
     console.error(`[${ctx.requestId}] Error:`, error.message);
@@ -292,7 +292,7 @@ The context API enables type-safe context binding at call-time. Define context t
 
 ```typescript
 import { z } from "zod";
-import { createSafeFnClient } from "@safekit/safe-fn";
+import { createClient } from "@safekit/safe-fn";
 
 type AuthContext = {
   db: Database;
@@ -301,7 +301,7 @@ type AuthContext = {
 const ctx = { db: new Database(), logger: console };
 
 // Enable context capabilities
-const fn = createSafeFnClient()
+const fn = createClient()
   .context<AuthContext>()
   .handler(async ({ ctx }) => {
     const user = await ctx.db.getUser("user-123");
@@ -316,7 +316,7 @@ const result = await fn.withContext(ctx).execute();
 Context works with middleware - middleware receives the working context (base + input context):
 
 ```typescript
-const client = createSafeFnClient()
+const client = createClient()
   .context<AuthContext>()
   .use(async ({ ctx, next }) => {
     // ctx is properly typed as AuthContext
@@ -433,7 +433,7 @@ const loggingMiddleware = createMiddleware(async ({ rawInput, next }) => {
 });
 
 // Use with any client
-const clientWithMiddleware = createSafeFnClient().use(timingMiddleware).use(loggingMiddleware);
+const clientWithMiddleware = createClient().use(timingMiddleware).use(loggingMiddleware);
 ```
 
 ## Schema Support

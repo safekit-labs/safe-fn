@@ -3,22 +3,22 @@
  * Examples showing different input/output patterns
  */
 import { z } from "zod";
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 
 // Create a SafeFn client with default context
-const safeFnClient = createSafeFnClient({
+const client = createClient({
   defaultContext: { userId: "anonymous" },
 });
 
 // 1. Single Object Pattern
-export const getUser = safeFnClient
+export const getUser = client
   .input(z.object({ id: z.string() }))
   .handler(async ({ input }) => {
     return { id: input.id, name: "John" };
   });
 
 // 2. Multiple Arguments Pattern
-export const addUser = safeFnClient
+export const addUser = client
   .args(z.string(), z.number()) // name, age
   .handler(async ({ args }) => {
     const [name, age] = args;
@@ -26,12 +26,12 @@ export const addUser = safeFnClient
   });
 
 // 3. Zero Arguments Pattern
-export const healthCheck = safeFnClient.args().handler(async () => ({ status: "ok" }));
+export const healthCheck = client.args().handler(async () => ({ status: "ok" }));
 
 // 4. Without Schema Validation (type-only)
 type Input = { a: number; b: number };
 
-export const add = safeFnClient
+export const add = client
   .input<Input>()
   .handler(async ({ input }) => {
     return input.a + input.b;

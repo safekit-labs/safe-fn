@@ -102,7 +102,7 @@ class SafeFnBuilderImpl<TBaseContext extends Context, TMetadata extends Metadata
 /**
  * Creates a new SafeFnBuilder instance with optional context and metadata types
  *
- * @deprecated Use `createSafeFnClient` instead for a simpler API that directly returns a configured SafeFn client
+ * @deprecated Use `createClient` instead for a simpler API that directly returns a configured SafeFn client
  */
 export function createBuilder<
   TBaseContext extends Context = Context,

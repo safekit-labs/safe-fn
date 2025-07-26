@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 import {
   zod3Schemas,
   zod4Schemas,
@@ -34,8 +34,8 @@ const libraries = [...workingLibraries, ...conditionalLibraries];
 describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
   describe(`${name} Object Schemas`, () => {
     it(`${name} should work with object schemas`, async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .input(schemas.objectSchemas.userSchema)
         .handler(async ({input}) => input);
 
@@ -44,8 +44,8 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
     });
 
     it(`${name} should validate input`, async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .input(schemas.objectSchemas.emailSchema)
         .handler(async ({input}) => input);
 
@@ -62,8 +62,8 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
 
   describe(`${name} Multiple Arguments`, () => {
     it(`${name} should support multiple arguments`, async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .args(...schemas.argumentSchemas.stringNumberArray)
         .handler(async ({ args }) => args);
 
@@ -72,8 +72,8 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
     });
 
     it(`${name} should support zero arguments`, async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .args()
         .handler(async ({ args }) => args);
 
@@ -82,8 +82,8 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
     });
 
     it(`${name} should validate arguments`, async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .args(...schemas.argumentSchemas.stringMinArray)
         .handler(async ({ args }) => args);
 
@@ -100,8 +100,8 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
 
   describe(`${name} Output Validation`, () => {
     it(`${name} should validate output schemas`, async () => {
-      const safeFnClient = createSafeFnClient();
-      const fn = safeFnClient
+      const client = createClient();
+      const fn = client
         .input(schemas.objectSchemas.userSchema)
         .output(schemas.outputSchemas.numberTransform)
         .handler(async ({input}: any) => ({ result: input.age * 2 }));
@@ -113,11 +113,11 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
 
   describe(`${name} Metadata Validation`, () => {
     it(`${name} should validate metadata`, async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: schemas.metadataSchemas.operationSchema,
       });
 
-      const fn = safeFnClient
+      const fn = client
         .input(schemas.objectSchemas.userSchema)
         .metadata(testData.validMetadata)
         .handler(async ({input}: any) => input.name);
@@ -127,11 +127,11 @@ describe.each(libraries)("$name Validator Support", ({ name, schemas }) => {
     });
 
     it(`${name} should validate required metadata fields`, async () => {
-      const safeFnClient = createSafeFnClient({
+      const client = createClient({
         metadataSchema: schemas.metadataSchemas.authSchema,
       });
 
-      const fn = safeFnClient
+      const fn = client
         .input(schemas.objectSchemas.userSchema)
         .metadata(testData.validAuthMetadata)
         .handler(async ({input}: any) => input.name);

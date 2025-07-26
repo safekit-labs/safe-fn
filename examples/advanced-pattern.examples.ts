@@ -3,10 +3,10 @@
  * Examples showing metadata, output schemas, and context chaining
  */
 import { z } from "zod";
-import { createSafeFnClient } from "@/factory";
+import { createClient } from "@/factory";
 
 // Create a SafeFn client with default context
-const safeFnClient = createSafeFnClient({
+const client = createClient({
   defaultContext: {
     requestId: "default",
     userId: undefined as string | undefined,
@@ -14,7 +14,7 @@ const safeFnClient = createSafeFnClient({
 });
 
 // Create a SafeFn client with metadata schema for advanced examples
-const advancedClient = createSafeFnClient({
+const advancedClient = createClient({
   defaultContext: {
     requestId: "default",
     userId: undefined as string | undefined,
@@ -26,7 +26,7 @@ const advancedClient = createSafeFnClient({
 });
 
 // 1. With Metadata
-export const createUser = safeFnClient
+export const createUser = client
   .metadata({ operation: "create-user", requiresAuth: true })
   .input(z.object({ name: z.string(), email: z.string().email() }))
   .handler(async ({ input }) => {
@@ -34,7 +34,7 @@ export const createUser = safeFnClient
   });
 
 // 2. With Output Schema
-export const validateResponse = safeFnClient
+export const validateResponse = client
   .input(z.object({ value: z.number() }))
   .output(z.object({ result: z.number(), isValid: z.boolean() }))
   .handler(async ({ input }) => {
@@ -42,7 +42,7 @@ export const validateResponse = safeFnClient
   });
 
 // 3. With Function-Level Middleware
-export const protectedAction = safeFnClient
+export const protectedAction = client
   .input(z.object({ action: z.string() }))
   .use(async ({ ctx, next }) => {
     if (!ctx.userId) throw new Error("Unauthorized");
@@ -84,7 +84,7 @@ export const contextChainExample = advancedClient
 // 5. Context Building from Empty - Starting with no default context
 // Note: TypeScript has limitations with complex context inference from inline middleware
 // For now, this example shows the structure but may require type assertions
-const emptyContextClient = createSafeFnClient({
+const emptyContextClient = createClient({
   defaultContext: {} as Record<string, any>, // Start with flexible context
 });
 

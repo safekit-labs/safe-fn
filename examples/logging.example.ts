@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createSafeFnClient, createMiddleware } from "@safekit/safe-fn";
+import { createClient, createMiddleware } from "@safekit/safe-fn";
 
 // bun run examples/logging.example.ts
 
@@ -85,7 +85,7 @@ const loggingMiddleware = createMiddleware<ClientContext, LoggingMetadata, Clien
 /**
  * Creates a base safe-fn client with logging middleware
  */
-const baseClient = createSafeFnClient({
+const baseClient = createClient({
   metadataSchema: loggingMetadataSchema,
 }).use(extractLoggerMiddleware);
 

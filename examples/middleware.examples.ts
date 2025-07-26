@@ -2,7 +2,7 @@
  * Middleware Examples
  * Demonstrates middleware context chaining and type safety features
  */
-import { createSafeFnClient, createMiddleware } from "@/index";
+import { createClient, createMiddleware } from "@/index";
 
 
 // ========================================================================
@@ -13,7 +13,7 @@ import { createSafeFnClient, createMiddleware } from "@/index";
  * Example 1: Basic context chaining that matches next-safe-action behavior
  * Shows how context types evolve through middleware chain
  */
-export const contextChainingExample = createSafeFnClient()
+export const contextChainingExample = createClient()
   .use(async ({ ctx, next }) => {
     // ctx is {} (empty object) initially
     console.log("Middleware 1 - Initial context:", { ctx });
@@ -53,7 +53,7 @@ export const contextChainingExample = createSafeFnClient()
  * Example 2: Authentication and authorization middleware pattern
  * Shows a common real-world use case for middleware chaining
  */
-export const authenticationExample = createSafeFnClient()
+export const authenticationExample = createClient()
   .use(async ({ next }) => {
     // Authentication middleware - verify token and add user info
     console.log("Authentication middleware");
@@ -129,7 +129,7 @@ export const authenticationExample = createSafeFnClient()
  * Example 3: Progressive context building from empty state
  * Demonstrates building complex context step by step
  */
-export const progressiveContextExample = createSafeFnClient()
+export const progressiveContextExample = createClient()
   .use(async ({ next }) => {
     // Step 1: Add environment info
     console.log("Environment setup");
@@ -198,7 +198,7 @@ export const progressiveContextExample = createSafeFnClient()
  * Example 4: Type safety verification
  * Shows that context types are properly inferred and validated
  */
-export const typeSafetyExample = createSafeFnClient()
+export const typeSafetyExample = createClient()
   .use(async ({ ctx, next }) => {
     // ctx is {} initially - can assign to empty object type
     const emptyCheck: object = ctx;
@@ -237,7 +237,7 @@ export const typeSafetyExample = createSafeFnClient()
  * Example 5: Middleware that doesn't modify context
  * Shows that middleware can be used for side effects without changing context
  */
-export const sideEffectMiddlewareExample = createSafeFnClient({
+export const sideEffectMiddlewareExample = createClient({
   defaultContext: { service: "example-api" },
 })
   .use(async ({ next }) => {
@@ -336,10 +336,10 @@ export const validationMiddleware = createMiddleware(async ({ rawInput, rawArgs,
 });
 
 // Example clients that use standalone middleware
-const clientWithTiming = createSafeFnClient()
+const clientWithTiming = createClient()
   .use(timingMiddleware);
 
-const clientWithLogging = createSafeFnClient()
+const clientWithLogging = createClient()
   .use(loggingMiddleware)
   .use(envMiddleware);
 

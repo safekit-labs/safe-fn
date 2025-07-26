@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createSafeFnClient } from "@safekit/safe-fn";
+import { createClient } from "@safekit/safe-fn";
 
 // bun run examples/context.example.ts
 
@@ -37,7 +37,7 @@ const authContextSchema = z.object({
 
 console.log("=== Example 1: Type-only Context ===");
 
-const client1 = createSafeFnClient().context<AuthContext>();
+const client1 = createClient().context<AuthContext>();
 
 const getUserProfile = client1
   .input(z.object({ userId: z.string() }))
@@ -86,7 +86,7 @@ console.log("Profile 4:", profile4);
 
 console.log("\n=== Example 2: Schema-validated Context ===");
 
-const client2 = createSafeFnClient().context(authContextSchema);
+const client2 = createClient().context(authContextSchema);
 
 const deleteUser = client2
   .input(z.object({ userId: z.string() }))
@@ -133,7 +133,7 @@ try {
 
 console.log("\n=== Example 3: Args Pattern with Context ===");
 
-const client3 = createSafeFnClient().context<AuthContext>();
+const client3 = createClient().context<AuthContext>();
 
 const updateUserRole = client3
   .args(z.string(), z.enum(["admin", "user"]))
@@ -165,7 +165,7 @@ console.log("Role update result:", roleUpdateResult);
 
 console.log("\n=== Example 4: Middleware Integration ===");
 
-const client4 = createSafeFnClient()
+const client4 = createClient()
   .context<AuthContext>()
   .use(async ({ ctx, next }) => {
     // Middleware can access and modify context
@@ -226,7 +226,7 @@ const mockDb = {
   },
 };
 
-const client5 = createSafeFnClient().context<DatabaseContext>();
+const client5 = createClient().context<DatabaseContext>();
 
 const queryUsers = client5
   .input(z.object({ filter: z.string() }))
@@ -256,7 +256,7 @@ console.log("Query result:", queryResult);
 
 console.log("\n=== Example 6: Error Handling with Context ===");
 
-const client6 = createSafeFnClient()
+const client6 = createClient()
   .context<AuthContext>()
   .use(async ({ ctx, next }) => {
     try {

@@ -2,7 +2,7 @@
  * Simple Middleware Debug Example
  * Shows middleware stack progression using metadata
  */
-import { createSafeFnClient } from "@/index";
+import { createClient } from "@/index";
 import { z } from "zod";
 
 // bun run examples/middleware.debug.example.ts
@@ -13,7 +13,7 @@ const debugMetadataSchema = z.object({
 });
 
 // Example showing middleware stack progression
-export const metadataDebugExample = createSafeFnClient({
+export const metadataDebugExample = createClient({
   metadataSchema: debugMetadataSchema
 })
   .use(async ({ next, metadata }) => {
