@@ -117,15 +117,13 @@ export async function executeMiddlewareChain<
     // Create validation helper for this middleware
     const valid = createValidationHelper(rawInput, rawArgs, inputValidator, argsValidator);
 
-    // Execute the middleware
+    // Execute the middleware (updated for new MiddlewareFn signature)
     await middleware({
       rawInput,
       rawArgs,
       ctx: currentContext,
       metadata,
-      next,
-      valid,
-    });
+    } as any, next as any);
   };
 
   // Start the chain

@@ -76,7 +76,7 @@ export interface ArrayInputHandlerOptions<
   inputValidator: ParseFn<any> | undefined;
   outputValidator: ParseFn<any> | undefined;
   functionMiddlewares: MiddlewareFn<TMetadata, TWorkingContext, any>[];
-  handler: SafeFnHandler<any, THandlerOutput, TWorkingContext, TMetadata>;
+  handler: SafeFnHandler<THandlerOutput, TWorkingContext, TMetadata>;
   errorHandlerFn: ErrorHandlerFn<TMetadata, TWorkingContext>;
 }
 
@@ -96,7 +96,7 @@ export interface ObjectInputHandlerOptions<
   inputValidator: ParseFn<any> | undefined;
   outputValidator: ParseFn<any> | undefined;
   functionMiddlewares: MiddlewareFn<TMetadata, TWorkingContext, any>[];
-  handler: SafeFnHandler<THandlerInput, THandlerOutput, TWorkingContext, TMetadata>;
+  handler: SafeFnHandler<THandlerOutput, TWorkingContext, TMetadata>;
   errorHandlerFn: ErrorHandlerFn<TMetadata, TWorkingContext>;
 }
 

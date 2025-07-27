@@ -2,7 +2,7 @@
 // MIDDLEWARE SYSTEM TYPES
 // ========================================================================
 
-import type { Context, Metadata, Prettify, Unwrap } from "./core";
+import type { Context, Metadata } from "./core";
 
 // ========================================================================
 // MIDDLEWARE EXECUTION TYPES
@@ -19,20 +19,31 @@ export interface MiddlewareResult<TOutput, TNextCtx extends Context> {
 }
 
 /**
- * Next function for the unified middleware system
- * Generic over the context type that will be passed to the next middleware
+ * Simplified Next function for middleware-only architecture
+ * Similar to Express.js middleware pattern
  */
-export type MiddlewareNext = {
-  <TNextCtx extends Context = {}>(params?: { ctx?: TNextCtx }): Promise<MiddlewareResult<unknown, TNextCtx>>;
-};
+export type NextFunction<TContext extends Context = Context> = (
+  context?: TContext
+) => Promise<unknown>;
 
 /**
- * Clean type alias for middleware next function with proper overloads
- * Provides a much more readable type display in IDEs
+ * Simple middleware execution context
+ * Contains all the data a middleware might need
  */
-export interface NextFunction<TCurrentCtx extends Context = {}> {
-  (): Promise<Unwrap<MiddlewareResult<unknown, TCurrentCtx>>>;
-  <TNextCtx extends Context>(opts: { ctx: TNextCtx }): Promise<Unwrap<MiddlewareResult<unknown, Prettify<TCurrentCtx & TNextCtx>>>>;
+export interface MiddlewareContext<TContext extends Context = Context, TMetadata extends Metadata = Metadata> {
+  // Raw input data (before validation)
+  rawInput?: unknown;
+  rawArgs?: unknown;
+  
+  // Validated data (set by validation middleware)
+  input?: unknown;
+  args?: unknown;
+  validatedInput?: unknown;
+  validatedArgs?: unknown;
+  
+  // Context and metadata
+  ctx: TContext;
+  metadata: TMetadata;
 }
 
 /**
@@ -49,24 +60,20 @@ export type ValidateFunction = {
 // ========================================================================
 
 /**
- * Unified Middleware Function Type
- * Similar to next-safe-action's MiddlewareFn but adapted for safe-fn
- * - Takes current context type as input
- * - Returns new context type through MiddlewareResult
- * - The return type's context becomes the input for the next middleware
+ * Simplified Middleware Function Type for middleware-only architecture
+ * Similar to Express.js middleware pattern:
+ * - Receives execution context
+ * - Can modify context and call next()
+ * - Can transform the result
  */
 export type MiddlewareFn<
-  TMetadata extends Metadata,
-  TCurrentCtx extends Context,
-  TNextCtx extends Context,
-> = (props: {
-  rawInput: unknown;
-  rawArgs: unknown;
-  ctx: Prettify<TCurrentCtx>;
-  metadata: TMetadata;
-  next: NextFunction<TCurrentCtx>;
-  valid: ValidateFunction;
-}) => Promise<MiddlewareResult<unknown, TNextCtx>>;
+  TMetadata extends Metadata = Metadata,
+  TCurrentCtx extends Context = Context,
+  TNextCtx extends Context = Context,
+> = (
+  context: MiddlewareContext<TCurrentCtx, TMetadata>,
+  next: NextFunction<TNextCtx>
+) => Promise<unknown>;
 
 export type Middleware<
   TCurrentContext extends Context = Context,
