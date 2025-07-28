@@ -1,79 +1,64 @@
+import type {
+  MaybePromise,
+  InferRawInput,
+  InferValidatedInput,
+  InferRawOutput,
+  InferValidatedOutput,
+} from "./types";
+
 // ========================================================================
-// HANDLER TYPES AND CREATION
+// HANDLER
 // ========================================================================
 
-import type { StandardSchemaV1 } from '../standard-schema';
-
-// ========================================================================
-// CONDITIONAL TYPE UTILITIES FOR SCHEMA SUPPORT
-// ========================================================================
+// ------------------ TYPES ------------------
 
 /**
- * Extract raw input type - if StandardSchemaV1, use Input generic, otherwise use type directly
- */
-export type InferRawInput<T> = T extends StandardSchemaV1<infer Input, any> 
-  ? Input 
-  : T;
-
-/**
- * Extract validated input type - if StandardSchemaV1, use Output generic, otherwise use type directly
- */
-export type InferValidatedInput<T> = T extends StandardSchemaV1<any, infer Output>
-  ? Output
-  : T;
-
-/**
- * Extract raw output type - if StandardSchemaV1, use Input generic, otherwise use type directly
- */
-export type InferRawOutput<T> = T extends StandardSchemaV1<infer Input, any>
-  ? Input
-  : T;
-
-/**
- * Extract validated output type - if StandardSchemaV1, use Output generic, otherwise use type directly
- */
-export type InferValidatedOutput<T> = T extends StandardSchemaV1<any, infer Output>
-  ? Output  
-  : T;
-
-/**
- * Handler parameter object
- */
-export interface HandlerParams<
-  TContext extends Record<string, any> = {},
-  TInput = unknown
-> {
-  ctx: TContext;
-  input: TInput;
-}
-
-/**
- * Handler function type
+ * Handler function type that receives context and input, returns output
  */
 export type Handler<
-  TContext extends Record<string, any> = {},
-  TInput = unknown,
-  TOutput = unknown
-> = (params: HandlerParams<TContext, TInput>) => TOutput | Promise<TOutput>;
+  TConfig extends {
+    input?: unknown;
+    output?: unknown;
+    context?: unknown;
+  } = {
+    input: unknown;
+    output: unknown;
+    context: Record<string, unknown>;
+  },
+> = (params: {
+  ctx: TConfig["context"];
+  input: TConfig["input"];
+}) => MaybePromise<TConfig["output"]>;
+
+// ------------------ CREATION FUNCTIONS ------------------
 
 /**
- * Create typed handler with input/output requirements
- * Supports both regular types and StandardSchemaV1 schemas
+ * Creates a typed handler with positional generics and schema support.
+ * The generic parameters are ordered for the best developer experience.
+ *
+ * 1. `TInput`: The input parameters (most common to type).
+ * 2. `TOutput`: The result this handler produces.
+ * 3. `TContext`: The context from middleware (often inferred).
  */
-export function createHandler<TContext extends {
-  ctx?: Record<string, any>;
-  input: any | StandardSchemaV1;
-  output: any | StandardSchemaV1;
-}>(
-  handler: Handler<
-    TContext['ctx'] extends Record<string, any> ? TContext['ctx'] : {},
-    InferValidatedInput<TContext['input']>,
-    InferValidatedOutput<TContext['output']>
-  >
-): Handler<
-  TContext['ctx'] extends Record<string, any> ? TContext['ctx'] : {},
-  InferValidatedInput<TContext['input']>,
-  InferValidatedOutput<TContext['output']>
-> {
-  return handler;
+export function createHandler<
+  TInput = unknown,
+  TOutput = unknown,
+  TContext = Record<string, unknown>,
+>(
+  fn: Handler<{
+    input: InferValidatedInput<TInput>;
+    output: InferRawOutput<TOutput>;
+    context: TContext;
+  }>,
+): Handler<{
+  input: InferRawInput<TInput>;
+  output: InferValidatedOutput<TOutput>;
+  context: TContext;
+}> {
+  // The validation layer will handle the conversion between raw/validated types
+  return fn as Handler<{
+    input: InferRawInput<TInput>;
+    output: InferValidatedOutput<TOutput>;
+    context: TContext;
+  }>;
 }

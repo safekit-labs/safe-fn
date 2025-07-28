@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
-    include: ["./__tests__/**/*.spec.ts"],
+    include: ["./__tests__/**/*.spec.ts", "./**/*.test.ts"],
     globals: true,
     environment: "node",
     coverage: {

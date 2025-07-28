@@ -1,212 +1,247 @@
-import { describe, it, expect } from "vitest";
-import { createCoreClient, createMiddleware, createHandler } from "../../src/core";
+import { describe, test, expect, expectTypeOf } from "vitest";
+import { z } from "zod";
+import { createCoreClient, createMiddleware, createHandler } from "@safekit/safe-fn";
 
-describe("@safekit/core", () => {
-  describe("createCoreClient", () => {
-    it("should create core instance", () => {
-      const client = createCoreClient();
-      expect(client).toBeDefined();
+import type { Handler } from "../../src/core";
+
+describe("SafeFn Core", () => {
+  test("basic handler execution", async () => {
+    const handler = createHandler<{ name: string }, { greeting: string }, {}>(({ input }) => ({
+      greeting: `Hello ${input.name}!`,
+    }));
+
+    const fn = createCoreClient().handler(handler);
+    const result = await fn({ name: "World" });
+
+    expect(result).toEqual({ greeting: "Hello World!" });
+  });
+
+  test("middleware lifecycle hooks", async () => {
+    const order: string[] = [];
+
+    const middleware = createMiddleware({
+      before: async ({ ctx }) => {
+        order.push("before");
+        return { userId: "user123" };
+      },
+      after: async ({ ctx, result }) => {
+        order.push("after");
+      },
+    });
+
+    const handler = createHandler<{}, string, { userId: string }>(({ ctx }) => {
+      order.push("handler");
+      return `Hello ${ctx.userId}`;
+    });
+
+    const fn = createCoreClient().use(middleware).handler(handler);
+    const result = await fn({});
+
+    expect(result).toBe("Hello user123");
+    expect(order).toEqual(["before", "handler", "after"]);
+  });
+
+  test("error handling with onError hook", async () => {
+    const order: string[] = [];
+
+    const middleware = createMiddleware<{}, { userId: string }>({
+      before: async ({ ctx }) => {
+        order.push("before");
+        return { userId: "user123" };
+      },
+      onError: async ({ ctx, error }) => {
+        order.push("onError");
+        // ctx.userId available since before() succeeded
+        expect(ctx.userId).toBe("user123");
+        expect(error.message).toBe("Test error");
+      },
+    });
+
+    const handler = createHandler<{}, string, { userId: string }>(() => {
+      order.push("handler");
+      throw new Error("Test error");
+    });
+
+    const fn = createCoreClient().use(middleware).handler(handler);
+
+    await expect(fn({})).rejects.toThrow("Test error");
+    expect(order).toEqual(["before", "handler", "onError"]);
+  });
+
+  test("context merging through middleware chain", async () => {
+    const middleware1 = createMiddleware<{}, { step1: string }>({
+      before: async ({ ctx }) => ({ step1: "done" }),
+    });
+
+    const middleware2 = createMiddleware<{ step1: string }, { step2: string }>({
+      before: async ({ ctx }) => ({ step2: ctx.step1 + "-step2" }),
+    });
+
+    const handler = createHandler<
+      {},
+      { step1: string; step2: string },
+      { step1: string; step2: string }
+    >(({ ctx }) => ctx);
+
+    const fn = createCoreClient().use(middleware1).use(middleware2).handler(handler);
+
+    const result = await fn({});
+
+    expect(result).toEqual({
+      step1: "done",
+      step2: "done-step2",
     });
   });
 
-  describe("handlers", () => {
-    it("should handle sync functions", () => {
-      const client = createCoreClient();
-      const handler = createHandler<{
-        input: { name: string };
-        output: { message: string };
-      }>(({ input }) => ({ message: `Hello ${input.name}!` }));
+  test("context merging through chained middleware execution", async () => {
+    const fn = createCoreClient()
+      .use({
+        before: async ({ ctx }) => ({ step1: "done" }),
+      })
+      .use({
+        before: async ({ ctx }) => ({ step2: ctx.step1 + "-step2" }),
+      });
 
-      const fn = client.handler(handler);
-      const result = fn({ name: "World" });
-      expect(result).toEqual({ message: "Hello World!" });
-    });
-
-    it("should handle async functions", async () => {
-      const client = createCoreClient();
-      const handler = createHandler<{
-        input: { name: string };
-        output: { message: string };
-      }>(async ({ input }) => ({ message: `Hello ${input.name}!` }));
-
-      const fn = client.handler(handler);
-      const result = await fn({ name: "World" });
-      expect(result).toEqual({ message: "Hello World!" });
-    });
+    expect(fn).toBeDefined();
   });
 
-  describe("middleware", () => {
-    it("should execute middleware in onion pattern", async () => {
-      const client = createCoreClient();
-      const calls: string[] = [];
-
-      const middleware1 = createMiddleware(async ({ next }) => {
-        calls.push("m1-before");
-        const result = await next({});
-        calls.push("m1-after");
-        return result;
-      });
-
-      const middleware2 = createMiddleware(async ({ next }) => {
-        calls.push("m2-before");
-        const result = await next({});
-        calls.push("m2-after");
-        return result;
-      });
-
-      const fn = client
-        .use(middleware1)
-        .use(middleware2)
-        .handler<{
-          input: {};
-          output: string;
-        }>(() => {
-          calls.push("handler");
-          return "result";
-        });
-      await fn({});
-
-      expect(calls).toEqual(["m1-before", "m2-before", "handler", "m2-after", "m1-after"]);
+  test("single middleware output context type inference", () => {
+    const middleware1 = createMiddleware({
+      before: async ({ ctx }) => ({ step1: "done" }),
     });
 
-    it("should pass context through middleware", async () => {
-      const client = createCoreClient();
-
-      const authMiddleware = createMiddleware(async ({ next }) => {
-        return next({ userId: "user123" });
-      });
-
-      const fn = client.use(authMiddleware).handler<{
-        ctx: { userId: string };
-        input: {};
-        output: { userId: string };
-      }>(({ ctx }) => ({ userId: ctx.userId }));
-      const result = await fn({});
-
-      expect(result).toEqual({ userId: "user123" });
-    });
-
-    it("should accept array of middleware", async () => {
-      const client = createCoreClient();
-      const calls: string[] = [];
-
-      const middleware1 = createMiddleware(async ({ next }) => {
-        calls.push("m1");
-        return next({});
-      });
-
-      const middleware2 = createMiddleware(async ({ next }) => {
-        calls.push("m2");
-        return next({});
-      });
-
-      const fn = client.use([middleware1, middleware2]).handler<{
-        input: {};
-        output: string;
-      }>(() => "result");
-      await fn({});
-
-      expect(calls).toEqual(["m1", "m2"]);
-    });
+    // TypeScript should infer the middleware type
+    expect(middleware1).toBeDefined();
+    expect(typeof middleware1.before).toBe("function");
   });
 
-  describe("context merging", () => {
-    it("should merge context types from multiple middleware", async () => {
-      const client = createCoreClient();
+  test("middleware execution order (before forward, after reverse)", async () => {
+    const order: string[] = [];
 
-      const userMiddleware = createMiddleware(async ({ next }) => {
-        return next({ userId: "user123" });
-      });
-
-      const roleMiddleware = createMiddleware(async ({ next }) => {
-        return next({ role: "admin" });
-      });
-
-      const fn = client
-        .use(userMiddleware)
-        .use(roleMiddleware)
-        .handler<{
-          ctx: { userId: string; role: string };
-          input: {};
-          output: { userId: string; role: string };
-        }>(({ ctx }) => ({ userId: ctx.userId, role: ctx.role }));
-      const result = await fn({});
-
-      expect(result).toEqual({ userId: "user123", role: "admin" });
+    const middleware1 = createMiddleware({
+      before: async ({ ctx }) => {
+        order.push("m1-before");
+        return {};
+      },
+      after: async ({ ctx, result }) => {
+        order.push("m1-after");
+      },
     });
+
+    const middleware2 = createMiddleware({
+      before: async ({ ctx }) => {
+        order.push("m2-before");
+        return {};
+      },
+      after: async ({ ctx, result }) => {
+        order.push("m2-after");
+      },
+    });
+
+    const handler = createHandler<{}, string, {}>(() => {
+      order.push("handler");
+      return "done";
+    });
+
+    const fn = createCoreClient().use(middleware1).use(middleware2).handler(handler);
+
+    await fn({});
+
+    expect(order).toEqual(["m1-before", "m2-before", "handler", "m2-after", "m1-after"]);
   });
 
-  describe("chained usage (primary pattern)", () => {
-    it("should work with fully chained syntax - no generics", () => {
-      const client = createCoreClient();
-      
-      const fn = client.handler(({ input }) => `Hello ${input.name}!`);
-      const result = fn({ name: "World" });
-      
-      expect(result).toBe("Hello World!");
+  test("TRPC-style error context (partial outputCtx)", async () => {
+    const middleware = createMiddleware<unknown, { someData: string }>({
+      before: async ({ ctx }) => {
+        throw new Error("Before failed");
+      },
+      onError: async ({ ctx, error }) => {
+        // outputCtx properties should be undefined since before() failed
+        expect(ctx).toEqual({});
+      },
     });
 
-    it("should work with middleware chain - no generics", async () => {
-      const client = createCoreClient();
-      
-      const fn = client
-        .use(async ({ next }) => {
-          const result = await next({ requestId: "req-123" });
-          return { ...result, timestamp: Date.now() };
-        })
-        .handler(({ ctx, input }) => ({
-          message: `Hello ${input.name}!`,
-          requestId: ctx.requestId
-        }));
-      
-      const result = await fn({ name: "TypeScript" });
-      
-      expect(result.message).toBe("Hello TypeScript!");
-      expect(result.requestId).toBe("req-123");
-      expect(typeof result.timestamp).toBe("number");
-    });
+    const handler = createHandler<{}, string, { someData: string }>(() => "never reached");
 
-    it("should work with multiple middleware - no generics", async () => {
-      const client = createCoreClient();
-      
-      const fn = client
-        .use(async ({ next }) => next({ userId: "user123" }))
-        .use(async ({ next }) => next({ role: "admin" }))
-        .use(async ({ ctx, next }) => next({ fullName: `${ctx.userId}-${ctx.role}` }))
-        .handler(({ ctx, input }) => ({
-          greeting: `Hello ${input.name}!`,
-          user: ctx.fullName
-        }));
-      
-      const result = await fn({ name: "Chain" });
-      
-      expect(result).toEqual({
-        greeting: "Hello Chain!",
-        user: "user123-admin"
+    const fn = createCoreClient().use(middleware).handler(handler);
+
+    await expect(fn({})).rejects.toThrow("Before failed");
+  });
+
+  test("validation: at least one hook required", () => {
+    expect(() => {
+      createMiddleware({
+        // No hooks defined
       });
+    }).toThrow("Middleware must define at least one of: before, after, or onError");
+  });
+
+  test("handler with positional generics", async () => {
+    const handler1 = createHandler<{ name: string }, { greeting: string }, { userId: string }>(
+      ({ input, ctx }) => ({ greeting: `Hello ${input.name}, user ${ctx.userId}!` }),
+    );
+
+    const handler2 = createHandler<{ name: string }, { greeting: string }, { userId: string }>(
+      ({ input, ctx }) => ({ greeting: `Hello ${input.name}, user ${ctx.userId}!` }),
+    );
+
+    const middleware = createMiddleware({
+      before: async ({ ctx }) => ({ userId: "test123" }),
     });
 
-    it("should work with array middleware - no generics", async () => {
-      const client = createCoreClient();
-      
-      const authMiddleware = async ({ next }) => next({ isAuthenticated: true });
-      const logMiddleware = async ({ next }) => next({ logged: true });
-      
-      const fn = client
-        .use([authMiddleware, logMiddleware])
-        .handler(({ ctx, input }) => ({
-          data: input.data,
-          auth: ctx.isAuthenticated,
-          logged: ctx.logged
-        }));
-      
-      const result = await fn({ data: "test" });
-      
-      expect(result).toEqual({
-        data: "test",
-        auth: true,
-        logged: true
-      });
+    const fn1 = createCoreClient().use(middleware).handler(handler1);
+    const fn2 = createCoreClient().use(middleware).handler(handler2);
+
+    const result1 = await fn1({ name: "Alice" });
+    const result2 = await fn2({ name: "Bob" });
+
+    expect(result1).toEqual({ greeting: "Hello Alice, user test123!" });
+    expect(result2).toEqual({ greeting: "Hello Bob, user test123!" });
+  });
+
+  test("handler with Zod schema inference", () => {
+    const inputSchema = z.object({ page: z.coerce.number<string>() });
+    const outputSchema = z.object({ total: z.coerce.number<string>() });
+
+    const handler = createHandler<typeof inputSchema, typeof outputSchema>(({ input }) => {
+      // input.page should be number (validated)
+      expect(typeof input.page).toBe("number");
+      return { total: "42" }; // raw number, will be coerced to string
+    });
+
+    expect(handler).toBeDefined();
+
+    // Type test - verify handler has the expected type
+    expectTypeOf(handler).toEqualTypeOf<
+      Handler<{
+        input: {
+          page: string;
+        };
+        output: {
+          total: number;
+        };
+        context: Record<string, unknown>;
+      }>
+    >();
+  });
+
+  test("chained middleware and handler execution", async () => {
+    const result = await createCoreClient()
+      .use({
+        before: async ({ ctx }) => ({ userId: "user123" }),
+      })
+      .use({
+        before: async ({ ctx }) => {
+          // expectTypeOf(ctx).toEqualTypeOf<{userId: string}>();
+          return { sessionId: ctx.userId + "-session" }
+        },
+      })
+      .handler<{ name: string }, { greeting: string }>(({ input, ctx }) => ({
+        greeting: `Hello ${input.name}! User: ${ctx.userId}, Session: ${ctx.sessionId}`,
+      }))({ name: "World" });
+
+    expect(result).toEqual({
+      greeting: "Hello World! User: user123, Session: user123-session",
     });
   });
 });

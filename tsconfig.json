@@ -17,7 +17,8 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@safekit/safe-fn": ["src/index.ts"],
+      "@safekit/safe-fn/*": ["src/*"]
     }
   },
   "include": ["./src/**/*.ts", "./__tests__/**/*.ts", "./examples/**/*.ts"],

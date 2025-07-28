@@ -1,24 +1,17 @@
 // ========================================================================
-// SAFEFN CORE - MAIN EXPORTS
+// SAFEFN CORE API V3
 // ========================================================================
 
-export { createCoreClient } from './client';
-export { createMiddleware } from './middleware';
-export { createHandler } from './handler';
+// Core client
+export { createCoreClient, type CoreClient } from "./client";
 
-// Export types
-export type { 
-  CoreClient,
-  Middleware,
-  Handler,
-  MiddlewareParams,
-  HandlerParams,
-  NextFunction 
-} from './client';
+// Type utilities
+export { Prettify } from "./types";
 
-export type {
-  InferRawInput,
-  InferValidatedInput,
-  InferRawOutput,
-  InferValidatedOutput
-} from './handler';
+// Middleware system
+export { createMiddleware } from "./hook-middleware";
+export type { Middleware, InferMiddlewareContexts } from "./hook-middleware";
+
+// Handler system
+export { createHandler } from "./handler";
+export type { Handler } from "./handler";
