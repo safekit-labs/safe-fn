@@ -23,11 +23,11 @@ describe("Coerce Validation", () => {
         });
 
       // Should accept string input (matches generic)
-      const result1 = await fn({ page: "42" }, {});
+      const result1 = await fn({ page: "42" });
       expect(result1).toEqual({ receivedPage: 42, type: "number" });
 
       // Should accept number input (matches generic)
-      const result2 = await fn({ page: 42 }, {});
+      const result2 = await fn({ page: 42 });
       expect(result2).toEqual({ receivedPage: 42, type: "number" });
     });
 
