@@ -3,7 +3,7 @@
  */
 
 import type { Context, Metadata, Prettify, HasContext } from "./core";
-import type { SchemaValidator, InputSchemaArray, InferSchemaOutput } from "./schema";
+import type { SchemaValidator, InputSchemaArray, InferRawInput, InferValidatedInput, InferRawOutput, InferValidatedOutput } from "./schema";
 import type { HandlerInput, ArgsHandlerInput, SafeFnHandler, SafeFnSignature, InputType } from "./handler";
 import type { MiddlewareFn } from "./middleware";
 
@@ -122,7 +122,7 @@ interface SafeFnBase<
   input<TSchema extends SchemaValidator<any>>(
     schema: TSchema,
   ): TInputType extends 'none'
-    ? SafeFn<TBaseContext, TInputContext, InferSchemaOutput<TSchema>, TOutput, TMetadata, 'single', TContextCapable>
+    ? SafeFn<TBaseContext, TInputContext, TSchema, TOutput, TMetadata, 'single', TContextCapable>
     : never;
 
   /**
@@ -156,11 +156,11 @@ interface SafeFnBase<
 
   /**
    * Define output schema for validation
-   * @template TNewOutput - Output type inferred from schema
+   * @template TSchema - Schema type for validation
    */
-  output<TNewOutput>(
-    schema: SchemaValidator<TNewOutput>,
-  ): SafeFn<TBaseContext, TInputContext, TInput, TNewOutput, TMetadata, TInputType, TContextCapable>;
+  output<TSchema extends SchemaValidator<any>>(
+    schema: TSchema,
+  ): SafeFn<TBaseContext, TInputContext, TInput, TSchema, TMetadata, TInputType, TContextCapable>;
 
 
   /**
@@ -172,11 +172,11 @@ interface SafeFnBase<
   handler<THandlerInput = TInput, THandlerOutput = TOutput>(
     handler: TInputType extends 'args'
       ? THandlerInput extends readonly any[]
-        ? (input: ArgsHandlerInput<THandlerInput, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<THandlerOutput> | THandlerOutput
+        ? (input: ArgsHandlerInput<InferValidatedInput<THandlerInput>, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<InferRawOutput<THandlerOutput>> | InferRawOutput<THandlerOutput>
         : never
       : TInputType extends 'single'
-      ? (input: HandlerInput<THandlerInput, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<THandlerOutput> | THandlerOutput
-      : SafeFnHandler<THandlerInput, THandlerOutput, Prettify<TBaseContext & TInputContext>, TMetadata>
+      ? (input: HandlerInput<InferValidatedInput<THandlerInput>, Prettify<TBaseContext & TInputContext>, TMetadata>) => Promise<InferRawOutput<THandlerOutput>> | InferRawOutput<THandlerOutput>
+      : SafeFnHandler<InferValidatedInput<THandlerInput>, InferRawOutput<THandlerOutput>, Prettify<TBaseContext & TInputContext>, TMetadata>
   ): TContextCapable extends HasContext
     ? SafeFn<TBaseContext, TInputContext, THandlerInput, THandlerOutput, TMetadata, TInputType, TContextCapable>
     : SafeFnSignature<THandlerInput, THandlerOutput, Prettify<TBaseContext & TInputContext>, TInputType>;
@@ -198,11 +198,11 @@ export interface SafeFnWithContext<
    */
   withContext(context: TInputContext): TInputType extends 'args'
     ? TInput extends readonly any[]
-      ? ContextBoundArgsFunction<TInput, TOutput>
+      ? ContextBoundArgsFunction<InferRawInput<TInput>, InferValidatedOutput<TOutput>>
       : never
     : TInputType extends 'none'
-    ? ContextBoundNoInputFunction<TOutput>
-    : ContextBoundFunction<TInput, TOutput>;
+    ? ContextBoundNoInputFunction<InferValidatedOutput<TOutput>>
+    : ContextBoundFunction<InferRawInput<TInput>, InferValidatedOutput<TOutput>>;
 }
 
 /**

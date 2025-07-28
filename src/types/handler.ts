@@ -3,6 +3,7 @@
  */
 
 import type { Context, Metadata, Prettify } from "./core";
+import type { SchemaValidator, InferTupleFromSchemas, InferSchemaInput, InferSchemaOutput, InferRawInput,  InferValidatedOutput } from "./schema";
 
 // ========================================================================
 // HANDLER INPUT TYPES
@@ -43,15 +44,15 @@ export interface TupleHandlerInput<TArgs extends readonly any[], TContext extend
  */
 type CleanTupleSignature<TTuple extends readonly any[], TOutput> =
   TTuple extends readonly [infer T1]
-    ? (arg1: T1) => Promise<TOutput> | TOutput
+    ? (arg1: InferRawInput<T1>) => Promise<TOutput> | TOutput
   : TTuple extends readonly [infer T1, infer T2]
-    ? (arg1: T1, arg2: T2) => Promise<TOutput> | TOutput
+    ? (arg1: InferRawInput<T1>, arg2: InferRawInput<T2>) => Promise<TOutput> | TOutput
   : TTuple extends readonly [infer T1, infer T2, infer T3]
-    ? (arg1: T1, arg2: T2, arg3: T3) => Promise<TOutput> | TOutput
+    ? (arg1: InferRawInput<T1>, arg2: InferRawInput<T2>, arg3: InferRawInput<T3>) => Promise<TOutput> | TOutput
   : TTuple extends readonly [infer T1, infer T2, infer T3, infer T4]
-    ? (arg1: T1, arg2: T2, arg3: T3, arg4: T4) => Promise<TOutput> | TOutput
+    ? (arg1: InferRawInput<T1>, arg2: InferRawInput<T2>, arg3: InferRawInput<T3>, arg4: InferRawInput<T4>) => Promise<TOutput> | TOutput
   : TTuple extends readonly [infer T1, infer T2, infer T3, infer T4, infer T5]
-    ? (arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5) => Promise<TOutput> | TOutput
+    ? (arg1: InferRawInput<T1>, arg2: InferRawInput<T2>, arg3: InferRawInput<T3>, arg4: InferRawInput<T4>, arg5: InferRawInput<T5>) => Promise<TOutput> | TOutput
   : (...args: TTuple) => Promise<TOutput> | TOutput; // fallback for longer tuples
 
 /**
@@ -71,17 +72,17 @@ export type SafeFnSignature<
   TInputType extends InputType = 'none',
 > = TInputType extends 'args'
   ? TInput extends InferTupleFromSchemas<readonly SchemaValidator<any>[]>
-    ? CleanTupleSignature<TInput, TOutput>
+    ? CleanTupleSignature<InferRawInput<TInput>, InferValidatedOutput<TOutput>>
     : TInput extends readonly []
-    ? () => Promise<TOutput> | TOutput
-    : (...args: any[]) => Promise<TOutput> | TOutput
+    ? () => Promise<InferValidatedOutput<TOutput>> | InferValidatedOutput<TOutput>
+    : (...args: any[]) => Promise<InferValidatedOutput<TOutput>> | InferValidatedOutput<TOutput>
   : TInputType extends 'single'
-  ? (input: TInput, context?: Partial<TContext>) => Promise<TOutput> | TOutput
+  ? (input: InferRawInput<TInput>, context?: Partial<TContext>) => Promise<InferValidatedOutput<TOutput>> | InferValidatedOutput<TOutput>
   : TInputType extends 'none'
-  ? () => Promise<TOutput> | TOutput
+  ? () => Promise<InferValidatedOutput<TOutput>> | InferValidatedOutput<TOutput>
   : unknown extends TInput
-  ? () => Promise<TOutput> | TOutput
-  : (input: TInput, context?: Partial<TContext>) => Promise<TOutput> | TOutput;
+  ? () => Promise<InferValidatedOutput<TOutput>> | InferValidatedOutput<TOutput>
+  : (input: InferRawInput<TInput>, context?: Partial<TContext>) => Promise<InferValidatedOutput<TOutput>> | InferValidatedOutput<TOutput>;
 
 /**
  * Function signature type that uses schema input types for the call signature
@@ -103,5 +104,3 @@ export type SafeFnHandler<TInput, TOutput, TContext extends Context, TMetadata e
   ? (input: ArgsHandlerInput<TInput, TContext, TMetadata>) => Promise<TOutput> | TOutput
   : (input: HandlerInput<TInput, TContext, TMetadata>) => Promise<TOutput> | TOutput;
 
-// Import types needed for SafeFnSignature
-import type { SchemaValidator, InferTupleFromSchemas, InferSchemaInput, InferSchemaOutput } from "./schema";

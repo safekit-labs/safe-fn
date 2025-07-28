@@ -66,3 +66,35 @@ export type InferTupleFromSchemas<T extends readonly SchemaValidator<any>[]> = T
   : {
       readonly [K in keyof T]: InferSchemaOutput<T[K]>;
     };
+
+// ========================================================================
+// RAW/VALIDATED TYPE INFERENCE UTILITIES
+// ========================================================================
+
+/**
+ * Extract raw input type - if StandardSchemaV1, use Input generic, otherwise use type directly
+ */
+export type InferRawInput<T> = T extends StandardSchemaV1<infer Input, unknown>
+  ? Input
+  : T;
+
+/**
+ * Extract validated input type - if StandardSchemaV1, use Output generic, otherwise use type directly
+ */
+export type InferValidatedInput<T> = T extends StandardSchemaV1<unknown, infer Output>
+  ? Output
+  : T;
+
+/**
+ * Extract raw output type - if StandardSchemaV1, use Input generic, otherwise use type directly
+ */
+export type InferRawOutput<T> = T extends StandardSchemaV1<infer Input, unknown>
+  ? Input
+  : T;
+
+/**
+ * Extract validated output type - if StandardSchemaV1, use Output generic, otherwise use type directly
+ */
+export type InferValidatedOutput<T> = T extends StandardSchemaV1<unknown, infer Output>
+  ? Output
+  : T;
